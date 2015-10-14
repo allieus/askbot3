@@ -1,4 +1,7 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import datetime
 import sys
 from south.db import db
@@ -23,22 +26,22 @@ class Migration(SchemaMigration):
         )
 
         # Deleting model 'Comment'
-        db.delete_table(u'comment')
+        db.delete_table('comment')
 
         # Deleting model 'Answer'
-        db.delete_table(u'answer')
+        db.delete_table('answer')
 
         # Deleting model 'Question'
-        db.delete_table(u'question')
+        db.delete_table('question')
 
         if 'test' not in sys.argv and not db.dry_run:  # Don't confuse users
-            print TERM_YELLOW, 'You are free now to remove content types for Question/Answer/Comment models', TERM_RESET
+            print(TERM_YELLOW, 'You are free now to remove content types for Question/Answer/Comment models', TERM_RESET)
 
 
     def backwards(self, orm):
 
         # Adding model 'Comment'
-        db.create_table(u'comment', (
+        db.create_table('comment', (
             ('comment', self.gf('django.db.models.fields.CharField')(max_length=2048)),
             ('offensive_flag_count', self.gf('django.db.models.fields.IntegerField')(default=0)),
             ('object_id', self.gf('django.db.models.fields.PositiveIntegerField')()),
@@ -52,7 +55,7 @@ class Migration(SchemaMigration):
         db.send_create_signal('askbot', ['Comment'])
 
         # Adding model 'Answer'
-        db.create_table(u'answer', (
+        db.create_table('answer', (
             ('wiki', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('vote_up_count', self.gf('django.db.models.fields.IntegerField')(default=0)),
             ('text', self.gf('django.db.models.fields.TextField')(null=True)),
@@ -80,7 +83,7 @@ class Migration(SchemaMigration):
         db.send_create_signal('askbot', ['Answer'])
 
         # Adding model 'Question'
-        db.create_table(u'question', (
+        db.create_table('question', (
             ('wiki', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('vote_up_count', self.gf('django.db.models.fields.IntegerField')(default=0)),
             ('text', self.gf('django.db.models.fields.TextField')(null=True)),
@@ -116,7 +119,7 @@ class Migration(SchemaMigration):
 
     models = {
         'askbot.activity': {
-            'Meta': {'object_name': 'Activity', 'db_table': "u'activity'"},
+            'Meta': {'object_name': 'Activity', 'db_table': "activity"},
             'active_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'activity_type': ('django.db.models.fields.SmallIntegerField', [], {}),
             'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
@@ -163,7 +166,7 @@ class Migration(SchemaMigration):
             'wiki': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
         },
         'askbot.award': {
-            'Meta': {'object_name': 'Award', 'db_table': "u'award'"},
+            'Meta': {'object_name': 'Award', 'db_table': "award"},
             'awarded_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'badge': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'award_badge'", 'to': "orm['askbot.BadgeData']"}),
             'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
@@ -189,7 +192,7 @@ class Migration(SchemaMigration):
             'subscriber': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'notification_subscriptions'", 'to': "orm['auth.User']"})
         },
         'askbot.favoritequestion': {
-            'Meta': {'object_name': 'FavoriteQuestion', 'db_table': "u'favorite_question'"},
+            'Meta': {'object_name': 'FavoriteQuestion', 'db_table': "favorite_question"},
             'added_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'thread': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['askbot.Thread']"}),
@@ -257,7 +260,7 @@ class Migration(SchemaMigration):
             'who': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'question_views'", 'to': "orm['auth.User']"})
         },
         'askbot.repute': {
-            'Meta': {'object_name': 'Repute', 'db_table': "u'repute'"},
+            'Meta': {'object_name': 'Repute', 'db_table': "repute"},
             'comment': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'negative': ('django.db.models.fields.SmallIntegerField', [], {'default': '0'}),
@@ -269,7 +272,7 @@ class Migration(SchemaMigration):
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
         },
         'askbot.tag': {
-            'Meta': {'ordering': "('-used_count', 'name')", 'object_name': 'Tag', 'db_table': "u'tag'"},
+            'Meta': {'ordering': "('-used_count', 'name')", 'object_name': 'Tag', 'db_table': "tag"},
             'created_by': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'created_tags'", 'to': "orm['auth.User']"}),
             'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'deleted_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
@@ -299,7 +302,7 @@ class Migration(SchemaMigration):
             'view_count': ('django.db.models.fields.PositiveIntegerField', [], {'default': '0'})
         },
         'askbot.vote': {
-            'Meta': {'unique_together': "(('user', 'voted_post'),)", 'object_name': 'Vote', 'db_table': "u'vote'"},
+            'Meta': {'unique_together': "(('user', 'voted_post'),)", 'object_name': 'Vote', 'db_table': "vote"},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'votes'", 'to': "orm['auth.User']"}),
             'vote': ('django.db.models.fields.SmallIntegerField', [], {}),

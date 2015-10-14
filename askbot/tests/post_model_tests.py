@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import copy
 import datetime
 from operator import attrgetter
@@ -56,7 +57,7 @@ class PostModelTests(AskbotTestCase):
 
         self.assertRaisesRegexp(
             ValidationError,
-            r"{'__all__': \[u'Post field has to be set.'\]}",
+            r"{'__all__': \['Post field has to be set.'\]}",
             post_revision.save
         )
         """

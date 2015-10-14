@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import hotshot
 import time
 import os
@@ -13,6 +16,7 @@ from django.http import HttpResponse, HttpResponseForbidden, Http404
 from django.http import HttpResponseRedirect
 from django.utils import simplejson
 from django.utils.translation import ugettext as _
+from django.utils.encoding import force_text
 from django.utils.encoding import smart_str
 from askbot import exceptions as askbot_exceptions
 from askbot.conf import settings as askbot_settings
@@ -88,19 +92,19 @@ def ajax_only(view_func):
             data = view_func(request, *args, **kwargs)
             if data is None:
                 data = {}
-        except Exception, e:
+        except Exception as e:
             #todo: also check field called "message"
             if hasattr(e, 'messages'):
                 if len(e.messages) > 1:
-                    message = u'<ul>' + \
-                        u''.join(
-                            map(lambda v: u'<li>%s</li>' % v, e.messages)
+                    message = '<ul>' + \
+                        ''.join(
+                            map(lambda v: '<li>%s</li>' % v, e.messages)
                         ) + \
-                        u'</ul>'
+                        '</ul>'
                 else:
                     message = e.messages[0]
             else:
-                message = unicode(e)
+                message = force_text(e)
             if message == '':
                 message = _('Oops, apologies - there was some error')
             logging.debug(message)
@@ -129,8 +133,8 @@ def check_authorization_to_post(func_or_message):
         def wrapper(request, *args, **kwargs):
             if request.user.is_anonymous():
                 #todo: expand for handling ajax responses
-                if askbot_settings.ALLOW_POSTING_BEFORE_LOGGING_IN == False:
-                    request.user.message_set.create(message=unicode(message))
+                if askbot_settings.ALLOW_POSTING_BEFORE_LOGGING_IN is False:
+                    request.user.message_set.create(message=force_text(message))
                     params = 'next=%s' % request.path
                     return HttpResponseRedirect(url_utils.get_login_url() + '?' + params)
             return view_func(request, *args, **kwargs)

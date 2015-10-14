@@ -81,7 +81,7 @@ def is_iterable(thing):
     if hasattr(thing, '__iter__'):
         return True
     else:
-        return isinstance(thing, basestring)
+        return isinstance(thing, six.string_types)
 
 BOT_REGEX = re.compile(
     r'bot|http|\.com|crawl|spider|python|curl|yandex'

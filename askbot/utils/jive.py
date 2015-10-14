@@ -22,6 +22,8 @@ except ImportError:
 from random import randint
 import codecs
 
+from django.utils import six
+
 #---- Python version compat
 if sys.version_info[:2] < (2,4):
     from sets import Set as set
@@ -111,9 +113,9 @@ class JiveConverter(object):
         return '\n\n' + html_hash + '\n\n'
 
     def _normalize(self, text):
-        if not isinstance(text, unicode):
+        if not isinstance(text, six.text_type):
             #TODO: perhaps shouldn't presume UTF-8 for string input?
-            text = unicode(text, 'utf-8')
+            text = six.text_type(text, 'utf-8')
 
         #escape any html special chars globally as in jive they can be anywhere
         text = cgi.escape(text)

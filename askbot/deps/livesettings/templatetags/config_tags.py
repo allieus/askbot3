@@ -1,6 +1,7 @@
 from django import template
 from django.contrib.sites.models import Site
 from django.core import urlresolvers
+from django.utils import six
 from askbot.deps.livesettings import config_value
 from askbot.deps.livesettings.utils import url_join
 import logging
@@ -35,7 +36,7 @@ def break_at(value,  chars=40):
     return value
 
     chars = int(chars)
-    value = unicode(value)
+    value = six.text_type(value)
     if len(value) < chars:
         return value
     else:

@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 import datetime
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import six
 
 from picklefield.fields import PickledObjectField
 
@@ -15,16 +17,19 @@ __all__ = ['Nonce', 'Association', 'UserAssociation',
         'UserPasswordQueueManager', 'UserPasswordQueue',
         'UserEmailVerifier']
 
+
+@six.python_2_unicode_compatible
 class Nonce(models.Model):
     """ openid nonce """
     server_url = models.CharField(max_length=255)
     timestamp = models.IntegerField()
     salt = models.CharField(max_length=40)
 
-    def __unicode__(self):
-        return u"Nonce: %s" % self.id
+    def __str__(self):
+        return "Nonce: %s" % self.id
 
 
+@six.python_2_unicode_compatible
 class Association(models.Model):
     """ association openid url and lifetime """
     server_url = models.TextField(max_length=2047)
@@ -34,8 +39,9 @@ class Association(models.Model):
     lifetime = models.IntegerField()
     assoc_type = models.TextField(max_length=64)
 
-    def __unicode__(self):
-        return u"Association: %s, %s" % (self.server_url, self.handle)
+    def __str__(self):
+        return "Association: %s, %s" % (self.server_url, self.handle)
+
 
 class UserAssociation(models.Model):
     """
@@ -53,12 +59,13 @@ class UserAssociation(models.Model):
 
     class Meta(object):
         unique_together = (
-                                ('user','provider_name'),
-                                ('openid_url', 'provider_name')
-                            )
+            ('user', 'provider_name'),
+            ('openid_url', 'provider_name')
+        )
 
-    def __unicode__(self):
-        return u"Openid %s with user %s" % (self.openid_url, self.user)
+    def __str__(self):
+        return "Openid %s with user %s" % (self.openid_url, self.user)
+
 
 class UserPasswordQueueManager(models.Manager):
     """ manager for UserPasswordQueue object """
@@ -77,6 +84,7 @@ class UserPasswordQueueManager(models.Manager):
         return confirm_key
 
 
+@six.python_2_unicode_compatible
 class UserPasswordQueue(models.Model):
     """
     model for new password queue.
@@ -87,9 +95,11 @@ class UserPasswordQueue(models.Model):
 
     objects = UserPasswordQueueManager()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.user.username
 
+
+@six.python_2_unicode_compatible
 class UserEmailVerifier(models.Model):
     '''Model that stores the required values to verify an email
     address'''
@@ -109,5 +119,5 @@ class UserEmailVerifier(models.Model):
         now = datetime.datetime.now()
         return now > self.expires_on
 
-    def __unicode__(self):
+    def __str__(self):
         return self.key

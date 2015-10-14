@@ -3,14 +3,16 @@
 
 http://code.google.com/p/django-values/
 """
+from __future__ import unicode_literals
 from decimal import Decimal
 from django import forms
 from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.cache import cache
 from django.utils import simplejson
+from django.utils import six
 from django.utils.datastructures import SortedDict
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext_lazy
@@ -44,7 +46,7 @@ class SortedDotDict(SortedDict):
         try:
             return self[key]
         except:
-            raise AttributeError, key
+            raise AttributeError(key)
 
     def __iter__(self):
         vals = self.values()
@@ -138,6 +140,8 @@ BASE_GROUP = ConfigurationGroup(
                             ordering=0
                         )
 
+
+@six.python_2_unicode_compatible
 class Value(object):
 
     creation_counter = 0
@@ -206,11 +210,8 @@ class Value(object):
     def __iter__(self):
         return iter(self.value)
 
-    def __unicode__(self):
-        return unicode(self.value)
-
     def __str__(self):
-        return str(self.value)
+        return six.text_type(self.value)
 
     def add_choice(self, choice):
         """Add a choice if it doesn't already exist."""
@@ -243,16 +244,16 @@ class Value(object):
         return new_value
 
     def _default_text(self):
-        if not self.use_default or force_unicode(self.default) == '':
+        if not self.use_default or force_text(self.default) == '':
             note = ""
         elif self.choices:
             work = []
             for x in self.choices:
                 if x[0] in self.default:
-                    work.append(force_unicode(x[1]))
-            note = _('Default value: ') + unicode(u", ".join(work))
+                    work.append(force_text(x[1]))
+            note = _('Default value: ') + six.text_type(", ".join(work))
         else:
-            note = _("Default value: %s") % force_unicode(self.default)
+            note = _("Default value: %s") % force_text(self.default)
 
         return note
 
@@ -310,7 +311,7 @@ class Value(object):
 
         if self.localized and len(django_settings.LANGUAGES) > 1:
             for field in fields:
-                lang_name = unicode(langs_dict[field.language_code])
+                lang_name = six.text_type(langs_dict[field.language_code])
                 field.label += mark_safe(' <span class="lang">(%s)</span>' % lang_name)
 
         return fields
@@ -359,7 +360,7 @@ class Value(object):
             try:
                 val = self.setting.value
 
-            except SettingNotSet, sns:
+            except SettingNotSet as sns:
 
                 if self.localized and lang == django_settings.LANGUAGE_CODE:
                     try:
@@ -378,12 +379,12 @@ class Value(object):
                 else:
                     val = NOTSET
 
-            except AttributeError, ae:
+            except AttributeError as ae:
                 log.error("Attribute error: %s", ae)
                 log.error("%s: Could not get _value of %s", key, self.setting)
                 raise(ae)
 
-            except Exception, e:
+            except Exception as e:
                 global _WARN
                 log.error(e)
                 if str(e).find("configuration_setting") > -1:
@@ -466,11 +467,11 @@ class Value(object):
             if language_code and self.localized:
                 current_lang = get_language()
                 activate_language(language_code)
-                localized_value = unicode(self.default)
+                localized_value = six.text_type(self.default)
                 activate_language(current_lang)
                 return localized_value
             elif self.use_default:
-                return unicode(self.default)
+                return six.text_type(self.default)
 
         return ''
 
@@ -505,13 +506,13 @@ class Value(object):
         "Returns a value suitable for storage into a CharField"
         if value == NOTSET:
             value = ""
-        return unicode(value)
+        return six.text_type(value)
 
     def to_editor(self, value):
         "Returns a value suitable for display in a form widget"
         if value == NOTSET:
             return NOTSET
-        return unicode(value)
+        return six.text_type(value)
 
 ###############
 # VALUE TYPES #
@@ -550,7 +551,7 @@ class DecimalValue(Value):
 
         try:
             return Decimal(value)
-        except TypeError, te:
+        except TypeError as te:
             log.warning("Can't convert %s to Decimal for settings %s.%s", value, self.group.key, self.key)
             raise TypeError(te)
 
@@ -558,7 +559,7 @@ class DecimalValue(Value):
         if value == NOTSET:
             return "0"
         else:
-            return unicode(value)
+            return six.text_type(value)
 
 # DurationValue has a lot of duplication and ugliness because of issue #2443
 # Until DurationField is sorted out, this has to do some extra work
@@ -589,7 +590,7 @@ class DurationValue(Value):
         if value == NOTSET:
             return NOTSET
         else:
-            return unicode(value.days * 24 * 3600 + value.seconds + float(value.microseconds) / 1000000)
+            return six.text_type(value.days * 24 * 3600 + value.seconds + float(value.microseconds) / 1000000)
 
 class FloatValue(Value):
 
@@ -609,7 +610,7 @@ class FloatValue(Value):
         if value == NOTSET:
             return "0"
         else:
-            return unicode(value)
+            return six.text_type(value)
 
 class IntegerValue(Value):
     class field(forms.IntegerField):
@@ -627,7 +628,7 @@ class IntegerValue(Value):
         if value == NOTSET:
             return "0"
         else:
-            return unicode(value)
+            return six.text_type(value)
 
 
 class PercentValue(Value):
@@ -654,7 +655,7 @@ class PercentValue(Value):
         if value == NOTSET:
             return "0"
         else:
-            return unicode(value)
+            return six.text_type(value)
 
 class PositiveIntegerValue(IntegerValue):
 
@@ -677,7 +678,7 @@ class StringValue(Value):
     def to_python(self, value):
         if value == NOTSET:
             value = ""
-        return unicode(value)
+        return six.text_type(value)
 
     to_editor = to_python
 
@@ -709,7 +710,7 @@ class LongStringValue(Value):
     def to_python(self, value):
         if value == NOTSET:
             value = ""
-        return unicode(value)
+        return six.text_type(value)
 
     to_editor = to_python
 

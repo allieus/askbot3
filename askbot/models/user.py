@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import datetime
 import logging
 import re
@@ -9,7 +10,9 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group as AuthGroup
 from django.core import exceptions
 from django.forms import EmailField, URLField
+from django.utils import six
 from django.utils import translation
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext_lazy
 from django.utils.html import strip_tags
@@ -79,7 +82,7 @@ class ActivityQuerySet(models.query.QuerySet):
             else:
                 logging.debug(
                             'method get_origin_post() not implemented for %s' \
-                            % unicode(post)
+                            % force_text(post)
                         )
         return list(origin_posts)
 
@@ -228,6 +231,7 @@ class ActivityAuditStatus(models.Model):
         return (self.status == self.STATUS_NEW)
 
 
+@six.python_2_unicode_compatible
 class Activity(models.Model):
     """
     We keep some history data for user activities
@@ -250,12 +254,12 @@ class Activity(models.Model):
     objects = ActivityManager()
     responses_and_mentions = ResponseAndMentionActivityManager()
 
-    def __unicode__(self):
-        return u'[%s] was active at %s' % (self.user.username, self.active_at)
+    def __str__(self):
+        return '[%s] was active at %s' % (self.user.username, self.active_at)
 
     class Meta:
         app_label = 'askbot'
-        db_table = u'activity'
+        db_table = 'activity'
 
     def add_recipients(self, recipients):
         """have to use a special method, because django does not allow
@@ -311,6 +315,8 @@ class EmailFeedSettingManager(models.Manager):
 
         return subscriber_set
 
+
+@six.python_2_unicode_compatible
 class EmailFeedSetting(models.Model):
     #definitions of delays before notification for each type of notification frequency
     DELTA_TABLE = {
@@ -375,14 +381,11 @@ class EmailFeedSetting(models.Model):
         app_label = 'askbot'
 
     def __str__(self):
-        return unicode(self).encode('utf-8')
-
-    def __unicode__(self):
         if self.reported_at is None:
             reported_at = "'not yet'"
         else:
             reported_at = '%s' % self.reported_at.strftime('%d/%m/%y %H:%M')
-        return u'Email feed for %s type=%s, frequency=%s, reported_at=%s' % (
+        return 'Email feed for %s type=%s, frequency=%s, reported_at=%s' % (
                                                      self.subscriber,
                                                      self.feed_type,
                                                      self.frequency,

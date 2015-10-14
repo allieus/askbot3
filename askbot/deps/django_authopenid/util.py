@@ -18,6 +18,7 @@ from django.db.models.query import Q
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.utils import simplejson
+from django.utils import six
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ImproperlyConfigured
@@ -258,7 +259,7 @@ class LoginMethod(object):
             )
 
         self.name = getattr(self.mod, 'NAME', None)
-        if self.name is None or not isinstance(self.name, basestring):
+        if self.name is None or not isinstance(self.name, six.string_types):
             raise ImproperlyConfigured(
                 '%s.NAME is required as a string parameter' % self.mod_path
             )
@@ -268,7 +269,7 @@ class LoginMethod(object):
             )
 
         self.display_name = getattr(self.mod, 'DISPLAY_NAME', None)
-        if self.display_name is None or not isinstance(self.display_name, basestring):
+        if self.display_name is None or not isinstance(self.display_name, six.string_types):
             raise ImproperlyConfigured(
                 '%s.DISPLAY_NAME is required as a string parameter' % self.mod_path
             )
@@ -1012,8 +1013,8 @@ def ldap_check_password(username, password):
         ldap_session.simple_bind_s(username, password)
         ldap_session.unbind_s()
         return True
-    except ldap.LDAPError, e:
-        logging.critical(unicode(e))
+    except ldap.LDAPError as e:
+        logging.critical(six.text_type(e))
         return False
 
 
@@ -1033,7 +1034,7 @@ def mozilla_persona_get_email_from_assertion(assertion):
         if email:
             return email
         else:
-            message = unicode(data)
+            message = six.text_type(data)
             message += '\nMost likely base url in /settings/QA_SITE_SETTINGS/ is incorrect'
             raise ImproperlyConfigured(message)
     #todo: nead more feedback to help debug fail cases

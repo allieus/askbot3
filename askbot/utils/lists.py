@@ -1,5 +1,8 @@
 """Utilities for working with lists and sequences."""
 
+from django.utils import six
+
+
 class LazyList(list):
     def __init__(self, get_data):
         self.data = get_data
@@ -18,7 +21,7 @@ def flatten(x):
     """
     result = []
     for el in x:
-        if hasattr(el, '__iter__') and not isinstance(el, basestring):
+        if hasattr(el, '__iter__') and not isinstance(el, six.string_types):
             result.extend(flatten(el))
         else:
             result.append(el)

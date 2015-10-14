@@ -1,4 +1,6 @@
 #todo: http://stackoverflow.com/questions/837828/how-to-use-a-slug-in-django
+from __future__ import print_function
+from __future__ import unicode_literals
 DEBUGME = False
 import os
 import re
@@ -13,6 +15,7 @@ from xml.etree import ElementTree as et
 from django.db.models import fields
 from django.db.utils import IntegrityError
 from django.db import models
+from django.utils import six
 import askbot.models as askbot
 import askbot.deps.django_authopenid.models as askbot_openid
 import askbot.importers.stackexchange.models as se
@@ -258,7 +261,7 @@ class X(object):#
     #crude method of getting id provider name from the url
     @classmethod
     def get_openid_provider_name(cls, openid_url):
-        openid_str = unicode(openid_url)
+        openid_str = six.text_type(openid_url)
         bits = openid_str.split('/')
         base_url = bits[2] #assume this is base url
         url_bits = base_url.split('.')
@@ -351,8 +354,8 @@ it may be helpful to split this procedure in two:\n
                 transaction.commit()
                 time_after = datetime.now()
                 if DEBUGME == True:
-                    print time_after - time_before
-                    print HEAP.heap()
+                    print(time_after - time_before)
+                    print(HEAP.heap())
 
         if kwarg['process_data'] is False:
             #that means we just wanted to load the xml dump to
@@ -370,36 +373,36 @@ it may be helpful to split this procedure in two:\n
         self.save_askbot_message_id_list()
 
         #transfer data into ASKBOT tables
-        print 'Transferring users...'
+        print('Transferring users...')
         self.transfer_users()
         transaction.commit()
-        print 'done.'
-        print 'Transferring content edits...'
+        print('done.')
+        print('Transferring content edits...')
         sys.stdout.flush()
         self.transfer_question_and_answer_activity()
         transaction.commit()
-        print 'done.'
-        print 'Transferring view counts...'
+        print('done.')
+        print('Transferring view counts...')
         sys.stdout.flush()
         self.transfer_question_view_counts()
         transaction.commit()
-        print 'done.'
-        print 'Transferring comments...'
+        print('done.')
+        print('Transferring comments...')
         sys.stdout.flush()
         self.transfer_comments()
         transaction.commit()
-        print 'done.'
-        print 'Transferring badges and badge awards...'
+        print('done.')
+        print('Transferring badges and badge awards...')
         sys.stdout.flush()
         self.transfer_badges()
         transaction.commit()
-        print 'done.'
-        print 'Transferring Q&A votes...'
+        print('done.')
+        print('Transferring Q&A votes...')
         sys.stdout.flush()
         self.transfer_QA_votes()#includes favorites, accepts and flags
         transaction.commit()
-        print 'done.'
-        print 'Transferring comment votes...'
+        print('done.')
+        print('Transferring comment votes...')
         sys.stdout.flush()
         self.transfer_comment_votes()
         transaction.commit()
@@ -416,7 +419,7 @@ it may be helpful to split this procedure in two:\n
         transaction.commit()
         self.transfer_meta_pages()
         transaction.commit()
-        print 'done.'
+        print('done.')
 
     def open_dump(self, path):
         """open the zipfile, raise error if it
@@ -713,7 +716,7 @@ it may be helpful to split this procedure in two:\n
         comments = se.PostComment.objects.all()
         for se_c in ProgressBar(comments.iterator(), comments.count()):
             if se_c.deletion_date:
-                print 'Warning deleted comment %d dropped' % se_c.id
+                print('Warning deleted comment %d dropped' % se_c.id)
                 sys.stdout.flush()
                 continue
             se_post = se_c.post
@@ -747,7 +750,7 @@ it may be helpful to split this procedure in two:\n
                 #and drop it
                 self._missing_badges[name] = 0
                 if len(se_b.description) > 300:
-                    print 'Warning truncated description for badge %d' % se_b.id
+                    print('Warning truncated description for badge %d' % se_b.id)
                     sys.stdout.flush()
 
     def _award_badges(self):
@@ -783,8 +786,8 @@ it may be helpful to split this procedure in two:\n
         d = self._missing_badges
         unused = [name for name in d.keys() if d[name] == 0]
         dropped = [unidecode(name) for name in d.keys() if d[name] > 0]
-        print 'Warning - following unsupported badges were dropped:'
-        print ', '.join(dropped)
+        print('Warning - following unsupported badges were dropped:')
+        print(', '.join(dropped))
         sys.stdout.flush()
 
     def transfer_badges(self):
@@ -880,7 +883,7 @@ it may be helpful to split this procedure in two:\n
         xml_data = self.zipfile.read(xml_path)
 
         tree = et.fromstring(xml_data)
-        print 'loading from %s to %s' % (xml_path, table_name)
+        print('loading from %s to %s' % (xml_path, table_name))
         model = models.get_model('stackexchange', table_name)
         i = 0
         rows = tree.findall('.//row')
@@ -891,14 +894,14 @@ it may be helpful to split this procedure in two:\n
                 field_name = se_parser.parse_field_name(col.tag)
                 try:
                     field_type = model._meta.get_field(field_name)
-                except fields.FieldDoesNotExist, e:
-                    print u"Warning: %s" % unicode(e)
+                except fields.FieldDoesNotExist as e:
+                    print("Warning: %s" % six.text_type(e))
                     continue
                 field_value = se_parser.parse_value(col.text, field_type)
                 setattr(model_entry, field_name, field_value)
             model_entry.save()
             #transaction.commit()
-        print '... %d objects saved' % i
+        print('... %d objects saved' % i)
         sys.stdout.flush()
 
     def get_table_name(self, xml_file_basename):
@@ -940,15 +943,15 @@ it may be helpful to split this procedure in two:\n
                     u_openid.last_used_timestamp = se_u.last_login_date
                     u_openid.save()
                 except AssertionError:
-                    print u'User %s (id=%d) does not have openid' % \
-                            (unidecode(se_u.display_name), se_u.id)
+                    print('User %s (id=%d) does not have openid' % \
+                            (unidecode(se_u.display_name), se_u.id))
                     sys.stdout.flush()
                 except IntegrityError:
-                    print "Warning: have duplicate openid: %s" % se_u.open_id
+                    print("Warning: have duplicate openid: %s" % se_u.open_id)
                     sys.stdout.flush()
 
             if se_u.open_id is None and se_u.email is None:
-                print 'Warning: SE user %d is not recoverable (no email or openid)'
+                print('Warning: SE user %d is not recoverable (no email or openid)')
                 sys.stdout.flush()
 
             u.reputation = 1#se_u.reputation, it's actually re-computed
@@ -995,7 +998,7 @@ it may be helpful to split this procedure in two:\n
             #save the data
             try:
                 other = askbot.User.objects.get(username = u.username)
-                print 'alert - have a second user with name %s' % u.username
+                print('alert - have a second user with name %s' % u.username)
                 sys.sdtout.flush()
             except askbot.User.DoesNotExist:
                 pass

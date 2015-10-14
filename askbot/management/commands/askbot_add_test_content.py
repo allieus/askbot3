@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 from askbot.conf import settings as askbot_settings
 from askbot.models import User
@@ -83,7 +84,7 @@ class Command(NoArgsCommand):
     def print_if_verbose(self, text):
         "Only print if user chooses verbose output"
         if self.verbosity > 0:
-            print text
+            print(text)
 
     def create_users(self):
         "Create the users and return an array of created users"

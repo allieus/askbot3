@@ -6,6 +6,7 @@ and other views showing profile-related information.
 
 Also this module includes the view listing all forum users.
 """
+from __future__ import print_function
 import calendar
 import collections
 import functools
@@ -26,6 +27,7 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseForbidden
 from django.http import HttpResponseRedirect, Http404
+from django.utils.encoding import force_text
 from django.utils.translation import get_language
 from django.utils.translation import string_concat
 from django.utils.translation import ugettext as _
@@ -287,8 +289,8 @@ def user_moderate(request, subject, context):
                             raise_on_failure = True
                         )
                     message_sent = True
-                except exceptions.EmailNotSent, e:
-                    email_error_message = unicode(e)
+                except exceptions.EmailNotSent as e:
+                    email_error_message = force_text(e)
                 send_message_form = forms.SendMessageForm()
         else:
             reputation_change_type = None
@@ -513,7 +515,7 @@ def user_stats(request, user, context):
 #        thread_ids.add(t['thread'])
 #        tag_ids.add(t['thread__tags'])
 #        if t['thread__tags'] == 11:
-#            print t['thread'], t['id']
+#            print(t['thread'], t['id'])
 #    import ipdb; ipdb.set_trace()
 
     #

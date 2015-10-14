@@ -4,6 +4,7 @@ External service key settings
 from askbot.conf.settings_wrapper import settings
 from askbot.conf.super_groups import LOGIN_USERS_COMMUNICATION
 from askbot.deps import livesettings
+from django.utils import six
 from django.utils.translation import string_concat
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings as django_settings
@@ -177,7 +178,7 @@ GOOGLE_METHOD_CHOICES = (
 
 for provider in providers:
     if provider == 'local':
-        provider_string = unicode(_('local password'))
+        provider_string = six.text_type(_('local password'))
     else:
         provider_string = provider
 

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import unittest
 from askbot.utils import category_tree as ct
 from django.utils import simplejson
@@ -6,30 +9,30 @@ class CategoryTreeTests(unittest.TestCase):
     def setUp(self):
         self.tree = [
             [
-                u'dummy', [#dummy is a sentinel node
+                'dummy', [#dummy is a sentinel node
                     [
-                        u'cars', [
-                            [u'volkswagen', []],
-                            [u'zhiguli', []]
+                        'cars', [
+                            ['volkswagen', []],
+                            ['zhiguli', []]
                         ]
                     ],
                     [
-                        u'cats', [
-                            [u'meow', []],
-                            [u'tigers', [
-                                        [u'rrrr', []]
+                        'cats', [
+                            ['meow', []],
+                            ['tigers', [
+                                        ['rrrr', []]
                                     ]
                             ]
                         ]
                     ],
                     [
-                        u'music', [
-                            [u'play', [
-                                [u'loud', []]]
+                        'music', [
+                            ['play', [
+                                ['loud', []]]
                             ],
-                            [u'listen', []],
-                            [u'buy', []],
-                            [u'download', []]
+                            ['listen', []],
+                            ['buy', []],
+                            ['download', []]
                         ]
                     ]
                 ]

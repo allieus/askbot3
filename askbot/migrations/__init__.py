@@ -1,3 +1,4 @@
+from __future__ import print_function
 from south.db import db
 from south.utils import ask_for_it_by_name
 from south.v2 import SchemaMigration
@@ -25,7 +26,7 @@ def houston_do_we_have_a_problem(table):
         assert len(ret) == 1 # There HAVE to be info about this table !
         assert len(ret[0]) == 2
         if ret[0][1] == 'InnoDB':
-            print TERM_YELLOW, "!!!", '.'.join(db_table), "is InnoDB - using workarounds !!!", TERM_RESET
+            print(TERM_YELLOW, "!!!", '.'.join(db_table), "is InnoDB - using workarounds !!!", TERM_RESET)
             return True
     return False
 

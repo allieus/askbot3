@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from django.core.management.base import CommandError, BaseCommand
 from django.db import transaction
 from askbot.models import User
@@ -23,8 +24,8 @@ class MergeUsersBaseCommand(BaseCommand):
             try:
                 self.process_field(rel.model, rel.field.name)
                 transaction.savepoint_commit(sid)
-            except Exception, error:
-                self.stdout.write((u'Warning: %s\n' % error).encode('utf-8'))
+            except Exception as error:
+                self.stdout.write(('Warning: %s\n' % error).encode('utf-8'))
                 transaction.savepoint_rollback(sid)
             transaction.commit()
 
@@ -33,8 +34,8 @@ class MergeUsersBaseCommand(BaseCommand):
             try:
                 self.process_m2m_field(rel.model, rel.field.name)
                 transaction.savepoint_commit(sid)
-            except Exception, error:
-                self.stdout.write((u'Warning: %s\n' % error).encode('utf-8'))
+            except Exception as error:
+                self.stdout.write(('Warning: %s\n' % error).encode('utf-8'))
                 transaction.savepoint_rollback(sid)
             transaction.commit()
 
@@ -43,11 +44,11 @@ class MergeUsersBaseCommand(BaseCommand):
         transaction.commit()
 
     def cleanup(self):
-        raise Exception, 'Not implemented'
+        raise Exception('Not implemented')
 
     def process_custom_user_fields(self):
         """Put app specific logic here."""
-        raise Exception, 'Not implemented'
+        raise Exception('Not implemented')
 
     def parse_arguments(self, *arguments):
         if len(arguments) != 2:

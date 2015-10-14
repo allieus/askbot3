@@ -1,8 +1,10 @@
 """functions that directly handle user input
 """
+from __future__ import print_function
 import sys
 import time
 import logging
+from django.utils import six
 from askbot.utils import path
 
 def start_printing_db_queries():
@@ -22,7 +24,7 @@ def choice_dialog(prompt_phrase, choices = None, invalid_phrase = None):
     placeholder
     """
     assert(hasattr(choices, '__iter__'))
-    assert(not isinstance(choices, basestring))
+    assert(not isinstance(choices, six.string_types))
     while 1:
         response = raw_input(
             '\n%s\ntype %s: ' % (prompt_phrase, '/'.join(choices))
@@ -31,7 +33,7 @@ def choice_dialog(prompt_phrase, choices = None, invalid_phrase = None):
             return response
         elif invalid_phrase != None:
             opt_string = ','.join(choices)
-            print invalid_phrase % {'opt_string': opt_string}
+            print(invalid_phrase % {'opt_string': opt_string})
         time.sleep(1)
 
 def numeric_choice_dialog(prompt_phrase, choices):
@@ -48,7 +50,7 @@ def numeric_choice_dialog(prompt_phrase, choices):
     :returns: (int) index number of the choice selected by the user
     """
     assert(hasattr(choices, '__iter__'))
-    assert(not isinstance(choices, basestring))
+    assert(not isinstance(choices, six.string_types))
     choice_menu = "\n".join(["%d - %s" % (i,x) for i, x in enumerate(choices)])
     while True:
         response = raw_input('\n%s\n%s> ' % (choice_menu, prompt_phrase))
@@ -57,7 +59,7 @@ def numeric_choice_dialog(prompt_phrase, choices):
         except ValueError:
             index = False
         if index is False or index < 0 or index >= len(choices):
-            print "\n*** Please enter a number between 0 and %d ***" % (len(choices)-1)
+            print("\n*** Please enter a number between 0 and %d ***" % (len(choices)-1))
         else:
             return index
 
@@ -80,7 +82,7 @@ def numeric_multiple_choice_dialog(prompt_phrase, choices, all_option=False):
     the user
     """
     assert(hasattr(choices, '__iter__'))
-    assert(not isinstance(choices, basestring))
+    assert(not isinstance(choices, six.string_types))
     if all_option:
         choices.insert(0, 'ALL')
     choice_menu = "\n".join(["%d - %s" % (i,x) for i, x in enumerate(choices)])
@@ -89,7 +91,7 @@ def numeric_multiple_choice_dialog(prompt_phrase, choices, all_option=False):
     while True:
         response = raw_input('\n%s\n%s> ' % (choice_menu, prompt_phrase))
         selections = response.split()
-        print "selections: %s" % selections
+        print("selections: %s" % selections)
         for c in selections:
             try:
                 index = int(c)
@@ -97,15 +99,15 @@ def numeric_multiple_choice_dialog(prompt_phrase, choices, all_option=False):
                 index = False
             if index < 0 or index >= len(choices):
                 index = False
-                print "\n*** Please enter only numbers between 0 and " +\
-                      "%d separated by spaces ***" % (len(choices)-1)
+                print("\n*** Please enter only numbers between 0 and " +\
+                      "%d separated by spaces ***" % (len(choices)-1))
                 break
             else:
                 choice_indexes.append(index)
         if index:
             if all_option and 0 in choice_indexes and len(choice_indexes) > 1:
-                print "\n*** You cannot include other choices with the ALL " +\
-                      "option ***"
+                print("\n*** You cannot include other choices with the ALL " +\
+                      "option ***")
             else:
                 return choice_indexes
 
@@ -182,7 +184,7 @@ def print_action(action_text, nowipe = False):
     """
     #for some reason sys.stdout.write does not work here
     #when action text is unicode
-    print action_text,
+    print(action_text, end=' ')
     sys.stdout.flush()
     if nowipe == False:
         #return to the beginning of the word
@@ -214,7 +216,7 @@ class ProgressBar(object):
         self.curr_barlen = 0
         self.progress = ''
         if message and length > 0:
-            print message
+            print(message)
 
 
     def __iter__(self):

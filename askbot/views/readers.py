@@ -6,6 +6,8 @@ By main textual content is meant - text of Questions, Answers and Comments.
 The "read-only" requirement here is not 100% strict, as for example "question" view does
 allow adding new comments via Ajax form post.
 """
+from __future__ import print_function
+from __future__ import unicode_literals
 import datetime
 import logging
 import urllib
@@ -21,6 +23,7 @@ from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.template.loader import get_template
 from django.template import Context, RequestContext
 from django.utils import simplejson
+from django.utils.encoding import force_text
 from django.utils.html import escape
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext
@@ -282,7 +285,7 @@ def questions(request, **kwargs):
                 request.user.message_set.create(message=msg)
 
         return render(request, 'main_page.html', template_data)
-        #print datetime.datetime.now() - before
+        #print(datetime.datetime.now() - before)
         #return res
 
 
@@ -441,8 +444,8 @@ def question(request, id):#refactor - long subroutine. display question body, an
 
     try:
         question_post.assert_is_visible_to(request.user)
-    except exceptions.QuestionHidden, error:
-        request.user.message_set.create(message = unicode(error))
+    except exceptions.QuestionHidden as error:
+        request.user.message_set.create(message = force_text(error))
         return HttpResponseRedirect(reverse('index'))
 
     #redirect if slug in the url is wrong
@@ -451,7 +454,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
         lang = translation.get_language()
         question_url = question_post.get_absolute_url(language=lang)
         if request.GET:
-            question_url += u'?' + urllib.urlencode(request.GET)
+            question_url += '?' + urllib.urlencode(request.GET)
         return HttpResponseRedirect(question_url)
 
 
@@ -487,12 +490,12 @@ def question(request, id):#refactor - long subroutine. display question body, an
 
         try:
             show_comment.assert_is_visible_to(request.user)
-        except exceptions.AnswerHidden, error:
-            request.user.message_set.create(message = unicode(error))
+        except exceptions.AnswerHidden as error:
+            request.user.message_set.create(message = force_text(error))
             #use reverse function here because question is not yet loaded
             return HttpResponseRedirect(reverse('question', kwargs = {'id': id}))
-        except exceptions.QuestionHidden, error:
-            request.user.message_set.create(message = unicode(error))
+        except exceptions.QuestionHidden as error:
+            request.user.message_set.create(message = force_text(error))
             return HttpResponseRedirect(reverse('index'))
 
     elif show_answer:
@@ -506,8 +509,8 @@ def question(request, id):#refactor - long subroutine. display question body, an
 
         try:
             show_post.assert_is_visible_to(request.user)
-        except django_exceptions.PermissionDenied, error:
-            request.user.message_set.create(message = unicode(error))
+        except django_exceptions.PermissionDenied as error:
+            request.user.message_set.create(message = force_text(error))
             return HttpResponseRedirect(reverse('question', kwargs = {'id': id}))
 
     thread = question_post.thread
@@ -524,7 +527,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
             request.user.message_set.create(message=message)
             return HttpResponseRedirect(thread.get_absolute_url())
 
-    logging.debug('answer_sort_method=' + unicode(answer_sort_method))
+    logging.debug('answer_sort_method=' + force_text(answer_sort_method))
 
     #load answers and post id's->athor_id mapping
     #posts are pre-stuffed with the correctly ordered comments
@@ -666,7 +669,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
     data.update(extra)
 
     return render(request, 'question.html', data)
-    #print datetime.datetime.now() - before
+    #print(datetime.datetime.now() - before)
     #return res
 
 def revisions(request, id, post_type = None):

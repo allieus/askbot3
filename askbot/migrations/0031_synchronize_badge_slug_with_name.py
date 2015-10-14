@@ -1,4 +1,6 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import datetime
 from south.db import db
 from south.v2 import DataMigration
@@ -31,7 +33,7 @@ class Migration(DataMigration):
 
     models = {
         'askbot.activity': {
-            'Meta': {'object_name': 'Activity', 'db_table': "u'activity'"},
+            'Meta': {'object_name': 'Activity', 'db_table': "activity"},
             'active_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'activity_type': ('django.db.models.fields.SmallIntegerField', [], {}),
             'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
@@ -76,7 +78,7 @@ class Migration(DataMigration):
             'wiki': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'})
         },
         'askbot.answer': {
-            'Meta': {'object_name': 'Answer', 'db_table': "u'answer'"},
+            'Meta': {'object_name': 'Answer', 'db_table': "answer"},
             'accepted': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'accepted_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'added_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
@@ -102,7 +104,7 @@ class Migration(DataMigration):
             'wikified_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'})
         },
         'askbot.answerrevision': {
-            'Meta': {'object_name': 'AnswerRevision', 'db_table': "u'answer_revision'"},
+            'Meta': {'object_name': 'AnswerRevision', 'db_table': "answer_revision"},
             'answer': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'revisions'", 'to': "orm['askbot.Answer']"}),
             'author': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'answerrevisions'", 'to': "orm['auth.User']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -112,7 +114,7 @@ class Migration(DataMigration):
             'text': ('django.db.models.fields.TextField', [], {})
         },
         'askbot.award': {
-            'Meta': {'object_name': 'Award', 'db_table': "u'award'"},
+            'Meta': {'object_name': 'Award', 'db_table': "award"},
             'awarded_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'badge': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'award_badge'", 'to': "orm['askbot.BadgeData']"}),
             'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
@@ -133,7 +135,7 @@ class Migration(DataMigration):
             'type': ('django.db.models.fields.SmallIntegerField', [], {})
         },
         'askbot.comment': {
-            'Meta': {'object_name': 'Comment', 'db_table': "u'comment'"},
+            'Meta': {'object_name': 'Comment', 'db_table': "comment"},
             'added_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'comment': ('django.db.models.fields.CharField', [], {'max_length': '2048'}),
             'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
@@ -153,7 +155,7 @@ class Migration(DataMigration):
             'subscriber': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'notification_subscriptions'", 'to': "orm['auth.User']"})
         },
         'askbot.favoritequestion': {
-            'Meta': {'object_name': 'FavoriteQuestion', 'db_table': "u'favorite_question'"},
+            'Meta': {'object_name': 'FavoriteQuestion', 'db_table': "favorite_question"},
             'added_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'question': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['askbot.Question']"}),
@@ -167,7 +169,7 @@ class Migration(DataMigration):
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'tag_selections'", 'to': "orm['auth.User']"})
         },
         'askbot.question': {
-            'Meta': {'object_name': 'Question', 'db_table': "u'question'"},
+            'Meta': {'object_name': 'Question', 'db_table': "question"},
             'added_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'answer_accepted': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'answer_count': ('django.db.models.fields.PositiveIntegerField', [], {'default': '0'}),
@@ -206,7 +208,7 @@ class Migration(DataMigration):
             'wikified_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'})
         },
         'askbot.questionrevision': {
-            'Meta': {'object_name': 'QuestionRevision', 'db_table': "u'question_revision'"},
+            'Meta': {'object_name': 'QuestionRevision', 'db_table': "question_revision"},
             'author': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'questionrevisions'", 'to': "orm['auth.User']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'question': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'revisions'", 'to': "orm['askbot.Question']"}),
@@ -225,7 +227,7 @@ class Migration(DataMigration):
             'who': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'question_views'", 'to': "orm['auth.User']"})
         },
         'askbot.repute': {
-            'Meta': {'object_name': 'Repute', 'db_table': "u'repute'"},
+            'Meta': {'object_name': 'Repute', 'db_table': "repute"},
             'comment': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'negative': ('django.db.models.fields.SmallIntegerField', [], {'default': '0'}),
@@ -237,7 +239,7 @@ class Migration(DataMigration):
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
         },
         'askbot.tag': {
-            'Meta': {'object_name': 'Tag', 'db_table': "u'tag'"},
+            'Meta': {'object_name': 'Tag', 'db_table': "tag"},
             'created_by': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'created_tags'", 'to': "orm['auth.User']"}),
             'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'deleted_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
@@ -247,7 +249,7 @@ class Migration(DataMigration):
             'used_count': ('django.db.models.fields.PositiveIntegerField', [], {'default': '0'})
         },
         'askbot.vote': {
-            'Meta': {'unique_together': "(('content_type', 'object_id', 'user'),)", 'object_name': 'Vote', 'db_table': "u'vote'"},
+            'Meta': {'unique_together': "(('content_type', 'object_id', 'user'),)", 'object_name': 'Vote', 'db_table': "vote"},
             'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'object_id': ('django.db.models.fields.PositiveIntegerField', [], {}),

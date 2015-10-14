@@ -1,8 +1,10 @@
+from __future__ import unicode_literals
 import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import six
 from django.utils.translation import ugettext as _
 from django.utils.html import escape
 from askbot import const
@@ -29,12 +31,13 @@ class VoteManager(models.Manager):
             return 0
 
 
+@six.python_2_unicode_compatible
 class Vote(models.Model):
     VOTE_UP = +1
     VOTE_DOWN = -1
     VOTE_CHOICES = (
-        (VOTE_UP,   u'Up'),
-        (VOTE_DOWN, u'Down'),
+        (VOTE_UP,   'Up'),
+        (VOTE_DOWN, 'Down'),
     )
     user = models.ForeignKey('auth.User', related_name='votes')
     voted_post = models.ForeignKey('Post', related_name='votes')
@@ -47,10 +50,10 @@ class Vote(models.Model):
     class Meta:
         unique_together = ('user', 'voted_post')
         app_label = 'askbot'
-        db_table = u'vote'
+        db_table = 'vote'
 
-    def __unicode__(self):
-        return u'[%s] voted at %s: %s' %(self.user, self.voted_at, self.vote)
+    def __str__(self):
+        return '[%s] voted at %s: %s' %(self.user, self.voted_at, self.vote)
 
     def __int__(self):
         """1 if upvote -1 if downvote"""
@@ -87,6 +90,7 @@ class Vote(models.Model):
         return score_after - score_before
 
 
+@six.python_2_unicode_compatible
 class BadgeData(models.Model):
     """Awarded for notable actions performed on the site by Users."""
     slug = models.SlugField(max_length=50, unique=True)
@@ -131,12 +135,14 @@ class BadgeData(models.Model):
         app_label = 'askbot'
         ordering = ('display_order', 'slug')
 
-    def __unicode__(self):
-        return u'%s: %s' % (self.get_type_display(), self.slug)
+    def __str__(self):
+        return '%s: %s' % (self.get_type_display(), self.slug)
 
     def get_absolute_url(self):
         return '%s%s/' % (reverse('badge', args=[self.id]), self.slug)
 
+
+@six.python_2_unicode_compatible
 class Award(models.Model):
     """The awarding of a Badge to a User."""
     user       = models.ForeignKey(User, related_name='award_user')
@@ -147,12 +153,12 @@ class Award(models.Model):
     awarded_at = models.DateTimeField(default=datetime.datetime.now)
     notified   = models.BooleanField(default=False)
 
-    def __unicode__(self):
-        return u'[%s] is awarded a badge [%s] at %s' % (self.user.username, self.badge.get_name(), self.awarded_at)
+    def __str__(self):
+        return '[%s] is awarded a badge [%s] at %s' % (self.user.username, self.badge.get_name(), self.awarded_at)
 
     class Meta:
         app_label = 'askbot'
-        db_table = u'award'
+        db_table = 'award'
 
 class ReputeManager(models.Manager):
     def get_reputation_by_upvoted_today(self, user):
@@ -182,6 +188,8 @@ class ReputeManager(models.Manager):
             else:
                 return 0
 
+
+@six.python_2_unicode_compatible
 class Repute(models.Model):
     """The reputation histories for user"""
     user     = models.ForeignKey(User)
@@ -200,12 +208,12 @@ class Repute(models.Model):
 
     objects = ReputeManager()
 
-    def __unicode__(self):
-        return u'[%s]\' reputation changed at %s' % (self.user.username, self.reputed_at)
+    def __str__(self):
+        return '[%s]\' reputation changed at %s' % (self.user.username, self.reputed_at)
 
     class Meta:
         app_label = 'askbot'
-        db_table = u'repute'
+        db_table = 'repute'
 
     def get_explanation_snippet(self):
         """returns HTML snippet with a link to related question

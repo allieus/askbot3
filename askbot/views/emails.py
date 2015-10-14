@@ -1,9 +1,11 @@
+from __future__ import unicode_literals
 from askbot.mail import messages
 from askbot.mail.messages import BaseEmail
 from askbot.utils.decorators import moderators_only
 from django.http import Http404
 from django.shortcuts import render
 from django.template import Context
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 import logging
 
@@ -53,15 +55,15 @@ def preview_email(request, slug):
     try:
         data['subject'] = email.render_subject()
         data['body'] = email.render_body()
-    except Exception, e:
-        tech_error = unicode(e)
+    except Exception as e:
+        tech_error = force_text(e)
         LOG.critical(tech_error)
         error_message = getattr(
                     email,
                     'preview_error_message',
                     DEFAULT_PREVIEW_ERROR_MESSAGE
                 )
-        error_message += u'</br> %s' % tech_error
+        error_message += '</br> %s' % tech_error
         data['error_message'] = error_message
 
     data['email'] = email

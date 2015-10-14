@@ -1,6 +1,7 @@
 """functions that send email in askbot
 these automatically catch email-related exceptions
 """
+from __future__ import print_function
 from django.conf import settings as django_settings
 DEBUG_EMAIL = getattr(django_settings, 'ASKBOT_DEBUG_INCOMING_EMAIL', False)
 
@@ -21,6 +22,7 @@ from bs4 import BeautifulSoup
 from django.core import mail
 from django.core.exceptions import PermissionDenied
 from django.forms import ValidationError
+from django.utils import six
 from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext_lazy
 from django.utils.translation import string_concat
@@ -114,10 +116,10 @@ def send_mail(
             attachments=attachments
         )
         logging.debug('sent update to %s' % ','.join(recipient_list))
-    except Exception, error:
-        sys.stderr.write('\n' + unicode(error).encode('utf-8') + '\n')
+    except Exception as error:
+        sys.stderr.write('\n' + six.text_type(error).encode('utf-8') + '\n')
         if raise_on_failure == True:
-            raise exceptions.EmailNotSent(unicode(error))
+            raise exceptions.EmailNotSent(six.text_type(error))
 
 def mail_moderators(
             subject_line = '',
@@ -222,10 +224,10 @@ def bounce_email(
         raise ValueError('unknown reason to bounce an email: "%s"' % reason)
 
 
-    #print 'sending email'
-    #print email
-    #print subject
-    #print error_message
+    #print('sending email')
+    #print(email)
+    #print(subject)
+    #print(error_message)
     headers = {}
     if reply_to:
         headers['Reply-To'] = reply_to
@@ -429,12 +431,12 @@ def process_emailed_question(
         bounce_email(email_address, subject, reason = 'unknown_user')
     except User.MultipleObjectsReturned:
         bounce_email(email_address, subject, reason = 'problem_posting')
-    except PermissionDenied, error:
+    except PermissionDenied as error:
         bounce_email(
             email_address,
             subject,
             reason = 'permission_denied',
-            body_text = unicode(error),
+            body_text = six.text_type(error),
             reply_to = reply_to
         )
     except ValidationError:

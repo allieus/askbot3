@@ -4,8 +4,9 @@ copied from David Cramer's blog
 http://www.davidcramer.net/code/369/spaceless-html-in-django.html
 """
 import re
+from django.utils import six
 from django.utils.functional import allow_lazy
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 
 def reduce_spaces_between_tags(value):
     """Returns the given HTML with all spaces between tags removed.
@@ -13,8 +14,8 @@ def reduce_spaces_between_tags(value):
     do not appear glued together
     slight mod of django.utils.html import strip_spaces_between_tags
     """
-    return re.sub(r'>\s+<', '> <', force_unicode(value))
-reduce_spaces_between_tags = allow_lazy(reduce_spaces_between_tags, unicode)
+    return re.sub(r'>\s+<', '> <', force_text(value))
+reduce_spaces_between_tags = allow_lazy(reduce_spaces_between_tags, six.text_type)
 
 class SpacelessMiddleware(object):
     def process_response(self, request, response):

@@ -202,8 +202,8 @@ def vote(request):
 
         if vote_type in const.VOTE_TYPES_INVALIDATE_CACHE:
             post.thread.reset_cached_data()
-    except Exception, e:
-        response_data['message'] = unicode(e)
+    except Exception as e:
+        response_data['message'] = force_text(e)
         response_data['success'] = 0
 
     data = simplejson.dumps(response_data)
@@ -709,8 +709,8 @@ def close(request, id):#close question
                 'form': form,
             }
             return render(request, 'close.html', data)
-    except exceptions.PermissionDenied, e:
-        request.user.message_set.create(message = unicode(e))
+    except exceptions.PermissionDenied as e:
+        request.user.message_set.create(message = force_text(e))
         return HttpResponseRedirect(question.get_absolute_url())
 
 @login_required
@@ -739,8 +739,8 @@ def reopen(request, id):#re-open question
             }
             return render(request, 'reopen.html', data)
 
-    except exceptions.PermissionDenied, e:
-        request.user.message_set.create(message = unicode(e))
+    except exceptions.PermissionDenied as e:
+        request.user.message_set.create(message = force_text(e))
         return HttpResponseRedirect(question.get_absolute_url())
 
 

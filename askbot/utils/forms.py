@@ -1,9 +1,12 @@
+from __future__ import unicode_literals
 import re
 from django import forms
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 from askbot.conf import settings as askbot_settings
 from askbot.utils.slug import slugify
@@ -17,8 +20,8 @@ import urllib
 def clean_next(next_url, default=None):
     if next_url is None or not next_url.startswith('/'):
         return default or reverse('index')
-    if isinstance(next_url, str):
-        next_url = unicode(urllib.unquote(next_url), 'utf-8', 'replace')
+    if isinstance(next_url, six.string_types):
+        next_url = force_text(urllib.unquote(next_url), 'utf-8', 'replace')
     return next_url.strip()
 
 def get_error_list(form_instance):
@@ -57,9 +60,9 @@ def format_errors(error_list):
     a string.
     """
     if len(error_list) == 1:
-        return unicode(error_list[0])
+        return force_text(error_list[0])
     else:
-        return unicode(error_list)
+        return force_text(error_list)
 
 class StrippedNonEmptyCharField(forms.CharField):
     def clean(self, value):
@@ -84,8 +87,8 @@ class NextUrlField(forms.CharField):
 login_form_widget_attrs = { 'class': 'required login' }
 
 class UserNameField(StrippedNonEmptyCharField):
-    RESERVED_NAMES = (u'fuck', u'shit', u'ass', u'sex', u'add',
-                       u'edit', u'save', u'delete', u'manage', u'update', 'remove', 'new')
+    RESERVED_NAMES = ('fuck', 'shit', 'ass', 'sex', 'add',
+                       'edit', 'save', 'delete', 'manage', 'update', 'remove', 'new')
     def __init__(
         self,
         db_model=User,

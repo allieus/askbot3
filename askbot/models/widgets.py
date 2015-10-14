@@ -1,8 +1,12 @@
+from __future__ import unicode_literals
 from django.db import models
+from django.utils import six
 from django.utils.translation import ugettext_lazy
 from askbot.models import Tag, Group
 from askbot.const import DEFAULT_QUESTION_WIDGET_STYLE, SEARCH_ORDER_BY
 
+
+@six.python_2_unicode_compatible
 class AskWidget(models.Model):
     '''stores widgets styles and options'''
     title = models.CharField(max_length=100)
@@ -17,8 +21,8 @@ class AskWidget(models.Model):
     class Meta:
         app_label = 'askbot'
 
-    def __unicode__(self):
-        return u"Widget: %s" % self.title
+    def __str__(self):
+        return "Widget: %s" % self.title
 
 
 class QuestionWidget(models.Model):

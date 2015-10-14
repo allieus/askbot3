@@ -1,4 +1,5 @@
 # encoding: utf-8
+from __future__ import print_function
 import datetime
 from south.db import db
 from south.v2 import DataMigration
@@ -11,7 +12,7 @@ class Migration(DataMigration):
         "determines openid provider from url"
         for assoc in orm.UserAssociation.objects.all():
             assoc.provider_name = util.get_provider_name(assoc.openid_url)
-            print '%s -> %s' % (assoc.user.username, assoc.provider_name)
+            print('%s -> %s' % (assoc.user.username, assoc.provider_name))
             assoc.save()
 
     def backwards(self, orm):

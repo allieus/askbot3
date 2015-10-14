@@ -22,6 +22,7 @@ from django.http import HttpResponseForbidden
 from django.http import HttpResponseRedirect
 from django.http import Http404
 from django.utils import simplejson
+from django.utils.encoding import force_text
 from django.utils.html import strip_tags, escape
 from django.utils.translation import get_language
 from django.utils.translation import ugettext as _
@@ -96,10 +97,10 @@ def upload(request):#ajax upload file to a question or answer
                     {'file_size': settings.ASKBOT_MAX_UPLOAD_FILE_SIZE}
             raise exceptions.PermissionDenied(msg)
 
-    except exceptions.PermissionDenied, e:
-        error = unicode(e)
-    except Exception, e:
-        logging.critical(unicode(e))
+    except exceptions.PermissionDenied as e:
+        error = force_text(e)
+    except Exception as e:
+        logging.critical(force_text(e))
         error = _('Error uploading file. Please contact the site administrator. Thank you.')
 
     if error == '':
@@ -256,8 +257,8 @@ def ask(request):#view used to ask a new question
                         form_data=form.cleaned_data
                     )
                     return HttpResponseRedirect(question.get_absolute_url())
-                except exceptions.PermissionDenied, e:
-                    request.user.message_set.create(message = unicode(e))
+                except exceptions.PermissionDenied as e:
+                    request.user.message_set.create(message = force_text(e))
                     return HttpResponseRedirect(reverse('index'))
 
             else:
@@ -368,16 +369,16 @@ def retag_question(request, id):
             'form' : form,
         }
         return render(request, 'question_retag.html', data)
-    except exceptions.PermissionDenied, e:
+    except exceptions.PermissionDenied as e:
         if request.is_ajax():
             response_data = {
-                'message': unicode(e),
+                'message': force_text(e),
                 'success': False
             }
             data = simplejson.dumps(response_data)
             return HttpResponse(data, content_type="application/json")
         else:
-            request.user.message_set.create(message = unicode(e))
+            request.user.message_set.create(message = force_text(e))
             return HttpResponseRedirect(question.get_absolute_url())
 
 @login_required
@@ -492,8 +493,8 @@ def edit_question(request, id):
         data.update(context.get_for_tag_editor())
         return render(request, 'question_edit.html', data)
 
-    except exceptions.PermissionDenied, e:
-        request.user.message_set.create(message = unicode(e))
+    except exceptions.PermissionDenied as e:
+        request.user.message_set.create(message = force_text(e))
         return HttpResponseRedirect(question.get_absolute_url())
 
 @login_required
@@ -591,8 +592,8 @@ def edit_answer(request, id):
 
         return render(request, 'answer_edit.html', data)
 
-    except exceptions.PermissionDenied, e:
-        request.user.message_set.create(message = unicode(e))
+    except exceptions.PermissionDenied as e:
+        request.user.message_set.create(message = force_text(e))
         return HttpResponseRedirect(answer.get_absolute_url())
 
 #todo: rename this function to post_new_answer
@@ -645,12 +646,12 @@ def answer(request, id, form_class=forms.AnswerForm):#process a new answer
                     )
 
                     return HttpResponseRedirect(answer.get_absolute_url())
-                except askbot_exceptions.AnswerAlreadyGiven, e:
-                    request.user.message_set.create(message = unicode(e))
+                except askbot_exceptions.AnswerAlreadyGiven as e:
+                    request.user.message_set.create(message = force_text(e))
                     answer = question.thread.get_answers_by_user(user)[0]
                     return HttpResponseRedirect(answer.get_absolute_url())
-                except exceptions.PermissionDenied, e:
-                    request.user.message_set.create(message = unicode(e))
+                except exceptions.PermissionDenied as e:
+                    request.user.message_set.create(message = force_text(e))
             else:
                 request.session.flush()
                 models.AnonymousAnswer.objects.create(
@@ -777,8 +778,8 @@ def post_comments(request):#generic ajax handler to load comments to an object
                 form_data=form.cleaned_data
             )
             response = __generate_comments_json(post, user, avatar_size)
-        except exceptions.PermissionDenied, e:
-            response = HttpResponseForbidden(unicode(e), content_type="application/json")
+        except exceptions.PermissionDenied as e:
+            response = HttpResponseForbidden(force_text(e), content_type="application/json")
 
     return response
 
@@ -877,9 +878,9 @@ def delete_comment(request):
         raise exceptions.PermissionDenied(
                     _('sorry, we seem to have some technical difficulties')
                 )
-    except exceptions.PermissionDenied, e:
+    except exceptions.PermissionDenied as e:
         return HttpResponseForbidden(
-                    unicode(e),
+                    force_text(e),
                     mimetype = 'application/json'
                 )
 

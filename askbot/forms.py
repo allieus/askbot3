@@ -1,5 +1,6 @@
 """Forms, custom form fields and related utility functions
 used in AskBot"""
+from __future__ import unicode_literals
 import re
 import datetime
 from django import forms
@@ -8,6 +9,7 @@ from askbot.const import message_keys
 from django.conf import settings as django_settings
 from django.core.exceptions import PermissionDenied
 from django.forms.util import ErrorList
+from django.utils import six
 from django.utils.html import strip_tags
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
@@ -363,7 +365,7 @@ class EditorField(forms.CharField):
                 '%(post)s content must be > %(count)d character',
                 '%(post)s content must be > %(count)d characters',
                 self.min_length
-            ) % {'post': unicode(self.post_term_name), 'count': self.min_length}
+            ) % {'post': six.text_type(self.post_term_name), 'count': self.min_length}
             raise forms.ValidationError(msg)
 
         if self.user.is_anonymous():
@@ -373,8 +375,8 @@ class EditorField(forms.CharField):
 
         try:
             self.user.assert_can_post_text(value)
-        except PermissionDenied, e:
-            raise forms.ValidationError(unicode(e))
+        except PermissionDenied as e:
+            raise forms.ValidationError(six.text_type(e))
 
         return value
 
@@ -505,12 +507,12 @@ class TagNamesField(forms.CharField):
             if cleaned_tag not in cleaned_entered_tags:
                 cleaned_entered_tags.append(clean_tag(tag))
 
-        result = u' '.join(cleaned_entered_tags)
+        result = ' '.join(cleaned_entered_tags)
 
         if len(result) > 125:#magic number!, the same as max_length in db
             raise forms.ValidationError(self.error_messages['max_length'])
 
-        return u' '.join(cleaned_entered_tags)
+        return ' '.join(cleaned_entered_tags)
 
 
 class WikiField(forms.BooleanField):
@@ -634,7 +636,7 @@ class ShowQuestionForm(forms.Form):
         or invalid"""
         if self._errors:
             #since the form is always valid, clear the errors
-            logging.error(unicode(self._errors))
+            logging.error(six.text_type(self._errors))
             self._errors = {}
 
         in_data = self.get_pruned_data()
@@ -983,7 +985,7 @@ class PostAsSomeoneForm(forms.Form):
         then we would not have to have two almost identical clean functions?
         """
         username = self.cleaned_data.get('post_author_username', '').strip()
-        initial_username = unicode(self.fields['post_author_username'].initial)
+        initial_username = six.text_type(self.fields['post_author_username'].initial)
         if username and username == initial_username:
             self.cleaned_data['post_author_username'] = ''
         return self.cleaned_data['post_author_username']
@@ -992,7 +994,7 @@ class PostAsSomeoneForm(forms.Form):
         """if value is the same as initial, it is reset to
         empty string"""
         email = self.cleaned_data.get('post_author_email', '').strip()
-        initial_email = unicode(self.fields['post_author_email'].initial)
+        initial_email = six.text_type(self.fields['post_author_email'].initial)
         if email == initial_email:
             email = ''
         if email != '':
@@ -1328,7 +1330,7 @@ class RevisionForm(forms.Form):
         date_format = '%c'
         rev_choices = list()
         for r in revisions:
-            rev_details = u'%s - %s (%s) %s' % (
+            rev_details = '%s - %s (%s) %s' % (
                 r[0], r[1], r[2].strftime(date_format), r[3]
             )
             rev_choices.append((r[0], rev_details))
@@ -1438,7 +1440,7 @@ class EditTagWikiForm(forms.Form):
 
 class EditUserForm(forms.Form):
     email = forms.EmailField(
-                    label=u'Email',
+                    label='Email',
                     required=False,
                     max_length=255,
                     widget=forms.TextInput(attrs={'size': 35})

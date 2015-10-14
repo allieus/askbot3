@@ -1,10 +1,11 @@
+from __future__ import print_function
 import os
 import subprocess
 
 locales = os.listdir('locale')
 
 def call_command(command):
-    print command
+    print(command)
     subprocess.call(command.split())
 
 for locale in locales:

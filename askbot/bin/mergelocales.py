@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 import shutil
@@ -49,7 +50,7 @@ LOCALE_LIST1 = get_locale_list(DIR1)
 LOCALE_LIST2 = get_locale_list(DIR2)
 
 for locale in LOCALE_LIST1:
-    print locale
+    print(locale)
     if locale not in LOCALE_LIST2:
         copy_locale_from(1, name = locale)
     else:
@@ -57,5 +58,5 @@ for locale in LOCALE_LIST1:
         LOCALE_LIST2.remove(locale)
 
 for locale in LOCALE_LIST2:
-    print locale
+    print(locale)
     copy_locale_from(2, name = locale)

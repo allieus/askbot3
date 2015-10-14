@@ -2,6 +2,7 @@
 that do not have revisions by creating a fake initial revision
 based on the content stored in the post itself
 """
+from __future__ import print_function
 from django.core.management.base import BaseCommand
 from askbot import models
 from askbot import const
@@ -11,7 +12,7 @@ from optparse import make_option
 def print_results(items):
     template = 'id=%d, title=%s'
     for thread in items:
-        print template % (thread.id, thread.title.encode('utf8'))
+        print(template % (thread.id, thread.title.encode('utf8')))
 
 class Command(BaseCommand):
     """Command class for "fix_bodyless_questions"
@@ -43,16 +44,16 @@ class Command(BaseCommand):
                 multi_body.append(thread)
 
         if len(bodyless) + len(multi_body) == 0:
-            print 'None found.'
+            print('None found.')
         else:
             if len(bodyless):
-                print '\nQuestions without body text:'
+                print('\nQuestions without body text:')
                 print_results(bodyless)
                 if options['delete']:
                     for thread in bodyless:
                         thread.delete()
             if len(multi_body):
-                print '\nQuestions with >1 instances of body text'
+                print('\nQuestions with >1 instances of body text')
                 print_results(multi_body)
                 if options['delete']:
                     for thread in multi_body:

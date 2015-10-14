@@ -2,6 +2,7 @@
 Q&A website settings - title, desctiption, basic urls
 keywords
 """
+from __future__ import unicode_literals
 from askbot.conf.settings_wrapper import settings
 from askbot.conf.super_groups import CONTENT_AND_UI
 from askbot.deps import livesettings
@@ -31,7 +32,7 @@ settings.register(
     livesettings.StringValue(
         QA_SITE_SETTINGS,
         'APP_KEYWORDS',
-        default=u'Askbot,forum,community',
+        default='Askbot,forum,community',
         description=_('Comma separated list of Q&A site keywords')
     )
 )

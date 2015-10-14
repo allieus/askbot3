@@ -5,7 +5,9 @@ Time-stamp: <2008-07-19 23:16:19 carljm context_processors.py>
 
 """
 from django.conf import settings as django_settings
+from django.utils import six
 from django.utils.encoding import StrAndUnicode
+from django.utils.encoding import force_text
 
 from askbot.user_messages import get_and_delete_messages
 
@@ -30,6 +32,8 @@ def user_messages(request):
         return { 'user_messages': messages }
     return {}
 
+
+@six.python_2_unicode_compatible
 class LazyMessages(StrAndUnicode):
     """
     Lazy message container, so messages aren't actually retrieved from
@@ -48,8 +52,8 @@ class LazyMessages(StrAndUnicode):
     def __nonzero__(self):
         return bool(self.messages)
 
-    def __unicode__(self):
-        return unicode(self.messages)
+    def __str__(self):
+        return force_text(self.messages)
 
     def __getitem__(self, *args, **kwargs):
         return self.messages.__getitem__(*args, **kwargs)

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 """Utilities for working with HTML."""
 from bs4 import BeautifulSoup
 from bs4 import NavigableString
@@ -8,6 +11,7 @@ import htmlentitydefs
 from urlparse import urlparse
 from django.core.urlresolvers import reverse
 from django.template.loader import get_template
+from django.utils.encoding import force_text
 from django.utils.html import strip_tags as strip_all_tags
 from django.utils.html import urlize
 from django.utils.translation import ugettext as _
@@ -91,7 +95,7 @@ def urlize_html(html, trim_url_limit=40):
         #bs4 is weird, so we work around to replace nodes
         #maybe there is a better way though
         urlized_text = urlize(node, trim_url_limit=trim_url_limit)
-        if unicode(node) == urlized_text:
+        if force_text(node) == urlized_text:
             continue
 
         sub_soup = BeautifulSoup(urlized_text, 'html5lib')
@@ -115,7 +119,7 @@ def urlize_html(html, trim_url_limit=40):
     for node in extract_nodes:
         node.extract()
 
-    result = unicode(soup.find('body').renderContents(), 'utf8')
+    result = force_text(soup.find('body').renderContents(), 'utf8')
     if html.endswith('\n') and not result.endswith('\n'):
         result += '\n'
     return result
@@ -144,7 +148,7 @@ def replace_links_with_text(html):
         elif url == '' or re.match(abs_url_re, url):
             link.replaceWith(format_url_replacement(url, text))
 
-    return unicode(soup.find('body').renderContents(), 'utf-8')
+    return force_text(soup.find('body').renderContents(), 'utf-8')
 
 def get_text_from_html(html_text):
     """Returns the content part from an HTML document
@@ -187,7 +191,7 @@ def strip_tags(html, tags=None):
     for tag in tags:
         tag_matches = soup.find_all(tag)
         map(lambda v: v.replaceWith(''), tag_matches)
-    return unicode(soup.find('body').renderContents(), 'utf-8')
+    return force_text(soup.find('body').renderContents(), 'utf-8')
 
 def sanitize_html(html):
     """Sanitizes an HTML fragment.
@@ -201,7 +205,7 @@ def sanitize_html(html):
     s = serializer.HTMLSerializer(omit_optional_tags=False,
                                   quote_attr_values=True)
     output_generator = s.serialize(stream)
-    return u''.join(output_generator)
+    return ''.join(output_generator)
 
 def has_moderated_tags(html):
     """True, if html contains tags subject to moderation
@@ -244,7 +248,7 @@ def moderate_tags(html):
             replaced = True
 
     if replaced:
-        return unicode(soup.find('body').renderContents(), 'utf-8')
+        return force_text(soup.find('body').renderContents(), 'utf-8')
 
     return html
 

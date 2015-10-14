@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.utils import translation
 from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
+from django.utils import six
 from coffin.common import CoffinEnvironment
 from jinja2 import loaders as jinja_loaders
 from jinja2.exceptions import TemplateNotFound
@@ -72,7 +73,7 @@ class AppDirectoryEnvironment(MultilingualEnvironment):
     """
 
     def get_app_setup_info(self, setup_item):
-        if isinstance(setup_item, basestring):
+        if isinstance(setup_item, six.string_types):
             return setup_item, list()
         elif isinstance(setup_item, (list, tuple)):
             dir_list = setup_item[1]

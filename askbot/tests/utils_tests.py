@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from django.test import TestCase
 from askbot.tests.utils import with_settings
 from askbot.utils.url_utils import urls_equal
@@ -108,5 +109,5 @@ class HTMLUtilsTests(TestCase):
     def test_get_text_from_html(self):
         self.assertEqual(
             get_text_from_html('ataoesa uau <a>link</a>aueaotuosu ao <a href="http://cnn.com">CNN!</a>\nnaouaouuau<img> <img src="http://cnn.com/1.png"/> <img src="http://cnn.com/2.png" alt="sometext">'),
-            u'ataoesa uau linkaueaotuosu ao http://cnn.com (CNN!)\n\nnaouaouuau http://cnn.com/1.png http://cnn.com/2.png (sometext)'
+            'ataoesa uau linkaueaotuosu ao http://cnn.com (CNN!)\n\nnaouaouuau http://cnn.com/1.png http://cnn.com/2.png (sometext)'
         )

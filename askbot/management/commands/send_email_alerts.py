@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import unicode_literals
 import datetime
 import traceback
 
@@ -102,7 +104,7 @@ class Command(NoArgsCommand):
             connection.close()
 
     def format_debug_msg(self, user, content):
-        msg = u"%s site_id=%d user=%s: %s" % (
+        msg = "%s site_id=%d user=%s: %s" % (
             datetime.datetime.now().strftime('%y-%m-%d %h:%m:%s'),
             SITE_ID,
             repr(user.username),
@@ -113,21 +115,21 @@ class Command(NoArgsCommand):
     def report_exception(self, user):
         """reports exception that happened during sending email alert to user"""
         message = self.format_debug_msg(user, traceback.format_exc())
-        print message
+        print(message)
         admin_email = askbot_settings.ADMIN_EMAIL
         try:
-            subject_line = u"Error processing daily/weekly notification for User '%s' for Site '%s'" % (user.username, SITE_ID)
+            subject_line = "Error processing daily/weekly notification for User '%s' for Site '%s'" % (user.username, SITE_ID)
             send_mail(
                 subject_line=subject_line.encode('utf-8'),
                 body_text=message,
                 recipient_list=[admin_email,]
             )
         except:
-            message = u"ERROR: was unable to report this exception to %s: %s" % (admin_email, traceback.format_exc())
-            print self.format_debug_msg(user, message)
+            message = "ERROR: was unable to report this exception to %s: %s" % (admin_email, traceback.format_exc())
+            print(self.format_debug_msg(user, message))
         else:
-            message = u"Sent email reporting this exception to %s" % admin_email
-            print self.format_debug_msg(user, message)
+            message = "Sent email reporting this exception to %s" % admin_email
+            print(self.format_debug_msg(user, message))
 
     def get_updated_questions_for_user(self, user):
         """
@@ -301,11 +303,11 @@ class Command(NoArgsCommand):
                     mentioned_whom=user
                 )
 
-                #print 'have %d mentions' % len(mentions)
+                #print('have %d mentions' % len(mentions))
                 #MM = Activity.objects.filter(activity_type = const.TYPE_ACTIVITY_MENTION)
-                #print 'have %d total mentions' % len(MM)
+                #print('have %d total mentions' % len(MM))
                 #for m in MM:
-                #    print m
+                #    print(m)
 
                 mention_posts = get_all_origin_posts(mentions)
                 q_mentions_id = [q.id for q in mention_posts]
@@ -427,19 +429,19 @@ class Command(NoArgsCommand):
             comments = meta_data.get('comments', 0)
             mentions = meta_data.get('mentions', 0)
 
-            #print meta_data
+            #print(meta_data)
             #finally skip question if there are no news indeed
             if len(q_rev) + len(new_ans) + len(ans_rev) + comments + mentions == 0:
                 meta_data['skip'] = True
-                #print 'skipping'
+                #print('skipping')
             else:
                 meta_data['skip'] = False
-                #print 'not skipping'
+                #print('not skipping')
                 update_info.active_at = datetime.datetime.now()
                 if DEBUG_THIS_COMMAND == False:
                     update_info.save() #save question email update activity
         #q_list is actually an ordered dictionary
-        #print 'user %s gets %d' % (user.username, len(q_list.keys()))
+        #print('user %s gets %d' % (user.username, len(q_list.keys())))
         #todo: sort question list by update time
         return q_list
 

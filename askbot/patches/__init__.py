@@ -2,7 +2,6 @@
 necessary for interoperability of different
 versions of various components used in askbot
 """
-import django
 from askbot.patches import django_patches
 from askbot.deployment import package_utils
 
@@ -17,7 +16,7 @@ def patch_django():
         django_patches.add_csrf_protection()
         django_patches.add_available_attrs_decorator()
 
-    if major == 1 and minor <=2:
+    if major == 1 and minor <= 2:
         django_patches.add_render_shortcut()
 
     if major == 1 and minor > 4:

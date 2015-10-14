@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import unicode_literals
 import datetime
 import logging
 import operator
@@ -13,6 +15,8 @@ from django.core import exceptions as django_exceptions
 from django.core.urlresolvers import reverse
 from django.template.loader import get_template
 from django.template import Context
+from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.hashcompat import md5_constructor
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext, string_concat, get_language
@@ -73,7 +77,7 @@ def default_title_renderer(thread):
     else:
         attr = None
     if attr is not None:
-        return u'%s %s' % (thread.title, unicode(attr))
+        return '%s %s' % (thread.title, force_text(attr))
     else:
         return thread.title
 
@@ -157,7 +161,7 @@ class ThreadManager(BaseQuerySetManager):
             tag_list = tag_list[:5]
             last_topic = _('" and more')
 
-        return '"' + '", "'.join(tag_list) + unicode(last_topic)
+        return '"' + '", "'.join(tag_list) + force_text(last_topic)
 
     def create(self, *args, **kwargs):
         raise NotImplementedError
@@ -224,7 +228,7 @@ class ThreadManager(BaseQuerySetManager):
             author=author,
             is_anonymous=is_anonymous,
             text=text,
-            comment=unicode(const.POST_STATUS['default_version']),
+            comment=force_text(const.POST_STATUS['default_version']),
             revised_at=added_at,
             by_email=by_email,
             email_address=email_address,
@@ -520,7 +524,7 @@ class ThreadManager(BaseQuerySetManager):
             'last_activity_by', 'closed', 'tagnames', 'accepted_answer'
         )
 
-        #print qs.query
+        #print(qs.query)
 
         return qs.distinct(), meta_data
 
@@ -1003,7 +1007,7 @@ class Thread(models.Model):
         if self.tagnames.strip() == '':
             return list()
         else:
-            return self.tagnames.split(u' ')
+            return self.tagnames.split(' ')
 
     def get_title(self):
         title_renderer = load_plugin(
@@ -1063,7 +1067,7 @@ class Thread(models.Model):
         return False
 
     def tagname_meta_generator(self):
-        return u','.join([unicode(tag) for tag in self.get_tag_names()])
+        return ','.join([force_text(tag) for tag in self.get_tag_names()])
 
     def all_answers(self):
         return self.posts.get_answers()
@@ -1761,7 +1765,7 @@ class Thread(models.Model):
             author=retagged_by,
             revised_at=retagged_at,
             tagnames=tagnames,
-            summary=unicode(const.POST_STATUS['retagged']),
+            summary=force_text(const.POST_STATUS['retagged']),
             text=latest_revision.text
         )
 
@@ -1859,6 +1863,8 @@ class QuestionView(models.Model):
     class Meta:
         app_label = 'askbot'
 
+
+@six.python_2_unicode_compatible
 class FavoriteQuestion(models.Model):
     """A favorite Question of a User."""
     thread        = models.ForeignKey(Thread)
@@ -1867,13 +1873,10 @@ class FavoriteQuestion(models.Model):
 
     class Meta:
         app_label = 'askbot'
-        db_table = u'favorite_question'
+        db_table = 'favorite_question'
 
     def __str__(self):
-        return unicode(self).encode('utf-8')
-
-    def __unicode__(self):
-        return u'[%s] favorited at %s' %(self.user, self.added_at)
+        return '[%s] favorited at %s' %(self.user, self.added_at)
 
 
 class DraftQuestion(models.Model):
@@ -1905,7 +1908,7 @@ class AnonymousQuestion(DraftContent):
         try:
             user.assert_can_post_text(self.text)
 
-        except django_exceptions.PermissionDenied, error:
+        except django_exceptions.PermissionDenied as error:
             #delete previous draft questions (only one is allowed anyway)
             prev_drafts = DraftQuestion.objects.filter(author=user)
             prev_drafts.delete()

@@ -1,6 +1,7 @@
 """Version 1 of API helper for the south orm
 usage of this api implementation starts with migration 24
 """
+from __future__ import print_function
 from askbot.migrations_api import BaseAPI
 from django.db import models
 #from django.contrib.contenttypes.models import ContentType
@@ -13,7 +14,7 @@ class API(BaseAPI):
         """
         model = parent.content_type.model
         id = parent.object_id
-        #print 'model is ' + model
+        #print('model is ' + model)
         if model == 'question':
             return self.orm.Question.objects.get(id=id)
         elif model == 'answer':
@@ -32,7 +33,7 @@ class API(BaseAPI):
             comment = self.orm.Comment.objects.get(id=id)
             return self.get_origin_post_from_content_object(comment)
         else:
-            #print 'dropped migration of activity in %s' % model
+            #print('dropped migration of activity in %s' % model)
             return None
 
     def get_moderators_and_admins(self):

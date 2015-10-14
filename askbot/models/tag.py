@@ -1,6 +1,8 @@
+from __future__ import unicode_literals
 import re
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import six
 from django.utils.translation import get_language
 from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext_lazy
@@ -251,6 +253,8 @@ def clean_group_name(name):
     to replace spaces with dashes"""
     return re.sub('\s+', '-', name.strip())
 
+
+@six.python_2_unicode_compatible
 class Tag(models.Model):
     #a couple of status constants
     STATUS_SUGGESTED = 0
@@ -287,11 +291,11 @@ class Tag(models.Model):
 
     class Meta:
         app_label = 'askbot'
-        db_table = u'tag'
+        db_table = 'tag'
         ordering = ('-used_count', 'name')
         unique_together = ('name', 'language_code')
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 class MarkedTag(models.Model):
@@ -308,6 +312,7 @@ class MarkedTag(models.Model):
         app_label = 'askbot'
 
 
+@six.python_2_unicode_compatible
 class TagSynonym(models.Model):
 
     source_tag_name = models.CharField(max_length=255, unique=True)
@@ -325,5 +330,5 @@ class TagSynonym(models.Model):
     class Meta:
         app_label = 'askbot'
 
-    def __unicode__(self):
-        return u'%s -> %s' % (self.source_tag_name, self.target_tag_name)
+    def __str__(self):
+        return '%s -> %s' % (self.source_tag_name, self.target_tag_name)

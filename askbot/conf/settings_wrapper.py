@@ -20,9 +20,11 @@ at run time
 
 askbot.deps.livesettings is a module developed for satchmo project
 """
+from __future__ import unicode_literals
 from django.conf import settings as django_settings
 from django.core.cache import cache
-from django.utils.encoding import force_unicode
+from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.functional import lazy
 from django.utils.translation import get_language
 from django.utils.translation import string_concat
@@ -32,10 +34,10 @@ from askbot.deps.livesettings.functions import config_get
 from askbot.deps.livesettings import signals
 
 def assert_setting_info_correct(info):
-    assert isinstance(info, tuple), u'must be tuple, %s found' % unicode(info)
+    assert isinstance(info, tuple), 'must be tuple, %s found' % six.text_type(info)
     assert len(info) in (3, 4), 'setting tuple must have three or four elements'
-    assert isinstance(info[0], str)
-    assert isinstance(info[1], str)
+    assert isinstance(info[0], (six.text_type, six.binary_type))
+    assert isinstance(info[1], (six.text_type, six.binary_type))
     assert isinstance(info[2], bool)
 
 
@@ -73,7 +75,7 @@ class ConfigSettings(object):
 
     def get_description(self, key):
         """returns descriptive title of the setting"""
-        return unicode(getattr(self.__instance, key).description)
+        return six.text_type(getattr(self.__instance, key).description)
 
     def reset(self, key):
         """returns setting to the default value"""
@@ -133,7 +135,7 @@ class ConfigSettings(object):
             anchor='id_%s__%s__%s' % (group_name, setting_name, get_language())
         )
         if len(data) == 4:
-            return force_unicode(string_concat(link, ' (', data[3], ')'))
+            return force_text(string_concat(link, ' (', data[3], ')'))
         return link
 
 
@@ -156,7 +158,7 @@ class ConfigSettings(object):
 
             required_links = map(lambda v: self.get_setting_url(v), required)
             optional_links = map(lambda v: self.get_setting_url(v), optional)
-                
+
             if required_links and optional_links:
                 return _(
                     'There are required related settings: '

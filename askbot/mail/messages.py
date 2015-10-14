@@ -1,6 +1,7 @@
 """functions in this module return body text
 of email messages for various occasions
 """
+from __future__ import unicode_literals
 import functools
 import logging
 import urllib
@@ -9,7 +10,8 @@ from django.conf import settings as django_settings
 from django.core.urlresolvers import reverse
 from django.template import Context
 from django.template.loader import get_template
-from django.utils.encoding import force_unicode
+from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.html import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from askbot import const
@@ -95,7 +97,7 @@ class BaseEmail(object):
 
         context = copy(self.get_context()) #copy context
         for key in context:
-            if isinstance(context[key], basestring):
+            if isinstance(context[key], six.string_types):
                 context[key] = mark_safe(context[key])
 
         return ' '.join(template.render(Context(context)).split())
@@ -118,7 +120,7 @@ class BaseEmail(object):
                 attachments=attachments or self.get_attachments()
             )
         else:
-            LOG.warning(u'Attempting to send disabled email "%s"' % force_unicode(self.title))
+            LOG.warning('Attempting to send disabled email "%s"' % force_text(self.title))
 
 class InstantEmailAlert(BaseEmail):
     template_path = 'email/instant_notification'
@@ -581,7 +583,7 @@ class BatchEmailAlert(BaseEmail):
         qq = Post.objects.filter(post_type='question')[:2]
 
         act_list = list()
-        act_list.append(force_unicode(_('new question')))
+        act_list.append(force_text(_('new question')))
         format_action_count('%(num)d rev', 3, act_list)
         format_action_count('%(num)d ans', 2, act_list)
         qdata.append({
@@ -734,7 +736,7 @@ class ApprovedPostNotificationRespondable(BaseEmail):
 
     def process_context(self, context):
         revision = context['revision']
-        prompt = force_unicode(_('To add to your post EDIT ABOVE THIS LINE'))
+        prompt = force_text(_('To add to your post EDIT ABOVE THIS LINE'))
         context.update({
             'site_name': askbot_settings.APP_SHORT_NAME,
             'post': revision.post,

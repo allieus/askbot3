@@ -2,7 +2,7 @@
 This command is incomplete, current awards only
 Civic Duty badge
 """
-
+from __future__ import print_function
 from askbot.models import badges
 from askbot.models import User
 from askbot.models import Vote
@@ -34,4 +34,4 @@ class Command(NoArgsCommand):
                         )
                 awarded_count += int(awarded)
 
-        print 'Awarded %d badges' % awarded_count
+        print('Awarded %d badges' % awarded_count)

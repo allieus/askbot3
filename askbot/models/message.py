@@ -1,8 +1,11 @@
 '''Copied from Django 1.3.1 source code, it will use this model to'''
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import six
 from django.utils.translation import ugettext_lazy
 
+
+@six.python_2_unicode_compatible
 class Message(models.Model):
     """
     The message system is a lightweight way to queue messages for given
@@ -21,8 +24,6 @@ class Message(models.Model):
         app_label = 'auth'
         db_table = 'auth_message'
 
-    def __unicode__(self):
+    def __str__(self):
         return self.message
 
-    def __str__(self):
-        return self.message.encode('utf-8')

@@ -11,6 +11,7 @@ from unidecode import unidecode
 
 from django.conf import settings
 from django.template import defaultfilters
+from django.utils import six
 from django.utils.encoding import smart_unicode
 
 
@@ -56,10 +57,10 @@ def slugify(input_text, max_length=150):
         return input_text
 
     allow_unicode_slugs = getattr(settings, 'ALLOW_UNICODE_SLUGS', False)
-    if isinstance(input_text, unicode) and not allow_unicode_slugs:
+    if isinstance(input_text, six.string_types) and not allow_unicode_slugs:
         input_text = unidecode(input_text)
 
-    if isinstance(input_text, unicode):
+    if isinstance(input_text, six.string_types):
         slug = unicode_slugify(input_text)
     else:
         slug = defaultfilters.slugify(input_text)

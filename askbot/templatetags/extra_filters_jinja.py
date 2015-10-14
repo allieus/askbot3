@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import datetime
 import pytz
 import re
@@ -13,6 +14,7 @@ from django.template import defaultfilters
 from django.core.urlresolvers import reverse, resolve
 from django.http import Http404
 from django.utils import simplejson
+from django.utils.encoding import force_text
 from django.utils.text import truncate_html_words
 from askbot import exceptions as askbot_exceptions
 from askbot.conf import settings as askbot_settings
@@ -132,7 +134,7 @@ def transurl(url):
         url.decode('ascii')
     except UnicodeError:
         raise ValueError(
-            u'string %s is not good for url - must be ascii' % url
+            'string %s is not good for url - must be ascii' % url
         )
     if getattr(django_settings, 'ASKBOT_TRANSLATE_URL', False):
         return urllib.quote(_(url).encode('utf-8'))
@@ -158,7 +160,7 @@ def country_flag_url(country_code):
 
 @register.filter
 def collapse(input):
-    input = unicode(input)
+    input = force_text(input)
     return ' '.join(input.split())
 
 

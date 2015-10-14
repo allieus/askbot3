@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+from django.utils import six
 from django.utils.translation import ugettext as _
 from askbot.deps.livesettings import values
 from askbot.deps.livesettings.models import SettingNotSet
@@ -9,6 +11,7 @@ log = logging.getLogger('configuration')
 
 _NOTSET = object()
 
+@six.python_2_unicode_compatible
 class ConfigurationSettings(object):
     """A singleton manager for ConfigurationSettings"""
 
@@ -28,7 +31,7 @@ class ConfigurationSettings(object):
             try:
                 return self[key]
             except:
-                raise AttributeError, key
+                raise AttributeError(key)
 
         def __iter__(self):
             for v in self.groups():
@@ -145,8 +148,8 @@ class ConfigurationSettings(object):
         """ Delegate access to implementation """
         return setattr(self.__instance, attr, value)
 
-    def __unicode__(self):
-        return u"ConfigurationSettings: " + unicode(self.groups())
+    def __str__(self):
+        return "ConfigurationSettings: " + six.text_type(self.groups())
 
 def config_exists(group, key):
     """Test to see if a setting has been registered"""
@@ -183,7 +186,7 @@ def config_collect_values(group, groupkey, key, unique=True, skip_missing=True):
     for g in groups:
         try:
             ret.append(config_value(g, key))
-        except KeyError, ke:
+        except KeyError as ke:
             if not skip_missing:
                 raise SettingNotSet('No config %s.%s' % (g, key))
 
@@ -228,7 +231,7 @@ def config_value_safe(group, key, default_value):
         raw = config_value(group, key)
     except SettingNotSet:
         pass
-    except ImportError, e:
+    except ImportError as e:
         log.warn("Error getting %s.%s, OK if you are in SyncDB.", group, key)
 
     return raw

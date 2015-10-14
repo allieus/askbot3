@@ -1,6 +1,7 @@
 """http-related utilities for askbot
 """
 from copy import copy
+from django.utils.encoding import force_text
 
 def hide_passwords(data):
     """replaces content of values that may contain passsword
@@ -39,7 +40,7 @@ def get_request_info(request):
     elif request.method == 'POST':
         data = request.POST
     data = hide_passwords(copy(data))
-    info += 'data: %s\n' % unicode(data)
+    info += 'data: %s\n' % force_text(data)
     info += 'host: %s\n' % request.get_host()
     if request.user.is_authenticated():
         info += 'user ID: %d\n' % request.user.id

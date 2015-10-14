@@ -20,7 +20,7 @@ def get_coffin_version():
         raise ValueError('unsupported version of coffin %s' % '.'.join(version))
     major_version = version[0]
     minor_version = version[1]
-    return (major_version, minor_version, micro_version)
+    return (int(major_version), int(minor_version), int(micro_version))
 
 def get_django_version():
     """returns three-tuple for the version

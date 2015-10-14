@@ -24,6 +24,7 @@ import uuid
 
 from django.template import Context
 from django.template.loader import get_template
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 from django.utils.translation import activate as activate_language
 from django.utils import simplejson
@@ -172,7 +173,7 @@ def record_post_update_celery_task(
         )
 
     except Exception:
-        logger.error(unicode(traceback.format_exc()).encode('utf-8'))
+        logger.error(force_text(traceback.format_exc()).encode('utf-8'))
 
 @task(ignore_result=True)
 def record_question_visit(
@@ -264,7 +265,7 @@ def send_instant_notifications_about_activity_in_post(
                     })
         try:
             email.send([user.email])
-        except askbot_exceptions.EmailNotSent, error:
+        except askbot_exceptions.EmailNotSent as error:
             logger.debug(
                 '%s, error=%s, logId=%s' % (user.email, error, log_id)
             )

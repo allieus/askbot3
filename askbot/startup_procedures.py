@@ -7,6 +7,8 @@ question: why not run these from askbot/__init__.py?
 
 the main function is run_startup_tests
 """
+from __future__ import print_function
+from __future__ import unicode_literals
 import askbot
 import django
 import os
@@ -18,6 +20,7 @@ from django.db import connection
 from django.conf import settings as django_settings
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
+from django.utils import six
 from datetime import datetime
 from askbot.utils.loading import load_module
 from askbot.utils.functions import enumerate_string_list
@@ -42,7 +45,7 @@ class AskbotConfigError(ImproperlyConfigured):
     def __init__(self, error_message):
         msg = PREAMBLE + error_message
         if sys.__stdin__.isatty():
-            #print footer only when askbot is run from the shell
+            #print(footer only when askbot is run from the shell)
             msg += FOOTER
             super(AskbotConfigError, self).__init__(msg)
 
@@ -57,7 +60,7 @@ def domain_is_bad():
 
 def askbot_warning(line):
     """prints a warning with the nice header, but does not quit"""
-    print >> sys.stderr, unicode(line).encode('utf-8')
+    print(six.text_type(line).encode('utf-8'), file=sys.stderr)
 
 def print_errors(error_messages, header = None, footer = None):
     """if there is one or more error messages,
@@ -96,7 +99,7 @@ def test_askbot_url():
     url = django_settings.ASKBOT_URL
     if url != '':
 
-        if isinstance(url, str) or isinstance(url, unicode):
+        if isinstance(url, six.text_type):
             pass
         else:
             msg = 'setting ASKBOT_URL must be of string or unicode type'
@@ -203,8 +206,8 @@ def try_import(module_name, pypi_package_name, short_message = False):
     A corresponding Python package in the case import fails"""
     try:
         load_module(module_name)
-    except ImportError, error:
-        message = 'Error: ' + unicode(error)
+    except ImportError as error:
+        message = 'Error: {}'.format(error)
         message += '\n\nPlease run: >pip install %s' % pypi_package_name
         if short_message == False:
             message += '\n\nTo install all the dependencies at once, type:'
@@ -526,7 +529,7 @@ def test_staticfiles():
             "    '%s'," % wrong_staticfiles_app_name
         )
     static_url = django_settings.STATIC_URL or ''
-    if static_url is None or str(static_url).strip() == '':
+    if static_url is None or static_url.strip() == '':
         errors.append(
             'Add STATIC_URL setting to your settings.py file. '
             'The setting must be a url at which static files '
@@ -555,7 +558,7 @@ def test_staticfiles():
         if isinstance(dir_entry, tuple):
             if dir_entry[0] == 'default/media':
                 default_skin_tuple = dir_entry
-        elif isinstance(dir_entry, str):
+        elif isinstance(dir_entry, six.string_types):
             if os.path.abspath(dir_entry) == old_default_skin_dir:
                 errors.append(
                     'Remove from STATICFILES_DIRS in your settings.py file:\n' + dir_entry
@@ -637,7 +640,7 @@ def test_csrf_cookie_domain():
     """makes sure that csrf cookie domain setting is acceptable"""
     #todo: maybe use the same steps to clean domain name
     csrf_cookie_domain = django_settings.CSRF_COOKIE_DOMAIN
-    if csrf_cookie_domain is None or str(csrf_cookie_domain.strip()) == '':
+    if csrf_cookie_domain is None or csrf_cookie_domain.strip() == '':
         raise AskbotConfigError(
             'Please add settings CSRF_COOKIE_DOMAN and CSRF_COOKIE_NAME '
             'settings - both are required. '
@@ -724,16 +727,16 @@ def test_custom_user_profile_tab():
     tab_settings = getattr(django_settings, setting_name, None)
     if tab_settings:
         if not isinstance(tab_settings, dict):
-            print "Setting %s must be a dictionary!!!" % setting_name
+            print("Setting %s must be a dictionary!!!" % setting_name)
 
         name = tab_settings.get('NAME', None)
         slug = tab_settings.get('SLUG', None)
         func_name = tab_settings.get('CONTENT_GENERATOR', None)
 
         errors = list()
-        if (name is None) or (not(isinstance(name, basestring))):
+        if (name is None) or (not(isinstance(name, six.string_types))):
             errors.append("%s['NAME'] must be a string" % setting_name)
-        if (slug is None) or (not(isinstance(slug, str))):
+        if (slug is None) or (not(isinstance(slug, six.string_types))):
             errors.append("%s['SLUG'] must be an ASCII string" % setting_name)
 
         if urllib.quote_plus(slug) != slug:
@@ -1142,8 +1145,8 @@ def run():
     try:
         if getattr(django_settings, 'ASKBOT_SELF_TEST', True):
             run_startup_tests()
-    except AskbotConfigError, error:
-        print error
+    except AskbotConfigError as error:
+        print(error)
         sys.exit(1)
     # close DB and cache connections to prevent issues in prefork mode
     connection.close()

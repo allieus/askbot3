@@ -17,6 +17,7 @@ and make sure that a signal `award_badges_signal` is sent with the
 corresponding event name, actor (user object), context_object and optionally
 - timestamp
 """
+from __future__ import unicode_literals
 import datetime
 from django.template.defaultfilters import slugify
 from django.conf import settings as django_settings
@@ -158,7 +159,7 @@ class PeerPressure(Badge):
 
     def __init__(self):
         description = _(
-            u'Deleted own post with %(votes)s or more downvotes'
+            'Deleted own post with %(votes)s or more downvotes'
         ) % {'votes': askbot_settings.PEER_PRESSURE_BADGE_MIN_DOWNVOTES}
         super(PeerPressure, self).__init__(
             name = _('Peer Pressure'),

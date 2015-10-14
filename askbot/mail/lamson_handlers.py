@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import functools
 import re
 import sys
@@ -6,6 +7,7 @@ from django.core.urlresolvers import reverse
 from django.conf import settings as django_settings
 from django.template import Context
 from django.template.loader import get_template
+from django.utils import six
 from django.utils.translation import ugettext as _
 from lamson.routing import route, stateless
 from lamson.server import Relay
@@ -160,11 +162,11 @@ def process_reply(func):
             error = _("You were replying to an email address\
              unknown to the system or you were replying from a different address from the one where you\
              received the notification.")
-        except Exception, e:
+        except Exception as e:
             import sys
-            sys.stderr.write(unicode(e).encode('utf-8'))
+            sys.stderr.write(six.text_type(e).encode('utf-8'))
             import traceback
-            sys.stderr.write(unicode(traceback.format_exc()).encode('utf-8'))
+            sys.stderr.write(six.text_type(traceback.format_exc()).encode('utf-8'))
 
         if error is not None:
             from askbot.mail.messages import ReplyByEmailError
@@ -190,7 +192,7 @@ def ASK(message, host = None, addr = None):
 
     if DEBUG_EMAIL:
         sys.stderr.write(
-            (u'Received email from %s\n' % from_address).encode('utf-8')
+            ('Received email from %s\n' % from_address).encode('utf-8')
         )
 
 
@@ -233,7 +235,7 @@ def VALIDATE_EMAIL(
     reply_code = reply_address_object.address
 
     if DEBUG_EMAIL:
-        msg = u'Received email validation from %s\n' % from_address
+        msg = 'Received email validation from %s\n' % from_address
         sys.stderr.write(msg.encode('utf-8'))
 
     try:
@@ -274,7 +276,7 @@ def PROCESS(
     the email, including the text body and the file attachments"""
     if DEBUG_EMAIL:
         sys.stderr.write(
-            (u'Received reply from %s\n' % from_address).encode('utf-8')
+            ('Received reply from %s\n' % from_address).encode('utf-8')
         )
     #1) get actual email content
     #   todo: factor this out into the process_reply decorator
@@ -315,5 +317,5 @@ def PROCESS(
         email.send([from_address,])
 
         if DEBUG_EMAIL:
-            msg = u'Sending welcome mail to %s\n' % from_address
+            msg = 'Sending welcome mail to %s\n' % from_address
             sys.stderr.write(msg.encode('utf-8'))

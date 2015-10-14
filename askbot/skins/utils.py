@@ -5,12 +5,14 @@ the lookup resolution process for templates and media works as follows:
 * if not found look in 'default'
 * raise an exception
 """
+from __future__ import print_function
 import os
 import logging
 import urllib
 import askbot
 from askbot.utils import hasher
 from django.conf import settings as django_settings
+from django.utils.encoding import force_text
 from django.utils.datastructures import SortedDict
 
 class MediaNotFound(Exception):
@@ -101,7 +103,7 @@ def get_media_url(url, ignore_missing = False):
     """
     #import datetime
     #before = datetime.datetime.now()
-    url = urllib.unquote(unicode(url))
+    url = urllib.unquote(force_text(url))
     while url[0] == '/': url = url[1:]
 
     #a hack allowing urls media stored on external locations to
@@ -166,7 +168,7 @@ def get_media_url(url, ignore_missing = False):
         url +=  '?v=%d' % resource_revision
 
     #after = datetime.datetime.now()
-    #print after - before
+    #print(after - before)
     return url
 
 def update_media_revision(skin=None):

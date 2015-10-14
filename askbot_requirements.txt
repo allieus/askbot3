@@ -1,30 +1,35 @@
-Coffin>=0.3,<=0.3.8
+-e git+https://github.com/allieus/python-modargs#egg=modargs
+# Coffin>=0.3,<=0.3.8
+-e git+https://github.com/allieus/coffin#egg=coffin
 Jinja2
 Lamson
 South>=0.7.1
-akismet
+# akismet
+-e git+https://github.com/allieus/python-akismet#egg=akismet
 beautifulsoup4
 django-avatar>=2.0
 django-celery>=3.0.11
-django-compressor==1.2
-django-countries==3.3
-django-followit==0.0.7
+django-compressor>=1.5
+django-countries>=3.3
+# django-followit>=0.0.7
+-e git+https://github.com/allieus/django-followit#egg=followit
 django-keyedcache
-django-kombu==0.9.4
-django-picklefield==0.3.0
+django-kombu>=0.9.4
+django-picklefield>=0.3.0
 django-recaptcha>=1.0.3
-django-robots==1.0
-django-threaded-multihost
-django-tinymce==1.5.1b2
-django>=1.5,<1.6
-html5lib==0.90
+django-robots>=1.0
+# django-threaded-multihost
+-e hg+https://allieus@bitbucket.org/allieus/django-threaded-multihost#egg=threaded_multihost
+django-tinymce>=1.5.1b2
+django>=1.8.5
+html5lib>=0.90
 longerusername
 markdown2
-mock==1.0.1
+mock>=1.0.1
 oauth2
 pyjwt
-pystache==0.3.1
+pystache>=0.3.1
 python-openid
-pytz==2013b
-sanction==0.3.1
+pytz>=2013b
+sanction>=0.3.1
 unidecode

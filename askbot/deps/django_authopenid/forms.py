@@ -29,6 +29,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import unicode_literals
 import logging
 import cgi
 from django import forms
@@ -83,7 +84,7 @@ class LoginProviderField(forms.CharField):
         if value in providers:
             return value
         else:
-            error_message = u'unknown provider name %s' % value
+            error_message = 'unknown provider name %s' % value
             logging.critical(error_message)
             raise forms.ValidationError(error_message)
 
@@ -410,10 +411,10 @@ class ChangeEmailForm(forms.Form):
             except User.DoesNotExist:
                 return self.cleaned_data['email']
             except User.MultipleObjectsReturned:
-                raise forms.ValidationError(u'There is already more than one \
+                raise forms.ValidationError('There is already more than one \
                     account registered with that e-mail address. Please try \
                     another.')
-            raise forms.ValidationError(u'This email is already registered \
+            raise forms.ValidationError('This email is already registered \
                 in our database. Please choose another.')
 
 

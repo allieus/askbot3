@@ -30,6 +30,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import unicode_literals
 import cgi
 import datetime
 from django.http import HttpResponseRedirect, Http404
@@ -52,6 +53,7 @@ from django.utils.html import escape
 from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.utils import simplejson
+from django.utils import six
 from askbot.mail.messages import EmailValidation
 from askbot.utils import decorators as askbot_decorators
 from askbot.utils.functions import format_setting_name
@@ -211,7 +213,7 @@ def ask_openid(
         auth_request = consumer.begin(openid_url)
     except DiscoveryFailure:
         openid_url = cgi.escape(openid_url)
-        msg = _(u"OpenID %(openid_url)s is invalid" % {'openid_url':openid_url})
+        msg = _("OpenID %(openid_url)s is invalid" % {'openid_url':openid_url})
         logging.debug(msg)
         return signin_failure(request, msg)
 
@@ -372,7 +374,7 @@ def complete_oauth1_signin(request):
         request.session['username'] = oauth.get_username()
 
         logging.debug('have %s user id=%s' % (oauth_provider_name, user_id))
-    except Exception, e:
+    except Exception as e:
         logging.critical(e)
         msg = _('Unfortunately, there was some problem when '
                 'connecting to %(provider)s, please try again '
@@ -597,8 +599,8 @@ def signin(request, template_name='authopenid/signin.html'):
                     oauth_url = connection.get_auth_url(login_only=True)
                     return HttpResponseRedirect(oauth_url)
 
-                except util.OAuthError, e:
-                    logging.critical(unicode(e))
+                except util.OAuthError as e:
+                    logging.critical(six.text_type(e))
                     msg = _('Unfortunately, there was some problem when '
                             'connecting to %(provider)s, please try again '
                             'or use another provider'
@@ -613,8 +615,8 @@ def signin(request, template_name='authopenid/signin.html'):
                     request.session['provider_name'] = provider_name
                     request.session['next_url'] = next_url
                     return HttpResponseRedirect(redirect_url)
-                except util.OAuthError, e:
-                    logging.critical(unicode(e))
+                except util.OAuthError as e:
+                    logging.critical(six.text_type(e))
                     msg = _('Unfortunately, there was some problem when '
                             'connecting to %(provider)s, please try again '
                             'or use another provider'
@@ -643,8 +645,8 @@ def signin(request, template_name='authopenid/signin.html'):
                                     login_provider_name=provider_name,
                                     redirect_url=next_url
                                 )
-                except WpFault, e:
-                    logging.critical(unicode(e))
+                except WpFault as e:
+                    logging.critical(six.text_type(e))
                     msg = _('The login password combination was not correct')
                     request.user.message_set.create(message = msg)
             else:
@@ -867,7 +869,7 @@ def complete_openid_signin(request):
     return_to = get_url_host(request) + reverse('user_complete_openid_signin')
     openid_response = consumer.complete(params, return_to)
 
-    logging.debug(u'returned openid parameters were: %s' % unicode(params))
+    logging.debug('returned openid parameters were: %s' % six.text_type(params))
 
     if openid_response.status == SUCCESS:
         logging.debug('openid response status is SUCCESS')
@@ -1011,7 +1013,7 @@ def finalize_generic_signin(
 
 @not_authenticated
 @csrf.csrf_protect
-def register(request, login_provider_name=None, 
+def register(request, login_provider_name=None,
     user_identifier=None, redirect_url=None):
     """
     this function is used via it's own url with request.method=POST
@@ -1228,7 +1230,7 @@ def verify_email_and_register(request):
             cleanup_post_register_session(request)
 
             return HttpResponseRedirect(get_next_url(request))
-        except Exception, e:
+        except Exception as e:
             message = _(
                 'Sorry, registration failed. '
                 'The token can be already used or has expired. Please try again'

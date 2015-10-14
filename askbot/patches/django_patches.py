@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 """a module for patching django"""
 import imp
 import os
@@ -71,9 +74,9 @@ class CsrfTokenNode(Node):
         csrf_token = context.get('csrf_token', None)
         if csrf_token:
             if csrf_token == 'NOTPROVIDED':
-                return mark_safe(u"")
+                return mark_safe("")
             else:
-                return mark_safe(u"<div style='display:none'><input type='hidden' name='csrfmiddlewaretoken' value='%s' /></div>" % csrf_token)
+                return mark_safe("<div style='display:none'><input type='hidden' name='csrfmiddlewaretoken' value='%s' /></div>" % csrf_token)
         else:
             # It's very probable that the token is missing because of
             # misconfiguration, so we raise a warning
@@ -81,7 +84,7 @@ class CsrfTokenNode(Node):
             if settings.DEBUG:
                 import warnings
                 warnings.warn("A {% csrf_token %} was used in a template, but the context did not provide the value.  This is usually caused by not using RequestContext.")
-            return u''
+            return ''
 
 def get_token(request):
     """
@@ -131,7 +134,7 @@ if hasattr(random, 'SystemRandom'):
     randrange = random.SystemRandom().randrange
 else:
     randrange = random.randrange
-_MAX_CSRF_KEY = 18446744073709551616L     # 2 << 63
+_MAX_CSRF_KEY = 2 << 63
 def _get_failure_view():
     """
     Returns the view to be used for CSRF rejections
@@ -292,7 +295,7 @@ def add_import_library_function():
         app_module = import_module(app_path)
         try:
             mod = import_module(taglib_module)
-        except ImportError, e:
+        except ImportError as e:
             # If the ImportError is because the taglib submodule does not exist, that's not
             # an error that should be raised. If the submodule exists and raised an ImportError
             # on the attempt to load it, that we want to raise.

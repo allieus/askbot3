@@ -1,3 +1,4 @@
+from __future__ import print_function
 from unittest import TestCase
 from askbot.deps.django_authopenid.forms import LoginForm
 from askbot import const
@@ -15,7 +16,7 @@ class LoginFormTests(TestCase):
         assert(len(new_pass) < const.PASSWORD_MIN_LENGTH)
         form = LoginForm(data)
         result = form.is_valid()
-        #print form.errors
+        #print(form.errors)
         self.assertFalse(result)
         self.assertEquals(form.initial['new_password'], None)
         #self.assertFalse('new_password_retyped' in form.cleaned_data)

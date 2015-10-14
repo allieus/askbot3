@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import unicode_literals
 from collections import defaultdict
 import datetime
 import operator
@@ -10,6 +12,8 @@ from django.contrib.auth.models import User
 from django.core import urlresolvers
 from django.db import models
 from django.utils import html as html_utils
+from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.text import truncate_html_words
 from django.utils.translation import activate as activate_language
 from django.utils.translation import get_language
@@ -277,7 +281,7 @@ class PostManager(BaseQuerySetManager):
             author=author,
             revised_at=added_at,
             text=text,
-            comment=unicode(const.POST_STATUS['default_version']),
+            comment=force_text(const.POST_STATUS['default_version']),
             by_email=by_email,
             ip_addr=ip_addr
         )
@@ -425,6 +429,7 @@ def get_post_renderer_type(post_type):
         return askbot_settings.EDITOR_TYPE
 
 
+@six.python_2_unicode_compatible
 class Post(models.Model):
     post_type = models.CharField(max_length=255, db_index=True)
 
@@ -1006,12 +1011,12 @@ class Post(models.Model):
             if not question_post:
                 question_post = self.thread._question_post()
             if no_slug:
-                url = u'%(base)s?answer=%(id)d#post-id-%(id)d' % {
+                url = '%(base)s?answer=%(id)d#post-id-%(id)d' % {
                     'base': urlresolvers.reverse('question', args=[question_post.id]),
                     'id': self.id
                 }
             else:
-                url = u'%(base)s%(slug)s/?answer=%(id)d#post-id-%(id)d' % {
+                url = '%(base)s%(slug)s/?answer=%(id)d#post-id-%(id)d' % {
                     'base': urlresolvers.reverse('question', args=[question_post.id]),
                     'slug': django_urlquote(slugify(self.thread.title)),
                     'id': self.id
@@ -1068,7 +1073,7 @@ class Post(models.Model):
 
         super(Post, self).delete(**kwargs)
 
-    def __unicode__(self):
+    def __str__(self):
         if self.is_question():
             return self.thread.title
         else:
@@ -1420,10 +1425,10 @@ class Post(models.Model):
         * authors or any answers who subsribe to instant updates
           on the questions which they answered
         """
-        #print '------------------'
-        #print 'in content function'
+        #print('------------------')
+        #print('in content function')
         subscriber_set = set()
-        #print 'potential subscribers: ', potential_subscribers
+        #print('potential subscribers: ', potential_subscribers)
 
         #1) mention subscribers - common to questions and answers
         from askbot.models.user import EmailFeedSetting
@@ -1437,13 +1442,13 @@ class Post(models.Model):
 
         origin_post = self.get_origin_post()
 
-        #print origin_post
+        #print(origin_post)
 
         #2) individually selected - make sure that users
         #are individual subscribers to this question
         # TODO: The line below works only if origin_post is Question !
         selective_subscribers = origin_post.thread.followed_by.all()
-        #print 'question followers are ', [s for s in selective_subscribers]
+        #print('question followers are ', [s for s in selective_subscribers])
         if selective_subscribers:
             selective_subscribers = EmailFeedSetting.objects.filter_subscribers(
                 potential_subscribers = selective_subscribers,
@@ -1451,7 +1456,7 @@ class Post(models.Model):
                 frequency = 'i'
             )
             subscriber_set.update(selective_subscribers)
-            #print 'selective subscribers: ', selective_subscribers
+            #print('selective subscribers: ', selective_subscribers)
 
         #3) whole forum subscribers
         global_subscribers = origin_post.get_global_instant_notification_subscribers()
@@ -1481,9 +1486,9 @@ class Post(models.Model):
                 feed_type = 'q_ans',
             )
             subscriber_set.update(answer_subscribers)
-            #print 'answer subscribers: ', answer_subscribers
+            #print('answer subscribers: ', answer_subscribers)
 
-        #print 'exclude_list is ', exclude_list
+        #print('exclude_list is ', exclude_list)
         return subscriber_set - set(exclude_list)
 
     def _comment__get_instant_notification_subscribers(
@@ -1507,8 +1512,8 @@ class Post(models.Model):
         * all global subscribers
           (tag filtered, and subject to personalized settings)
         """
-        #print 'in meta function'
-        #print 'potential subscribers: ', potential_subscribers
+        #print('in meta function')
+        #print('potential subscribers: ', potential_subscribers)
 
         subscriber_set = set()
 
@@ -1528,7 +1533,7 @@ class Post(models.Model):
                                         frequency = 'i'
                                     )
             subscriber_set.update(comment_subscribers)
-            #print 'comment subscribers: ', comment_subscribers
+            #print('comment subscribers: ', comment_subscribers)
 
         origin_post = self.get_origin_post()
         # TODO: The line below works only if origin_post is Question !
@@ -1544,10 +1549,10 @@ class Post(models.Model):
                     subscriber_set.add(subscriber)
 
             subscriber_set.update(selective_subscribers)
-            #print 'selective subscribers: ', selective_subscribers
+            #print('selective subscribers: ', selective_subscribers)
 
         global_subscribers = origin_post.get_global_instant_notification_subscribers()
-        #print 'global subscribers: ', global_subscribers
+        #print('global subscribers: ', global_subscribers)
 
         subscriber_set.update(global_subscribers)
 
@@ -1710,7 +1715,7 @@ class Post(models.Model):
         return when, who
 
     def tagname_meta_generator(self):
-        return u','.join([unicode(tag) for tag in self.get_tag_names()])
+        return ','.join([force_text(tag) for tag in self.get_tag_names()])
 
     def get_parent_post(self):
         """returns parent post or None
@@ -2139,7 +2144,7 @@ class Post(models.Model):
             is_anonymous=is_anonymous,
             revised_at=revised_at,
             tagnames=self.thread.tagnames,
-            summary=unicode(comment),
+            summary=force_text(comment),
             text=text,
             by_email=by_email,
             email_address=email_address,
@@ -2242,7 +2247,7 @@ class Post(models.Model):
             else:
                 attr = None
             if attr is not None:
-                return u'%s %s' % (self.thread.title, unicode(attr))
+                return '%s %s' % (self.thread.title, force_text(attr))
             else:
                 return self.thread.title
         raise NotImplementedError
@@ -2340,7 +2345,7 @@ class PostRevisionManager(models.Manager):
             #set default summary
             if revision.summary == '':
                 if revision.revision == 1:
-                    revision.summary = unicode(const.POST_STATUS['default_version'])
+                    revision.summary = force_text(const.POST_STATUS['default_version'])
                 else:
                     revision.summary = 'No.%s Revision' % revision.revision
             revision.save()
@@ -2368,6 +2373,8 @@ class PostRevisionManager(models.Manager):
 
         return revision
 
+
+@six.python_2_unicode_compatible
 class PostRevision(models.Model):
     QUESTION_REVISION_TEMPLATE_NO_TAGS = (
         '<h3>%(title)s</h3>\n'
@@ -2480,8 +2487,8 @@ class PostRevision(models.Model):
         else:
             raise ValueError()
 
-    def __unicode__(self):
-        return u'%s - revision %s of %s' % (self.post.post_type, self.revision, self.title)
+    def __str__(self):
+        return '%s - revision %s of %s' % (self.post.post_type, self.revision, self.title)
 
     def parent(self):
         return self.post
@@ -2574,7 +2581,7 @@ class AnonymousAnswer(DraftContent):
         try:
             user.assert_can_post_text(self.text)
 
-        except django_exceptions.PermissionDenied, e:
+        except django_exceptions.PermissionDenied as e:
             #delete previous draft questions (only one is allowed anyway)
             thread = self.question.thread
             prev_drafts = DraftAnswer.objects.filter(

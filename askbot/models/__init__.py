@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from askbot import startup_procedures
 startup_procedures.run()
 import django_transaction_signals
@@ -19,6 +20,8 @@ from django.core.paginator import Paginator
 from django.db.models import signals as django_signals
 from django.template import Context
 from django.template.loader import get_template
+from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.translation import get_language
 from django.utils.translation import string_concat
 from django.utils.translation import ugettext as _
@@ -1090,7 +1093,7 @@ def user_assert_can_see_deleted_post(self, post=None):
             admin_or_moderator_required=True,
             owner_can=True
         )
-    except django_exceptions.PermissionDenied, e:
+    except django_exceptions.PermissionDenied as e:
         #re-raise the same exception with a different message
         error_message = _(
             'This post has been deleted and can be seen only '
@@ -1103,7 +1106,7 @@ def user_assert_can_edit_deleted_post(self, post = None):
     assert(post.deleted == True)
     try:
         self.assert_can_see_deleted_post(post)
-    except django_exceptions.PermissionDenied, e:
+    except django_exceptions.PermissionDenied as e:
         error_message = _(
             'Sorry, only moderators, site administrators '
             'and post owners can edit deleted posts'
@@ -2290,7 +2293,7 @@ def user_create_post_reject_reason(
         author = self,
         revised_at = timestamp,
         text = details,
-        comment = unicode(const.POST_STATUS['default_version'])
+        comment = force_text(const.POST_STATUS['default_version'])
     )
 
     reason.details = details
@@ -2788,7 +2791,7 @@ def user_get_primary_language(self):
         return django_settings.LANGUAGE_CODE
 
 def get_profile_link(self, text=None):
-    profile_link = u'<a href="%s">%s</a>' \
+    profile_link = '<a href="%s">%s</a>' \
         % (self.get_profile_url(), escape(text or self.username))
 
     return mark_safe(profile_link)
@@ -3344,7 +3347,7 @@ def user_is_group_member(self, group=None):
     where group can be instance of Group
     or name of group as string
     """
-    if isinstance(group, str):
+    if isinstance(group, six.string_types):
         return GroupMembership.objects.filter(
                 user=self, group__name=group
             ).count() == 1
@@ -3683,8 +3686,8 @@ def notify_award_message(instance, created, **kwargs):
         with override(user.get_primary_language()):
             badge = get_badge(instance.badge.slug)
 
-            msg = _(u"Congratulations, you have received a badge '%(badge_name)s'. "
-                    u"Check out <a href=\"%(user_profile)s\">your profile</a>.") \
+            msg = _("Congratulations, you have received a badge '%(badge_name)s'. "
+                    "Check out <a href=\"%(user_profile)s\">your profile</a>.") \
                     % {
                         'badge_name':badge.name,
                         'user_profile':user.get_profile_url()
@@ -4039,8 +4042,8 @@ def notify_punished_users(user, **kwargs):
                     blocked_user_cannot=True,
                     suspended_user_cannot=True
                 )
-    except django_exceptions.PermissionDenied, e:
-        user.message_set.create(message = unicode(e))
+    except django_exceptions.PermissionDenied as e:
+        user.message_set.create(message = force_text(e))
 
 def post_anonymous_askbot_content(
                                 sender,
