@@ -5,7 +5,7 @@ import askbot
 from askbot.search.postgresql import setup_full_text_search
 
 class Command(NoArgsCommand):
-    @transaction.commit_on_success
+    @transaction.atomic
     def handle_noargs(self, **options):
         script_path = os.path.join(
                             askbot.get_install_directory(),

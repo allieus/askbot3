@@ -1,9 +1,8 @@
 from __future__ import unicode_literals
 from askbot import startup_procedures
 startup_procedures.run()
-import django_transaction_signals
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User  # FIXME: using get_user_model
 
 import collections
 import datetime
@@ -4367,12 +4366,17 @@ signals.question_visited.connect(
     dispatch_uid='record_question_visit'
 )
 
-#set up a possibility for the users to follow others
-try:
-    import followit
-    followit.register(User)
-except ImportError:
-    pass
+
+def on_app_ready(sender, **kwargs):
+    # set up a possibility for the users to follow others
+    try:
+        import followit
+        followit.register(User)
+    except ImportError:
+        pass
+
+signals.app_ready.connect(on_app_ready)
+
 
 
 __all__ = [

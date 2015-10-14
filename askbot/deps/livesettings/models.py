@@ -59,7 +59,7 @@ def find_setting(group, key, site=None):
 
     else:
         grp = overrides.get(group, None)
-        if grp and grp.has_key(key):
+        if grp and key in grp:
             val = grp[key]
             setting = ImmutableSetting(key=key, group=group, value=val)
             log.debug('Returning overridden: %s', setting)

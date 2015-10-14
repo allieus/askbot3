@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 import copy
 import datetime
+import json
 from operator import attrgetter
 import time
 from askbot.search.state_manager import SearchState
@@ -21,7 +22,6 @@ from askbot.models import Tag
 from askbot.models import Group
 from askbot.search.state_manager import DummySearchState
 from askbot.tests.utils import skipIf
-from django.utils import simplejson
 from askbot.conf import settings as askbot_settings
 
 
@@ -648,7 +648,7 @@ class ThreadRenderCacheUpdateTests(AskbotTestCase):
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         ) # use AJAX request
         self.assertEqual(200, response.status_code)
-        data = simplejson.loads(response.content)
+        data = json.loads(response.content)
 
         self.assertEqual(1, data['success'])
         self.assertEqual(6, data['count'])  # 6 == question.points(5) + 1
@@ -667,7 +667,7 @@ class ThreadRenderCacheUpdateTests(AskbotTestCase):
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         ) # use AJAX request
         self.assertEqual(200, response.status_code)
-        data = simplejson.loads(response.content)
+        data = json.loads(response.content)
 
         self.assertEqual(1, data['success'])
         self.assertEqual(5, data['count'])  # 6 == question.points(6) - 1
@@ -690,7 +690,7 @@ class ThreadRenderCacheUpdateTests(AskbotTestCase):
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         ) # use AJAX request
         self.assertEqual(200, response.status_code)
-        data = simplejson.loads(response.content)
+        data = json.loads(response.content)
 
         self.assertEqual(1, data['success'])
 

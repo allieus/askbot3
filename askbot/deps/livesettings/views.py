@@ -86,11 +86,11 @@ def export_as_python(request):
     both.extend(list(LongSetting.objects.all()))
 
     for s in both:
-        if not work.has_key(s.site.id):
+        if s.site.id not in work:
             work[s.site.id] = {}
         sitesettings = work[s.site.id]
 
-        if not sitesettings.has_key(s.group):
+        if s.group not in sitesettings:
             sitesettings[s.group] = {}
         sitegroup = sitesettings[s.group]
 

@@ -1,3 +1,4 @@
+django-transaction-hooks
 -e git+https://github.com/allieus/python-modargs#egg=modargs
 # Coffin>=0.3,<=0.3.8
 -e git+https://github.com/allieus/coffin#egg=coffin
@@ -13,7 +14,8 @@ django-compressor>=1.5
 django-countries>=3.3
 # django-followit>=0.0.7
 -e git+https://github.com/allieus/django-followit#egg=followit
-django-keyedcache
+# django-keyedcache
+-e hg+https://allieus@bitbucket.org/allieus/django-keyedcache#egg=keyedcache
 django-kombu>=0.9.4
 django-picklefield>=0.3.0
 django-recaptcha>=1.0.3
@@ -30,6 +32,6 @@ oauth2
 pyjwt
 pystache>=0.3.1
 python-openid
-pytz>=2013b
+pytz
 sanction>=0.3.1
 unidecode

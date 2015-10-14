@@ -13,7 +13,10 @@ from group_messaging.views import ThreadsList
 from mock import Mock
 import datetime
 import time
-import urlparse
+try:
+    from urllib.parse import urlparse, parse_qs, parse_qsl
+except ImportError:
+    from urlparse import urlparse, parse_qs, parse_qsl
 
 MESSAGE_TEXT = 'test message text'
 
@@ -169,8 +172,8 @@ class ViewsTests(GroupMessagingTests):
         html_message = get_html_message(outbox[0])
         link = BeautifulSoup(html_message).find('a', attrs={'class': 'thread-link'})
         url = link['href'].replace('&amp;', '&')
-        parsed_url = urlparse.urlparse(url)
-        url_data = urlparse.parse_qsl(parsed_url.query)
+        parsed_url = urlparse(url)
+        url_data = parse_qsl(parsed_url.query)
         self.client.login(user_id=self.recipient.id, method='force')
         response = self.client.get(parsed_url.path, url_data)
         dom = BeautifulSoup(response.content)
@@ -356,8 +359,8 @@ class ModelsTests(GroupMessagingTests):
         soup = BeautifulSoup(html_message)
         links = soup.find_all('a', attrs={'class': 'thread-link'})
         self.assertEqual(len(links), 1)
-        parse_result = urlparse.urlparse(links[0]['href'])
-        query = urlparse.parse_qs(parse_result.query.replace('&amp;', '&'))
+        parse_result = urlparse(links[0]['href'])
+        query = parse_qs(parse_result.query.replace('&amp;', '&'))
         self.assertEqual(query['thread_id'][0], str(root.id))
 
     def test_get_sent_threads(self):

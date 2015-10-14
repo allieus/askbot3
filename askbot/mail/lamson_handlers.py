@@ -35,7 +35,7 @@ def _strip_message_qoute(message_text):
     groups = re.search(pattern, email_text, re.IGNORECASE + re.DOTALL)
     qoute = None
     if not groups is None:
-        if groups.groupdict().has_key("qoute"):
+        if "qoute" in groups.groupdict():
             qoute = groups.groupdict()["qoute"]
     if qoute:
         result = reslut.split(qoute)[0]

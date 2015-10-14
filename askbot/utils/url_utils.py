@@ -1,5 +1,8 @@
 import os
-import urlparse
+try:
+    from urllib.parse import urlparse, urlunparse, ParseResult
+except ImportError:
+    from urlparse import urlparse, urlunparse, ParseResult
 from django.core.urlresolvers import reverse
 from django.conf import settings
 try:
@@ -32,9 +35,9 @@ def service_url(*args, **kwargs):
 
 def strip_path(url):
     """srips path, params and hash fragments of the url"""
-    purl = urlparse.urlparse(url)
-    return urlparse.urlunparse(
-        urlparse.ParseResult(
+    purl = urlparse(url)
+    return urlunparse(
+        ParseResult(
             purl.scheme,
             purl.netloc,
             '', '', '', ''
@@ -54,8 +57,8 @@ def append_trailing_slash(urlpath):
 
 def urls_equal(url1, url2, ignore_trailing_slash=False):
     """True, if urls are equal"""
-    purl1 = urlparse.urlparse(url1)
-    purl2 = urlparse.urlparse(url2)
+    purl1 = urlparse(url1)
+    purl2 = urlparse(url2)
     if purl1.scheme != purl2.scheme:
         return False
 

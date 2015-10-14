@@ -4,10 +4,15 @@ to profile functions, wrap them into decorator @profile('file_name.prof')
 source: http://code.djangoproject.com/wiki/ProfilingDjango
 """
 
-import hotshot.stats
 import sys
 
-stats = hotshot.stats.load(sys.argv[1])
-#stats.strip_dirs()
-stats.sort_stats('time', 'calls')
-stats.print_stats(20)
+try:
+    from pstats import Stats
+    stats = Stats()
+except ImportError:
+    from hotshot import stats
+
+_stats = stats.load(sys.argv[1])
+#_stats.strip_dirs()
+_stats.sort_stats('time', 'calls')
+_stats.print_stats(20)

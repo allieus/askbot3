@@ -5,7 +5,10 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from mock import Mock
 import urllib
-import urlparse
+try:
+    from urllib.parse import urlparse, parse_qsl
+except ImportError:
+    from urlparse import urlparse, parse_qsl
 
 class UserViewsTests(AskbotTestCase):
 
@@ -23,17 +26,17 @@ class UserViewsTests(AskbotTestCase):
         self.assertEqual(isinstance(response, HttpResponseRedirect), True)
 
         url = response['location']
-        parsed_url = urlparse.urlparse(url)
+        parsed_url = urlparse(url)
 
         self.assertEqual(parsed_url.path, reverse('user_signin'))
 
-        next = dict(urlparse.parse_qsl(parsed_url.query))['next']
+        next = dict(parse_qsl(parsed_url.query))['next']
         next_url = urllib.unquote(next)
-        parsed_url = urlparse.urlparse(next_url)
+        parsed_url = urlparse(next_url)
 
         self.assertEqual(parsed_url.path, request.path)
 
-        query = dict(urlparse.parse_qsl(parsed_url.query))
+        query = dict(parse_qsl(parsed_url.query))
         self.assertEqual(set(query.keys()), set(['foo', 'abra']))
         self.assertEqual(set(query.values()), set(['bar', 'cadabra']))
         self.assertEqual(query['abra'], 'cadabra')

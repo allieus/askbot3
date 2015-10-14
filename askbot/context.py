@@ -3,9 +3,9 @@ from the django settings, all parameters from the askbot livesettings
 and the application available for the templates
 """
 import sys
+import json
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.utils import simplejson
 
 import askbot
 from askbot import api
@@ -121,6 +121,6 @@ def application_settings(request):
         for group in groups_data:
             link = _get_group_url(group)
             group_list.append({'name': group['name'], 'link': link})
-        context['group_list'] = simplejson.dumps(group_list)
+        context['group_list'] = json.dumps(group_list)
 
     return context

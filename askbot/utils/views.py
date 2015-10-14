@@ -1,9 +1,9 @@
+import json
 from django.http import HttpResponse
 from django.http import HttpResponseNotAllowed
 from django.http import HttpResponseForbidden
 from django.template import Context
 from django.template.loader import get_template
-from django.utils import simplejson
 
 class PjaxView(object):
     """custom class-based view
@@ -23,7 +23,7 @@ class PjaxView(object):
         template_name = template_name or self.template_name
         template = get_template(template_name)
         html = template.render(Context(context))
-        json = simplejson.dumps({'html': html, 'success': True})
+        json = json.dumps({'html': html, 'success': True})
         return HttpResponse(json, content_type='application/json')
 
 

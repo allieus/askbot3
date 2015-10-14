@@ -31,7 +31,7 @@ if sys.version_info[:2] < (2,4):
         for i in sequence[::-1]:
             yield i
     def _unicode_decode(s, encoding, errors='xmlcharrefreplace'):
-        return unicode(s, encoding, errors)
+        return six.text_type(s, encoding, errors)
 else:
     def _unicode_decode(s, encoding, errors='strict'):
         return s.decode(encoding, errors)

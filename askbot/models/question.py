@@ -17,7 +17,6 @@ from django.template.loader import get_template
 from django.template import Context
 from django.utils import six
 from django.utils.encoding import force_text
-from django.utils.hashcompat import md5_constructor
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext, string_concat, get_language
 
@@ -1853,7 +1852,7 @@ class Thread(models.Model):
         return html
 
     def summary_html_cached(self):
-        return cache.cache.has_key(self.get_summary_cache_key())
+        return self.get_summary_cache_key() in cache.cache
 
 class QuestionView(models.Model):
     question = models.ForeignKey('Post', related_name='viewed')

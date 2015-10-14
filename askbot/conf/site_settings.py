@@ -10,7 +10,10 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings as django_settings
 from django.core.validators import ValidationError, validate_email
 import re
-from urlparse import urlparse
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 
 QA_SITE_SETTINGS = livesettings.ConfigurationGroup(

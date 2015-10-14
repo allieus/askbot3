@@ -5,6 +5,7 @@
 This module contains views that allow adding, editing, and deleting main textual content.
 """
 import datetime
+import json
 import logging
 import os
 import os.path
@@ -21,7 +22,6 @@ from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.http import HttpResponseRedirect
 from django.http import Http404
-from django.utils import simplejson
 from django.utils.encoding import force_text
 from django.utils.html import strip_tags, escape
 from django.utils.translation import get_language
@@ -109,7 +109,7 @@ def upload(request):#ajax upload file to a question or answer
         result = ''
         file_url = ''
 
-    #data = simplejson.dumps({
+    #data = json.dumps({
     #    'result': result,
     #    'error': error,
     #    'file_url': file_url
@@ -349,7 +349,7 @@ def retag_question(request, id):
                         message = request.user.get_and_delete_messages()[-1]
                         response_data['message'] = message
 
-                    data = simplejson.dumps(response_data)
+                    data = json.dumps(response_data)
                     return HttpResponse(data, content_type="application/json")
                 else:
                     return HttpResponseRedirect(question.get_absolute_url())
@@ -358,7 +358,7 @@ def retag_question(request, id):
                     'message': format_errors(form.errors['tags']),
                     'success': False
                 }
-                data = simplejson.dumps(response_data)
+                data = json.dumps(response_data)
                 return HttpResponse(data, content_type="application/json")
         else:
             form = forms.RetagQuestionForm(question)
@@ -375,7 +375,7 @@ def retag_question(request, id):
                 'message': force_text(e),
                 'success': False
             }
-            data = simplejson.dumps(response_data)
+            data = json.dumps(response_data)
             return HttpResponse(data, content_type="application/json")
         else:
             request.user.message_set.create(message = force_text(e))
@@ -709,7 +709,7 @@ def __generate_comments_json(obj, user, avatar_size):
         }
         json_comments.append(comment_data)
 
-    data = simplejson.dumps(json_comments)
+    data = json.dumps(json_comments)
     return HttpResponse(data, content_type="application/json")
 
 @csrf.csrf_protect

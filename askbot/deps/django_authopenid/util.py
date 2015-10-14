@@ -4,9 +4,13 @@ import functools
 import httplib
 import jwt
 import random
+import json
 import re
 import urllib
-import urlparse
+try:
+    from urllib.parse import urlparse, parse_qsl
+except ImportError:
+    from urlparse import urlparse, parse_qsl
 from askbot.utils.html import site_url
 from askbot.utils.functions import format_setting_name
 from openid.store.interface import OpenIDStore
@@ -17,7 +21,6 @@ import oauth2 as oauth # OAuth1 protocol
 from django.db.models.query import Q
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.utils import simplejson
 from django.utils import six
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext as _
@@ -457,7 +460,7 @@ def get_enabled_major_login_providers():
             'resource_endpoint': 'https://graph.facebook.com/',
             'icon_media_path': 'images/jquery-openid/facebook.gif',
             'get_user_id_function': get_facebook_user_id,
-            'response_parser': lambda data: dict(urlparse.parse_qsl(data)),
+            'response_parser': lambda data: dict(parse_qsl(data)),
             'scope': ['email',],
         }
 
@@ -493,7 +496,7 @@ def get_enabled_major_login_providers():
         client = oauth.Client(consumer, token=token)
         url = 'https://identi.ca/api/account/verify_credentials.json'
         response, content = client.request(url, 'GET')
-        json = simplejson.loads(content)
+        json = json.loads(content)
         return json['id']
 
     if askbot_settings.IDENTICA_KEY and askbot_settings.IDENTICA_SECRET:
@@ -1020,7 +1023,7 @@ def ldap_check_password(username, password):
 
 def mozilla_persona_get_email_from_assertion(assertion):
     conn = httplib.HTTPSConnection('verifier.login.persona.org')
-    parsed_url = urlparse.urlparse(askbot_settings.APP_URL)
+    parsed_url = urlparse(askbot_settings.APP_URL)
     params = urllib.urlencode({
                     'assertion': assertion,
                     'audience': parsed_url.scheme + '://' + parsed_url.netloc
@@ -1029,7 +1032,7 @@ def mozilla_persona_get_email_from_assertion(assertion):
     conn.request('POST', '/verify', params, headers)
     response = conn.getresponse()
     if response.status == 200:
-        data = simplejson.loads(response.read())
+        data = json.loads(response.read())
         email = data.get('email')
         if email:
             return email
@@ -1047,7 +1050,7 @@ def google_gplus_get_openid_data(client):
         token = token.encode('ascii')
         token = token + '='*(4 - len(token)%4)
         token = base64.urlsafe_b64decode(token)
-        data = simplejson.loads(token)
+        data = json.loads(token)
         return data.get('openid_id'), data.get('email')
     return None
 

@@ -79,13 +79,13 @@ def get_path_to_skin(skin):
 def get_skin_choices():
     """returns a tuple for use as a set of
     choices in the form"""
-    available_skins = get_available_skins().keys()
+    available_skins = list(get_available_skins().keys())
     skin_names = list(reversed(available_skins))
     return zip(skin_names, skin_names)
 
 def resolve_skin_for_media(media=None, preferred_skin = None):
     #see if file exists, if not, try skin 'default'
-    available_skins = get_available_skins(selected=preferred_skin).items()
+    available_skins = list(get_available_skins(selected=preferred_skin).items())
     for skin_name, skin_dir in available_skins:
         if os.path.isfile(os.path.join(skin_dir, 'media', media)):
             return skin_name

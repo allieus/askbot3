@@ -1,3 +1,4 @@
+import json
 from askbot.utils import decorators
 from askbot import const
 from askbot.conf import settings as askbot_settings
@@ -19,7 +20,6 @@ from django.template import RequestContext
 from django.views.decorators import csrf
 from django.utils.encoding import force_text
 from django.core import exceptions
-from django.utils import simplejson
 
 #some utility functions
 def get_object(memo):
@@ -219,7 +219,7 @@ def moderate_post_edits(request):
     if not request.user.is_administrator_or_moderator():
         raise exceptions.PermissionDenied()
 
-    post_data = simplejson.loads(request.raw_post_data)
+    post_data = json.loads(request.raw_post_data)
     #{'action': 'decline-with-reason', 'items': ['posts'], 'reason': 1, 'edit_ids': [827]}
 
     memo_set = models.ActivityAuditStatus.objects.filter(id__in=post_data['edit_ids'])

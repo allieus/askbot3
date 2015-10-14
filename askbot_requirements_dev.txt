@@ -1,7 +1,8 @@
+django-transaction-hooks
 -e git+https://github.com/allieus/python-modargs#egg=modargs
 #akismet
 -e git+https://github.com/allieus/python-akismet#egg=akismet
-django>=1.5,<1.6
+django>=1.8.5
 Jinja2
 # Coffin>=0.3,<=0.3.8
 -e git+https://github.com/allieus/coffin#egg=coffin
@@ -14,7 +15,8 @@ html5lib>=0.90
 django-avatar>=2.0
 django-appconf
 django-compressor>=1.5
-django-keyedcache
+# django-keyedcache
+-e hg+https://allieus@bitbucket.org/allieus/django-keyedcache#egg=keyedcache
 # django-threaded-multihost
 -e hg+https://allieus@bitbucket.org/allieus/django-threaded-multihost#egg=threaded_multihost
 django-robots>=1.0

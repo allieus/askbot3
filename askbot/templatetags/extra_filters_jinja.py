@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 import datetime
+import json
 import pytz
 import re
 import time
@@ -13,9 +14,8 @@ from django.contrib.humanize.templatetags import humanize
 from django.template import defaultfilters
 from django.core.urlresolvers import reverse, resolve
 from django.http import Http404
-from django.utils import simplejson
 from django.utils.encoding import force_text
-from django.utils.text import truncate_html_words
+from django.utils.text import Truncator
 from askbot import exceptions as askbot_exceptions
 from askbot.conf import settings as askbot_settings
 from django.conf import settings as django_settings
@@ -55,7 +55,7 @@ def as_js_bool(some_object):
 
 @register.filter
 def as_json(data):
-    return simplejson.dumps(data)
+    return json.dumps(data)
 
 @register.filter
 def is_current_language(lang):
@@ -143,7 +143,7 @@ def transurl(url):
 @register.filter
 def truncate_html_post(post_html):
     """truncates html if it is longer than 100 words"""
-    post_html = truncate_html_words(post_html, 5)
+    post_html = Truncator(post_html).words(5, html=True)
     post_html = '<div class="truncated-post">' + post_html
     post_html += '<span class="expander">(<a>' + _('more') + '</a>)</span>'
     post_html += '<div class="clearfix"></div></div>'

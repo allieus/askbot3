@@ -10,6 +10,7 @@ and turns them into complete views
 """
 import copy
 import datetime
+import json
 from django.template.loader import get_template
 from django.template import Context
 from django.contrib.auth.models import User
@@ -19,7 +20,6 @@ from django.forms import IntegerField
 from django.http import HttpResponse
 from django.http import HttpResponseNotAllowed
 from django.http import HttpResponseForbidden
-from django.utils import simplejson
 from askbot.utils.views import PjaxView
 from .models import Message
 from .models import MessageMemo
@@ -67,7 +67,7 @@ class NewThread(PjaxView):
                         )
             result['success'] = True
             result['message_id'] = message.id
-        return HttpResponse(simplejson.dumps(result), content_type='application/json')
+        return HttpResponse(json.dumps(result), content_type='application/json')
 
 
 class PostReply(PjaxView):

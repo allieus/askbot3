@@ -182,7 +182,7 @@ class ConfigSettings(object):
                 }
             else:
                 return ''
-        return lazy(_func, unicode)()
+        return lazy(_func, six.text_type)()
 
     def as_dict(self):
         cache_key = get_bulk_cache_key()

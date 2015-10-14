@@ -4,12 +4,13 @@
 http://code.google.com/p/django-values/
 """
 from __future__ import unicode_literals
+from __future__ import absolute_import
+import json
 from decimal import Decimal
 from django import forms
 from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.cache import cache
-from django.utils import simplejson
 from django.utils import six
 from django.utils.datastructures import SortedDict
 from django.utils.encoding import force_text
@@ -26,7 +27,7 @@ from askbot.deps.livesettings.widgets import ImageInput
 from askbot.utils.functions import format_setting_name
 import datetime
 import logging
-import signals
+from . import signals
 import os
 
 __all__ = ['BASE_GROUP', 'BASE_SUPER_GROUP', 'ConfigurationGroup', 'Value', 'BooleanValue',
@@ -189,7 +190,7 @@ class Value(object):
             self.requires = group.requires
             self.requires_value = group.requires_value
 
-        if kwargs.has_key('default'):
+        if 'default' in kwargs:
             self.default = kwargs.pop('default')
             self.use_default = True
         else:
@@ -374,7 +375,7 @@ class Value(object):
                     if overrides:
                         # maybe override the default
                         grp = overrides.get(self.group.key, {})
-                        if grp.has_key(key):
+                        if key in grp:
                             val = grp[self.key]
                 else:
                     val = NOTSET
@@ -388,7 +389,7 @@ class Value(object):
                 global _WARN
                 log.error(e)
                 if str(e).find("configuration_setting") > -1:
-                    if not _WARN.has_key('configuration_setting'):
+                    if 'configuration_setting' not in _WARN:
                         log.warn('Error loading setting %s.%s from table, OK if you are in syncdb', self.group.key, key)
                         _WARN['configuration_setting'] = True
 
@@ -806,7 +807,7 @@ class MultipleStringValue(Value):
     def get_db_prep_save(self, value):
         if is_string_like(value):
             value = [value]
-        return simplejson.dumps(value)
+        return json.dumps(value)
 
     def to_python(self, value):
         if not value or value == NOTSET:
@@ -815,7 +816,7 @@ class MultipleStringValue(Value):
             return value
         else:
             try:
-                return simplejson.loads(value)
+                return json.loads(value)
             except:
                 if is_string_like(value):
                     return [value]

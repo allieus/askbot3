@@ -7,8 +7,14 @@ from bs4 import NavigableString
 import html5lib
 from html5lib import sanitizer, serializer, tokenizer, treebuilders, treewalkers
 import re
-import htmlentitydefs
-from urlparse import urlparse
+try:
+    from html.entities import name2codepoint
+except ImportError:
+    from htmlentitydefs import name2codepoint
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 from django.core.urlresolvers import reverse
 from django.template.loader import get_template
 from django.utils.encoding import force_text
@@ -310,7 +316,7 @@ def unescape(text):
         else:
             # named entity
             try:
-                text = unichr(htmlentitydefs.name2codepoint[text[1:-1]])
+                text = unichr(name2codepoint[text[1:-1]])
             except KeyError:
                 pass
         return text # leave as is

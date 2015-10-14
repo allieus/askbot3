@@ -33,6 +33,7 @@
 from __future__ import unicode_literals
 import cgi
 import datetime
+import json
 from django.http import HttpResponseRedirect, Http404
 from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
@@ -47,12 +48,11 @@ from django.forms.util import ErrorList
 from django.shortcuts import render
 from django.template.loader import get_template
 from django.views.decorators import csrf
-from django.utils.encoding import smart_unicode
+from django.utils.encoding import smart_text
 from askbot.utils.functions import generate_random_key
 from django.utils.html import escape
 from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
-from django.utils import simplejson
 from django.utils import six
 from askbot.mail.messages import EmailValidation
 from askbot.utils import decorators as askbot_decorators
@@ -63,7 +63,6 @@ from askbot.deps.django_authopenid.ldap_auth import ldap_authenticate
 from askbot.deps.django_authopenid.exceptions import OAuthError
 from askbot.utils.loading import load_module
 from sanction.client import Client as OAuth2Client
-from urlparse import urlparse
 
 from openid.consumer.consumer import Consumer, \
     SUCCESS, CANCEL, FAILURE, SETUP_NEEDED
@@ -832,7 +831,7 @@ def change_password(request):
         data['message'] = _('Your new password is saved')
     else:
         data['errors'] = form.errors
-    return HttpResponse(simplejson.dumps(data), content_type='application/json')
+    return HttpResponse(json.dumps(data), content_type='application/json')
 
 @login_required
 def delete_login_method(request):
@@ -865,7 +864,7 @@ def complete_openid_signin(request):
     logging.debug('in askbot.deps.django_authopenid.complete')
     consumer = Consumer(request.session, util.DjangoOpenIDStore())
     # make sure params are encoded in utf8
-    params = dict((k,smart_unicode(v)) for k, v in request.GET.items())
+    params = dict((k,smart_text(v)) for k, v in request.GET.items())
     return_to = get_url_host(request) + reverse('user_complete_openid_signin')
     openid_response = consumer.complete(params, return_to)
 

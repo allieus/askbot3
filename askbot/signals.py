@@ -13,6 +13,8 @@ except ImportError:
     pass
 
 
+app_ready = django.dispatch.Signal()
+
 GenericSignal = namedtuple(
     'GenericSignal',
     field_names=['signal', 'callback', 'dispatch_uid']

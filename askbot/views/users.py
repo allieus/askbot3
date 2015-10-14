@@ -11,6 +11,7 @@ import calendar
 import collections
 import functools
 import datetime
+import json
 import logging
 import operator
 import urllib
@@ -32,7 +33,6 @@ from django.utils.translation import get_language
 from django.utils.translation import string_concat
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext
-from django.utils import simplejson
 from django.utils.html import strip_tags as strip_all_tags
 from django.views.decorators import csrf
 
@@ -84,7 +84,7 @@ def clear_new_notifications(request):
     activity_types += (
         const.TYPE_ACTIVITY_MENTION,
     )
-    post_data = simplejson.loads(request.raw_post_data)
+    post_data = json.loads(request.raw_post_data)
     memo_set = models.ActivityAuditStatus.objects.filter(
         id__in=post_data['memo_ids'],
         activity__activity_type__in=activity_types,
@@ -95,7 +95,7 @@ def clear_new_notifications(request):
 
 @decorators.ajax_only
 def delete_notifications(request):
-    post_data = simplejson.loads(request.raw_post_data)
+    post_data = json.loads(request.raw_post_data)
     memo_set = models.ActivityAuditStatus.objects.filter(
         id__in=post_data['memo_ids'],
         user=request.user

@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import hotshot
+try:
+    from cProfile import Profile
+except ImportError:
+    from hotshot import Profile
+
 import time
 import os
 import datetime
 import functools
 import inspect
+import json
 import logging
 from django.conf import settings
 from django.core import exceptions as django_exceptions
@@ -14,7 +19,6 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse, HttpResponseForbidden, Http404
 from django.http import HttpResponseRedirect
-from django.utils import simplejson
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_text
 from django.utils.encoding import smart_str
@@ -46,8 +50,8 @@ def ajax_login_required(view_func):
         if request.user.is_authenticated():
             return view_func(request, *args, **kwargs)
         else:
-            json = simplejson.dumps({'login_required':True})
-            return HttpResponseForbidden(json, content_type='application/json')
+            json_s = json.dumps({'login_required': True})
+            return HttpResponseForbidden(json_s, content_type='application/json')
     return wrap
 
 
@@ -112,15 +116,15 @@ def ajax_only(view_func):
                 'message': message,
                 'success': 0
             }
-            return HttpResponse(simplejson.dumps(data), content_type='application/json')
+            return HttpResponse(json.dumps(data), content_type='application/json')
 
         if isinstance(data, HttpResponse):#is this used?
             data.mimetype = 'application/json'
             return data
         else:
             data['success'] = 1
-            json = simplejson.dumps(data)
-            return HttpResponse(json, content_type='application/json')
+            json_s = json.dumps(data)
+            return HttpResponse(json_s, content_type='application/json')
     return wrapper
 
 def check_authorization_to_post(func_or_message):
@@ -177,7 +181,7 @@ def profile(log_file):
             base = base + "-" + time.strftime("%Y%m%dT%H%M%S", time.gmtime())
             final_log_file = base + ext
 
-            prof = hotshot.Profile(final_log_file)
+            prof = Profile(final_log_file)
             try:
                 ret = prof.runcall(f, *args, **kwargs)
             finally:

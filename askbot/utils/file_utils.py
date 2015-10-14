@@ -2,7 +2,10 @@
 import os
 import random
 import time
-import urlparse
+try:
+    from urllib.parse import urlparse, urlunparse, ParseResult
+except ImportError:
+    from urlparse import urlparse, urlunparse, ParseResult
 from django.core.files.storage import get_storage_class
 from django.conf import settings as django_settings
 
@@ -26,9 +29,9 @@ def store_file(file_object, file_name_prefix = ''):
     file_storage.save(file_name, file_object)
 
     file_url = file_storage.url(file_name)
-    parsed_url = urlparse.urlparse(file_url)
-    file_url = urlparse.urlunparse(
-        urlparse.ParseResult(
+    parsed_url = urlparse(file_url)
+    file_url = urlunparse(
+        ParseResult(
             parsed_url.scheme,
             parsed_url.netloc,
             parsed_url.path,

@@ -1,7 +1,7 @@
 """functions, preparing parts of context for
 the templates in the various views"""
+import json
 from django.conf import settings as django_settings
-from django.utils import simplejson
 from django.utils.translation import ugettext as _
 from askbot.conf import settings as askbot_settings
 from askbot import const
@@ -24,7 +24,7 @@ def get_for_tag_editor():
             'wrong_first_char': _(msg.TAG_WRONG_FIRST_CHAR_MESSAGE),
         }
     }
-    return {'tag_editor_settings': simplejson.dumps(data)}
+    return {'tag_editor_settings': json.dumps(data)}
 
 def get_for_inbox(user):
     """adds response counts of various types"""

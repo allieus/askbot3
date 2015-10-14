@@ -18,6 +18,7 @@ That is the reason for having two types of methods here:
   objects and call the base methods
 """
 import logging
+import json
 import sys
 import traceback
 import uuid
@@ -27,7 +28,6 @@ from django.template.loader import get_template
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 from django.utils.translation import activate as activate_language
-from django.utils import simplejson
 
 from celery.decorators import task
 from celery.utils.log import get_task_logger
@@ -79,11 +79,11 @@ def tweet_new_post_task(post_id):
     tweet_text = post.as_tweet()
 
     for raw_token in access_tokens:
-        token = simplejson.loads(raw_token)
+        token = json.loads(raw_token)
         twitter.tweet(tweet_text, access_token=token)
 
     if post.author.social_sharing_mode != const.SHARE_NOTHING:
-        token = simplejson.loads(post.author.twitter_access_token)
+        token = json.loads(post.author.twitter_access_token)
         twitter.tweet(tweet_text, access_token=token)
 
 

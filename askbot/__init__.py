@@ -9,6 +9,8 @@ import platform
 
 VERSION = (0, 7, 53)
 
+default_app_config = 'askbot.apps.AppConfig'
+
 #keys are module names used by python imports,
 #values - the package qualifier to use for pip
 REQUIREMENTS = {
@@ -19,14 +21,17 @@ REQUIREMENTS = {
     'compressor': 'django-compressor>=1.5',
     'django': 'django>=1.8.5',
     'django_countries': 'django-countries>=3.3',
-    'django_transaction_signals': 'django-transaction-signals',
+
+    # 'django_transaction_signals': 'django-transaction-signals',
+    'transaction_hooks': 'django-transaction-hooks',
+
     'djcelery': 'django-celery>=3.0.11',
     'djkombu': 'django-kombu>=0.9.4',
     'followit': 'django-followit',
     'html5lib': 'html5lib>=0.90',
     'jinja2': 'Jinja2',
     'jsonfield': 'jsonfield',
-    'keyedcache': 'django-keyedcache',
+    # 'keyedcache': 'django-keyedcache',  # FIXME: broken views disable
     'longerusername': 'longerusername',
     'markdown2': 'markdown2',
     'mock': 'mock>=1.0.1',
@@ -35,7 +40,7 @@ REQUIREMENTS = {
     'picklefield': 'django-picklefield>=0.3.0',
     'jwt': 'pyjwt',
     'pystache': 'pystache>=0.3.1',
-    'pytz': 'pytz>=2013b',
+    'pytz': 'pytz',
     'captcha': 'django-recaptcha>=1.0.3',
     'requirements': 'requirements-parser',
     'robots': 'django-robots>=1.0',
