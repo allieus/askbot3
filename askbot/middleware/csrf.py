@@ -9,8 +9,8 @@ class CsrfViewMiddleware(DjangoCsrfViewMiddleware):
 
     def process_response(self, request, response):
         """will set csrf cookie to all responses"""
-        #these two calls make the csrf token cookie to be installed
-        #properly on the response, see implementation of those calls
-        #to see why this works and why get_token is necessary
+        # these two calls make the csrf token cookie to be installed
+        # properly on the response, see implementation of those calls
+        # to see why this works and why get_token is necessary
         get_token(request)
         return super(CsrfViewMiddleware, self).process_response(request, response)

@@ -71,7 +71,7 @@ settings.register(
 def app_url_callback(old_value, new_value):
     """validates the site url and sets
     Sites framework record"""
-    #1) validate the site url
+    # 1) validate the site url
     parsed = urlparse(new_value)
     if parsed.netloc == '':
         msg = _('Please enter url of your site')
@@ -82,7 +82,7 @@ def app_url_callback(old_value, new_value):
     if parsed.path == '':
         new_value += '/'
 
-    #2) update domain name in the sites framework
+    # 2) update domain name in the sites framework
     from django.contrib.sites.models import Site
     site = Site.objects.get(id=django_settings.SITE_ID)
     site.domain = parsed.netloc

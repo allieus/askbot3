@@ -27,7 +27,7 @@ class ContentConvertionTests(AskbotTestCase):
         self.u2 = self.create_user(username='notadmin')
         self.client = Client()
 
-        #content
+        # content
         self.question = self.post_question(user=self.u1)
         self.answer_to_convert = self.post_answer(user=self.u2,
                                                   question=self.question)
@@ -45,19 +45,19 @@ class ContentConvertionTests(AskbotTestCase):
         self.client.post(reverse('comment_to_answer'),
                          {'comment_id': self.comment_to_convert.id})
         converted_answer = self.reload_object(self.comment_to_convert)
-        #old_parent = self.another_answer
+        # old_parent = self.another_answer
         old_parent = self.reload_object(self.another_answer)
 
-        #test for convertion
+        # test for convertion
         self.assertEquals(converted_answer.post_type, 'answer')
-        #test for parent change
+        # test for parent change
         self.assertNotEquals(old_parent.id, converted_answer.parent.id)
-        #test for answer count update
+        # test for answer count update
         self.assertEquals(converted_answer.thread.answer_count, answer_count + 1)
-        #test for comment count update
+        # test for comment count update
         self.assertEquals(old_parent.comment_count, old_parent_comment_count - 1)
 
-        #test the delete post view for errors
+        # test the delete post view for errors
         response = self.client.post(reverse('delete_post'),
                                     {'post_id': converted_answer.id,
                                      'cancel_vote': 'false'},
@@ -67,7 +67,7 @@ class ContentConvertionTests(AskbotTestCase):
 
     def test_convert_answer_to_comment(self):
         comment_count = self.question.comment_count
-        #because the answer itself has a comment too!
+        # because the answer itself has a comment too!
         comment_count += self.answer_to_convert.comment_count
 
         answer_count = self.question.thread.answer_count
@@ -77,14 +77,14 @@ class ContentConvertionTests(AskbotTestCase):
         converted_comment = self.reload_object(self.answer_to_convert)
         old_parent = self.reload_object(self.question)
 
-        #test for convertion
+        # test for convertion
         self.assertEquals(converted_comment.post_type, 'comment')
-        #test for answer count update
+        # test for answer count update
         self.assertEquals(converted_comment.thread.answer_count, answer_count - 1)
-        #test for comment count update
+        # test for comment count update
         self.assertEquals(old_parent.comment_count, comment_count + 1)
 
-        #test the delete comment view for errors
+        # test the delete comment view for errors
         response = self.client.post(reverse('delete_comment'),
                                     {'comment_id': converted_comment.id},
                                     HTTP_X_REQUESTED_WITH='XMLHttpRequest')

@@ -8,6 +8,7 @@ from django.utils import six
 from django.utils.functional import allow_lazy
 from django.utils.encoding import force_text
 
+
 def reduce_spaces_between_tags(value):
     """Returns the given HTML with all spaces between tags removed.
     ,but one. One space is left so that consecutive links and other things
@@ -16,6 +17,7 @@ def reduce_spaces_between_tags(value):
     """
     return re.sub(r'>\s+<', '> <', force_text(value))
 reduce_spaces_between_tags = allow_lazy(reduce_spaces_between_tags, six.text_type)
+
 
 class SpacelessMiddleware(object):
     def process_response(self, request, response):
@@ -26,3 +28,4 @@ class SpacelessMiddleware(object):
             response.content = reduce_spaces_between_tags(response.content)
             response['Content-Length'] = str(len(response.content))
         return response
+

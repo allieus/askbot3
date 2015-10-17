@@ -56,7 +56,7 @@
                 show_buttons = have_buttons
             )
         }}
-          {% if use_password_login == True %}
+          {% if use_password_login %}
         <fieldset
             id="password-fs"
             {% if user.is_anonymous() %}
@@ -102,11 +102,11 @@
                 </table>
                 <p id="local_login_buttons">
                     <input name="login_with_password" type="submit" value="{% trans %}Sign in{% endtrans %}" />
-                    {% if settings.USE_LDAP_FOR_PASSWORD_LOGIN == False %}
+                    {% if not settings.USE_LDAP_FOR_PASSWORD_LOGIN %}
                     <a class="create-password-account" style="vertical-align:middle" href="{{ url("user_signup_with_password") }}?login_provider=local">{% trans %}Create a password-protected account{% endtrans %}</a>
                     {% endif %}
                 </p>
-            {% elif settings.USE_LDAP_FOR_PASSWORD_LOGIN == False %}
+            {% elif not settings.USE_LDAP_FOR_PASSWORD_LOGIN %}
                 <h2 id="password-heading">
                     {% trans %}To change your password - please enter the new one twice, then submit{% endtrans %}
                 </h2>

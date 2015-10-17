@@ -589,11 +589,15 @@ def _compile_scripts_txt():
     names = []
     cats = []
 
-    import urllib2, re, textwrap
+    try:
+        from urllib.request import urlopen
+    except ImportError:
+        from urllib2 import urlopen
+    import re
+    import textwrap
 
     url = 'http://www.unicode.org/Public/UNIDATA/Scripts.txt'
-    f = urllib2.urlopen(url)
-    for ln in f:
+    for ln in urlopen(url):
         p = re.findall(r'([0-9A-F]+)(?:\.\.([0-9A-F]+))?\W+(\w+)\s*#\s*(\w+)', ln)
         if p:
             a, b, name, cat = p[0]

@@ -3,7 +3,7 @@ from django.db import connection
 from django.conf import settings as django_settings
 from django.utils.translation import get_language
 
-#mapping of "django" language names to postgres
+# mapping of "django" language names to postgres
 LANGUAGE_NAMES = {
     'da':    'danish',
     'de':    'german',
@@ -33,12 +33,12 @@ def setup_full_text_search(script_path):
 
     cursor = connection.cursor()
     try:
-        #test if language exists
+        # test if language exists
         cursor.execute("SELECT * FROM pg_language WHERE lanname='plpgsql'")
         lang_exists = cursor.fetchone()
         if not lang_exists:
             cursor.execute("CREATE LANGUAGE plpgsql")
-        #run the main query
+        # run the main query
         cursor.execute(fts_init_query)
     finally:
         cursor.close()
@@ -66,12 +66,12 @@ def run_full_text_search(query_set, query_text, text_search_vector_name):
 
     language_code = get_language()
 
-    #a hack with japanese search for the short queries
+    # a hack with japanese search for the short queries
     if language_code in ['ja', 'zh-cn'] and len(query_text) in (1, 2):
-        mul = 4/len(query_text) #4 for 1 and 2 for 2
+        mul = 4/len(query_text) # 4 for 1 and 2 for 2
         query_text = (query_text + ' ')*mul
 
-    search_query = '|'.join(query_text.split())#apply "OR" operator
+    search_query = '|'.join(query_text.split())# apply "OR" operator
     language_name = LANGUAGE_NAMES.get(language_code, 'english')
     extra_params = (language_name, search_query,)
     extra_kwargs = {
@@ -87,7 +87,7 @@ def run_thread_search(query_set, query):
     """runs search for full thread content"""
     return run_full_text_search(query_set, query, 'text_search_vector');
 
-run_user_search = run_thread_search #an alias
+run_user_search = run_thread_search # an alias
 
 def run_title_search(query_set, query):
     """runs search for title and tags"""

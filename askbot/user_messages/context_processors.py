@@ -2,13 +2,12 @@
 Context processor for lightweight session messages.
 
 Time-stamp: <2008-07-19 23:16:19 carljm context_processors.py>
-
 """
-from django.conf import settings as django_settings
-from django.utils import six
-from django.utils.encoding import force_text
 
+from django.conf import settings as django_settings
+from django.utils.encoding import force_text, python_2_unicode_compatible
 from askbot.user_messages import get_and_delete_messages
+
 
 def user_messages(request):
     """
@@ -16,23 +15,23 @@ def user_messages(request):
 
     """
     if not request.path.startswith('/' + django_settings.ASKBOT_URL):
-        #todo: a hack, for real we need to remove this middleware
-        #and switch to the new-style session messages
+        # TODO: a hack, for real we need to remove this middleware
+        # and switch to the new-style session messages
         return {}
 
-    #the get_and_delete_messages is added to anonymous user by the
-    #ConnectToSessionMessages middleware by the process_request,
-    #however - if the user is logging out via /admin/logout/
-    #the AnonymousUser is installed in the response and thus
-    #the Askbot's session messages hack will fail, so we have
-    #an extra if statement here.
+    # the get_and_delete_messages is added to anonymous user by the
+    # ConnectToSessionMessages middleware by the process_request,
+    # however - if the user is logging out via /admin/logout/
+    # the AnonymousUser is installed in the response and thus
+    # the Askbot's session messages hack will fail, so we have
+    # an extra if statement here.
     if hasattr(request.user, 'get_and_delete_messages'):
         messages = request.user.get_and_delete_messages()
-        return { 'user_messages': messages }
+        return {'user_messages': messages}
     return {}
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class LazyMessages(object):
     """
     Lazy message container, so messages aren't actually retrieved from
@@ -63,3 +62,4 @@ class LazyMessages(object):
         self._messages = get_and_delete_messages(self.request)
         return self._messages
     messages = property(_get_messages)
+

@@ -8,24 +8,19 @@ in order to render messages within the page.
 Notice that :mod:`urls` module decorates all these functions
 and turns them into complete views
 """
+
 import copy
 import datetime
-import json
-from django.template.loader import get_template
 from django.template import Context
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import Q
 from django.forms import IntegerField
-from django.http import HttpResponse
-from django.http import HttpResponseNotAllowed
-from django.http import HttpResponseForbidden
+from django.http import JsonResponse
 from askbot.utils.views import PjaxView
 from .models import Message
 from .models import MessageMemo
 from .models import SenderList
 from .models import LastVisitTime
-from .models import get_personal_group_by_user_id
 from .models import get_personal_groups_for_users
 from .models import get_unread_inbox_counter
 
@@ -61,13 +56,10 @@ class NewThread(PjaxView):
         if result.get('success', True):
             recipients = get_personal_groups_for_users(users)
             message = Message.objects.create_thread(
-                            sender=request.user,
-                            recipients=recipients,
-                            text=request.POST['text']
-                        )
+                sender=request.user, recipients=recipients, text=request.POST['text'])
             result['success'] = True
             result['message_id'] = message.id
-        return HttpResponse(json.dumps(result), content_type='application/json')
+        return JsonResponse(result)
 
 
 class PostReply(PjaxView):
@@ -77,15 +69,8 @@ class PostReply(PjaxView):
     def post(self, request):
         parent_id = IntegerField().clean(request.POST['parent_id'])
         parent = Message.objects.get(id=parent_id)
-        message = Message.objects.create_response(
-                                        sender=request.user,
-                                        text=request.POST['text'],
-                                        parent=parent
-                                    )
-        last_visit = LastVisitTime.objects.get(
-                                        message=message.root,
-                                        user=request.user
-                                    )
+        message = Message.objects.create_response(sender=request.user, text=request.POST['text'], parent=parent)
+        last_visit = LastVisitTime.objects.get(message=message.root, user=request.user)
         last_visit.at = datetime.datetime.now()
         last_visit.save()
         return self.render_to_response(
@@ -107,7 +92,7 @@ class ThreadsList(PjaxView):
         else:
             user = request.user
 
-        #get threads and the last visit time
+        # get threads and the last visit time
         sender_id = IntegerField().clean(request.REQUEST.get('sender_id', '-1'))
 
         if sender_id == -2:
@@ -120,20 +105,17 @@ class ThreadsList(PjaxView):
             threads = Message.objects.get_sent_threads(sender=user)
         else:
             sender = User.objects.get(id=sender_id)
-            threads = Message.objects.get_threads(
-                                            recipient=user,
-                                            sender=sender
-                                        )
+            threads = Message.objects.get_threads(recipient=user, sender=sender)
         threads = threads.order_by('-last_active_at')
 
-        #for each thread we need to know if there is something
-        #unread for the user - to mark "new" threads as bold
+        # for each thread we need to know if there is something
+        # unread for the user - to mark "new" threads as bold
         threads_data = dict()
         for thread in threads:
             thread_data = dict()
-            #determine status
+            # determine status
             thread_data['status'] = 'new'
-            #determine the senders info
+            # determine the senders info
             senders_names = thread.senders_info.split(',')
             if user.username in senders_names:
                 senders_names.remove(user.username)
@@ -142,20 +124,17 @@ class ThreadsList(PjaxView):
             threads_data[thread.id] = thread_data
 
         ids = [thread.id for thread in threads]
-        counts = Message.objects.filter(
-                                id__in=ids
-                            ).annotate(
-                                responses_count=models.Count('descendants')
-                            ).values('id', 'responses_count')
+        counts = Message.objects.\
+            filter(id__in=ids).\
+            annotate(responses_count=models.Count('descendants')).\
+            values('id', 'responses_count')
+
         for count in counts:
             thread_id = count['id']
             responses_count = count['responses_count']
             threads_data[thread_id]['responses_count'] = responses_count
 
-        last_visit_times = LastVisitTime.objects.filter(
-                                            user=user,
-                                            message__in=threads
-                                        )
+        last_visit_times = LastVisitTime.objects.filter(user=user, message__in=threads)
         for last_visit in last_visit_times:
             thread_data = threads_data[last_visit.message_id]
             if thread_data['thread'].last_active_at <= last_visit.at:
@@ -186,10 +165,10 @@ class DeleteOrRestoreThread(ThreadsList):
         * recalculate the threads list and return it for display
           by reusing the threads list "get" function
         """
-        #part of the threads list context
+        # part of the threads list context
         sender_id = IntegerField().clean(request.POST['sender_id'])
 
-        #sender_id==-2 means deleted post
+        # sender_id==-2 means deleted post
         if self.thread_action == 'delete':
             if sender_id == -2:
                 action = 'delete'
@@ -199,13 +178,10 @@ class DeleteOrRestoreThread(ThreadsList):
             action = 'restore'
 
         thread = Message.objects.get(id=thread_id)
-        memo, created = MessageMemo.objects.get_or_create(
-                                    user=request.user,
-                                    message=thread
-                                )
+        memo, created = MessageMemo.objects.get_or_create(user=request.user, message=thread)
 
         if created and action == 'archive':
-            #unfortunately we lose "unseen" status when archiving
+            # unfortunately we lose "unseen" status when archiving
             counter = get_unread_inbox_counter(request.user)
             counter.decrement()
             counter.save()
@@ -241,15 +217,13 @@ class ThreadDetails(PjaxView):
 
     def get_context(self, request, thread_id=None):
         """shows individual thread"""
-        #todo: assert that current thread is the root
+        # TODO: assert that current thread is the root
         root = Message.objects.get(id=thread_id)
         responses = Message.objects.filter(root__id=thread_id).order_by('sent_at')
-        last_visit, created = LastVisitTime.objects.get_or_create(
-                                                            message=root,
-                                                            user=request.user
-                                                        )
+        last_visit, created = LastVisitTime.objects.get_or_create(message=root, user=request.user)
         root.mark_as_seen(request.user)
-        if created is False:
+
+        if not created:
             last_visit.at = datetime.datetime.now()
             last_visit.save()
 

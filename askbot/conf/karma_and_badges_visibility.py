@@ -23,7 +23,7 @@ settings.register(
             ('public', 'show publicly'),
             ('private', 'show to owners only'),
             ('hidden', 'hide completely'),
-        ),#todo: later implement hidden mode
+        ),# TODO: later implement hidden mode
         description = _("Visibility of karma"),
         clear_cache = True,
         help_text = _(
@@ -40,7 +40,7 @@ settings.register(
         choices = (
             ('public', 'show publicly'),
             ('hidden', 'hide completely')
-        ),#todo: later implement private mode
+        ),# TODO: later implement private mode
         description = _("Visibility of badges"),
         clear_cache = True,
         help_text = _(

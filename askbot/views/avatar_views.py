@@ -1,4 +1,3 @@
-from askbot.conf import settings as askbot_settings
 from askbot.conf import gravatar_enabled
 from askbot.models import User, user_can_see_karma
 from askbot.utils.forms import get_error_list
@@ -8,8 +7,6 @@ from avatar.models import Avatar
 from avatar.signals import avatar_updated
 from django.conf import settings as django_settings
 from django.contrib.auth.decorators import login_required
-from django.core.urlresolvers import reverse
-from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.encoding import force_str
 from django.utils.translation import ugettext as _
@@ -24,7 +21,7 @@ def admin_or_owner_required(func):
         if request.user.is_authenticated():
             if request.user.is_administrator() or request.user.id == user_id:
                 return func(request, user_id)
-        #delegate to do redirect to the login_required
+        # delegate to do redirect to the login_required
         return login_required(func)(request, user_id)
     return wrapped
 
@@ -42,26 +39,26 @@ def get_avatar_data(user, avatar_size):
     """
     avatar_type = user.get_avatar_type()
 
-    #determine avatar data for the view
+    # determine avatar data for the view
     avatar_data = list()
 
     if 'avatar' in django_settings.INSTALLED_APPS:
         avatars = user.avatar_set.all()
-        #iterate through uploaded avatars
+        # iterate through uploaded avatars
         for avatar in avatars:
             datum = {
                 'id': avatar.id,
                 'avatar_type': 'uploaded_avatar',
                 'url': avatar.avatar_url(avatar_size),
-                #avatar app always keeps one avatar as primary
-                #but we may want to allow user select gravatar
-                #and/or default fallback avatar!!!
+                # avatar app always keeps one avatar as primary
+                # but we may want to allow user select gravatar
+                # and/or default fallback avatar!!!
                 'is_primary': avatar.primary and avatar_type == 'a'
             }
             avatar_data.append(datum)
 
     if gravatar_enabled():
-        #add gravatar datum
+        # add gravatar datum
         gravatar_datum = {
             'avatar_type': 'gravatar',
             'url': user.get_gravatar_url(avatar_size),
@@ -69,7 +66,7 @@ def get_avatar_data(user, avatar_size):
         }
         avatar_data.append(gravatar_datum)
 
-    #add default avatar datum
+    # add default avatar datum
     default_datum = {
         'avatar_type': 'default_avatar',
         'url': user.get_default_avatar_url(avatar_size),
@@ -77,7 +74,7 @@ def get_avatar_data(user, avatar_size):
     }
     avatar_data.append(default_datum)
 
-    #if there are >1 primary avatar, select just one
+    # if there are >1 primary avatar, select just one
     primary_avatars = filter(lambda v: v['is_primary'], avatar_data)
     if len(primary_avatars) > 1:
         def clear_primary(datum):
@@ -85,7 +82,7 @@ def get_avatar_data(user, avatar_size):
         map(clear_primary, primary_avatars)
         primary_avatars[0]['is_primary'] = True
 
-    #insert primary avatar first
+    # insert primary avatar first
     primary_avatars = filter(lambda v: v['is_primary'], avatar_data)
     if len(primary_avatars):
         primary_avatar = primary_avatars[0]
@@ -97,9 +94,7 @@ def get_avatar_data(user, avatar_size):
 
 
 def redirect_to_show_list(user_id):
-    return HttpResponseRedirect(
-        reverse('askbot_avatar_show_list', kwargs={'user_id': user_id})
-    )
+    return redirect('askbot_avatar_show_list', user_id=user_id)
 
 
 @admin_or_owner_required
@@ -110,10 +105,10 @@ def show_list(request, user_id=None, extra_context=None, avatar_size=128):
     status_message = request.session.pop('askbot_avatar_status_message', None)
 
     context = {
-        #these are user profile context vars
+        # these are user profile context vars
         'can_show_karma': user_can_see_karma(request.user, user),
         'user_follow_feature_on': ('followit' in django_settings.INSTALLED_APPS),
-        #below are pure avatar view context vars
+        # below are pure avatar view context vars
         'avatar_data': avatar_data,
         'has_uploaded_avatar': has_uploaded_avatar,
         'can_upload': can_upload,

@@ -45,7 +45,7 @@ class Command(NoArgsCommand):
         post_save.receivers = []
 
     def handle(self, *arguments, **options):
-        #destroy pre_save and post_save signals
+        # destroy pre_save and post_save signals
         self.parse_arguments(arguments)
         if options.get('interactive'):
             self.confirm_action()

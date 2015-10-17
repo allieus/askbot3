@@ -90,14 +90,14 @@ class Command(NoArgsCommand):
         "Create the users and return an array of created users"
         users = []
 
-        #add admin with the same password - this user will be admin automatically
+        # add admin with the same password - this user will be admin automatically
         admin = User.objects.create_user('admin', 'admin@example.com')
         admin.set_password('admin')
         admin.save()
         self.print_if_verbose("Created User 'admin'")
         users.append(admin)
 
-        #this user will have regular privileges, because it's second
+        # this user will have regular privileges, because it's second
         joe = User.objects.create_user('joe', 'joe@example.com')
         joe.set_password('joe')
         joe.save()
@@ -127,7 +127,7 @@ class Command(NoArgsCommand):
         last_vote = False
         # Each user posts a question
         for i in range(NUM_QUESTIONS):
-            user = users[i % len(users)]#allows to post many questions all by less users
+            user = users[i % len(users)]# allows to post many questions all by less users
             # Downvote/upvote the questions - It's reproducible, yet
             # gives good randomized data
             if not active_question is None:

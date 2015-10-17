@@ -7,7 +7,7 @@ class Command(NoArgsCommand):
 
     def handle_noargs(self, **options):
         from askbot.conf import settings
-        #Just loads all the settings that way they will be in the cache
+        # Just loads all the settings that way they will be in the cache
         for key, value in settings._ConfigSettings__instance.items():
             empty1 = getattr(settings, key)
         print('cache pre-loaded')

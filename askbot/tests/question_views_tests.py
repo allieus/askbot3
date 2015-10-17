@@ -37,17 +37,17 @@ class PrivateQuestionViewsTests(AskbotTestCase):
         self.assertEqual(question.title, self.qdata['title'])
         self.assertFalse(models.Group.objects.get_global_group() in set(question.groups.all()))
 
-        #private question is not accessible to unauthorized users
+        # private question is not accessible to unauthorized users
         self.client.logout()
         response = self.client.get(question._question_post().get_absolute_url())
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.content, '')
-        #private question link is not shown on the main page
-        #to unauthorized users
+        # private question link is not shown on the main page
+        # to unauthorized users
         response = self.client.get(reverse('questions'))
         self.assertFalse(self.qdata['title'] in response.content)
-        #private question link is not shown on the poster profile
-        #to the unauthorized users
+        # private question link is not shown on the poster profile
+        # to the unauthorized users
         response = self.client.get(self.user.get_profile_url())
         self.assertFalse(self.qdata['title'] in response.content)
 
@@ -56,7 +56,7 @@ class PrivateQuestionViewsTests(AskbotTestCase):
         title = question.thread.get_title()
         self.assertTrue(force_text(const.POST_STATUS['private']) in title)
         data = self.qdata
-        #data['post_privately'] = 'false'
+        # data['post_privately'] = 'false'
         data['select_revision'] = 'false'
         data['text'] = 'edited question text'
         response1 = self.client.post(
@@ -196,10 +196,10 @@ class PrivateAnswerViewsTests(AskbotTestCase):
                 'select_revision': 'false'
             }
         )
-        #check that answer is not visible to the "everyone" group
+        # check that answer is not visible to the "everyone" group
         answer = self.reload_object(answer)
         self.assertFalse(models.Group.objects.get_global_group() in answer.groups.all())
-        #check that countent is not seen by an anonymous user
+        # check that countent is not seen by an anonymous user
         self.client.logout()
         response = self.client.get(self.question.get_absolute_url())
         self.assertFalse('edited answer text' in response.content)

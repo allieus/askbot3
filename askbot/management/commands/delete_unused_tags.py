@@ -15,8 +15,8 @@ class Command(NoArgsCommand):
         deleted_tags = list()
         for tag in ProgressBar(tags, total, message):
             if not tag.threads.exists():
-                #if any user subscribed for the tag and
-                #the user is not blocked, skip deleting the tag
+                # if any user subscribed for the tag and
+                # the user is not blocked, skip deleting the tag
                 marks = tag.user_selections.all()
                 do_delete = True
                 for mark in marks:

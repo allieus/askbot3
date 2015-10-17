@@ -9,7 +9,7 @@ class CategoryTreeTests(unittest.TestCase):
     def setUp(self):
         self.tree = [
             [
-                'dummy', [#dummy is a sentinel node
+                'dummy', [# dummy is a sentinel node
                     [
                         'cars', [
                             ['volkswagen', []],

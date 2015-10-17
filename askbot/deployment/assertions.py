@@ -1,5 +1,5 @@
 """assertions regarding deployment of askbot
-todo: move here stuff from startup_procedures.py
+TODO: move here stuff from startup_procedures.py
 
 the reason - some assertions need to be run in askbot/__init__
 as opposed to startup_procedures.py - which are executed in the

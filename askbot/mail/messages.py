@@ -1,27 +1,26 @@
-"""functions in this module return body text
-of email messages for various occasions
-"""
+"functions in this module return body text of email messages for various occasions"
+
 from __future__ import unicode_literals
-import functools
 import logging
-import urllib
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib import quote
 from copy import copy
 from django.conf import settings as django_settings
 from django.core.urlresolvers import reverse
-from django.template import Context
-from django.template.loader import get_template
+from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.html import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from askbot import const
 from askbot.conf import settings as askbot_settings
-from askbot.utils import html as html_utils
 from askbot.utils.diff import textDiff as htmldiff
 from askbot.utils.html import (absolutize_urls, sanitize_html, site_link, site_url)
-from askbot.utils.slug import slugify
 
 LOG = logging.getLogger(__name__)
+
 
 def get_user():
     """returns a user object"""
@@ -54,7 +53,7 @@ class BaseEmail(object):
     by stripping tags
     """
 
-    template_path = 'path/to/email/dir' #override in subclass
+    template_path = 'path/to/email/dir'  # override in subclass
     title = 'A brief title for this email'
     description = 'In subclass, explain when/why this email might be sent'
     mock_context = {}
@@ -93,18 +92,14 @@ class BaseEmail(object):
         return True
 
     def render_subject(self):
-        template = get_template(self.template_path + '/subject.txt')
-
-        context = copy(self.get_context()) #copy context
+        context = copy(self.get_context())  # copy context
         for key in context:
             if isinstance(context[key], six.string_types):
                 context[key] = mark_safe(context[key])
-
-        return ' '.join(template.render(Context(context)).split())
+        return ' '.join(render_to_string(self.template_path + '/subject.txt', context).split())
 
     def render_body(self):
-        template = get_template(self.template_path + '/body.html')
-        body = template.render(Context(self.get_context()))
+        body = render_to_string(self.template_path + '/body.html', self.get_context())
         return absolutize_urls(body)
 
     def send(self, recipient_list, raise_on_failure=False, headers=None, attachments=None):
@@ -122,13 +117,12 @@ class BaseEmail(object):
         else:
             LOG.warning('Attempting to send disabled email "%s"' % force_text(self.title))
 
+
 class InstantEmailAlert(BaseEmail):
     template_path = 'email/instant_notification'
     title = _('Instant email notification')
     description = _('Sent to relevant users when a post is made or edited')
-    preview_error_message = _(
-        'At least two users and one post are needed to generate the preview'
-    )
+    preview_error_message = _('At least two users and one post are needed to generate the preview')
 
     def is_enabled(self):
         return askbot_settings.ENABLE_EMAIL_ALERTS \
@@ -149,11 +143,10 @@ class InstantEmailAlert(BaseEmail):
             activity_type = const.TYPE_ACTIVITY_COMMENT_ANSWER
 
         activity = Activity(
-                    user=post.author,
-                    content_object=post,
-                    activity_type=activity_type,
-                    question=post.get_origin_post()
-                )
+            user=post.author,
+            content_object=post,
+            activity_type=activity_type,
+            question=post.get_origin_post())
         return {
             'post': post,
             'from_user': post.author,
@@ -171,8 +164,7 @@ class InstantEmailAlert(BaseEmail):
         headers = self.get_thread_headers(
             post,
             origin_post,
-            update_activity.activity_type
-            )
+            update_activity.activity_type)
         headers['Reply-To'] = reply_address
         return headers
 
@@ -247,22 +239,21 @@ class InstantEmailAlert(BaseEmail):
             revisions = post.revisions.all()[:2]
             assert(len(revisions) == 2)
             content_preview = htmldiff(
-                    sanitize_html(revisions[1].html),
-                    sanitize_html(revisions[0].html),
-                    ins_start = '<b><u style="background-color:#cfc">',
-                    ins_end = '</u></b>',
-                    del_start = '<del style="color:#600;background-color:#fcc">',
-                    del_end = '</del>'
-                )
-            #todo: remove hardcoded style
+                sanitize_html(revisions[1].html),
+                sanitize_html(revisions[0].html),
+                ins_start='<b><u style="background-color:# cfc">',
+                ins_end='</u></b>',
+                del_start='<del style="color:# 600;background-color:# fcc">',
+                del_end='</del>')
+            # TODO: remove hardcoded style
         else:
             content_preview = post.format_for_email(is_leaf_post=True, recipient=to_user)
 
-        #add indented summaries for the parent posts
+        # add indented summaries for the parent posts
         content_preview += post.format_for_email_as_parent_thread_summary(recipient=to_user)
 
-        #content_preview += '<p>======= Full thread summary =======</p>'
-        #content_preview += post.thread.format_for_email(recipient=to_user)
+        # content_preview += '<p>======= Full thread summary =======</p>'
+        # content_preview += post.thread.format_for_email(recipient=to_user)
 
         if update_type == 'post_shared':
             user_action = _('%(user)s shared a %(post_link)s.')
@@ -291,8 +282,8 @@ class InstantEmailAlert(BaseEmail):
             user_link_fmt = '<a href="%(profile_url)s">%(username)s</a> (<a href="mailto:%(email)s">%(email)s</a>)'
             user_link = user_link_fmt % {
                 'profile_url': user_url,
-                    'username': from_user.username,
-                    'email': from_user.email
+                'username': from_user.username,
+                'email': from_user.email,
             }
         elif post.is_anonymous:
             user_link = from_user.get_name_of_anonymous_user()
@@ -309,14 +300,11 @@ class InstantEmailAlert(BaseEmail):
         reply_address, alt_reply_address = get_reply_to_addresses(to_user, post)
 
         if can_reply:
-            reply_separator = const.SIMPLE_REPLY_SEPARATOR_TEMPLATE % \
-                          _('To reply, PLEASE WRITE ABOVE THIS LINE.')
+            reply_separator = const.SIMPLE_REPLY_SEPARATOR_TEMPLATE % _('To reply, PLEASE WRITE ABOVE THIS LINE.')
             if post.post_type == 'question' and alt_reply_address:
                 data = {
-                  'addr': alt_reply_address,
-                  'subject': urllib.quote(
-                            ('Re: ' + post.thread.title).encode('utf-8')
-                          )
+                    'addr': alt_reply_address,
+                    'subject': quote(('Re: ' + post.thread.title).encode('utf-8')),
                 }
                 reply_separator += '<p>' + const.REPLY_WITH_COMMENT_TEMPLATE % data
                 reply_separator += '</p>'
@@ -365,14 +353,11 @@ class WelcomeEmail(BaseEmail):
     template_path = 'email/welcome'
     title = _('Welcome message')
     description = _('Sent to newly registered user when replying by email is disabled')
-    preview_error_message = _(
-        'At least one user is required generate a preview'
-    )
+    preview_error_message = _('At least one user is required generate a preview')
 
     def is_enabled(self):
         return askbot_settings.ENABLE_EMAIL_ALERTS \
             and askbot_settings.WELCOME_EMAIL_ENABLED
-
 
     def get_mock_context(self):
         return {'user': get_user()}
@@ -380,6 +365,7 @@ class WelcomeEmail(BaseEmail):
     def process_context(self, context):
         context['recipient_user'] = context['user']
         return context
+
 
 class WelcomeEmailRespondable(BaseEmail):
     template_path = 'email/welcome_respondable'
@@ -493,8 +479,7 @@ class InsufficientReputation(BaseEmail):
     def process_context(self, context):
         user = context['user']
         min_rep = askbot_settings.MIN_REP_TO_POST_BY_EMAIL
-        min_upvotes = 1 + \
-                      (min_rep/askbot_settings.REP_GAIN_FOR_RECEIVING_UPVOTE)
+        min_upvotes = 1 + (min_rep/askbot_settings.REP_GAIN_FOR_RECEIVING_UPVOTE)
         return {
             'username': user.username,
             'recipient_user': user,
@@ -527,12 +512,8 @@ class RejectedPost(BaseEmail):
 class ModerationQueueNotification(BaseEmail):
     template_path = 'email/moderation_queue_notification'
     title = _('Moderation queue has items')
-    description = _(
-        'Sent to moderators when the moderation queue is not empty'
-    )
-    preview_error_message = _(
-        'At least one user on the site is necessary to generate the preview'
-    )
+    description = _('Sent to moderators when the moderation queue is not empty')
+    preview_error_message = _('At least one user on the site is necessary to generate the preview')
 
     def is_enabled(self):
         return askbot_settings.CONTENT_MODERATION_MODE == 'premoderation' \
@@ -671,9 +652,8 @@ class EmailValidation(BaseEmail):
         url_name = context['handler_url_name']
         context.update({
             'site_name': askbot_settings.APP_SHORT_NAME,
-            'recipient_user': None,#needed for the Django template
-            'validation_link': site_url(reverse(url_name)) + \
-                                '?validation_code=' + context['key']
+            'recipient_user': None,  # needed for the Django template
+            'validation_link': site_url(reverse(url_name)) + '?validation_code=' + context['key'],
         })
         return context
 
@@ -731,7 +711,7 @@ class ApprovedPostNotificationRespondable(BaseEmail):
 
     def get_headers(self):
         context = self.get_context()
-        #todo: possibly add more mailto thread headers to organize messages
+        # TODO: possibly add more mailto thread headers to organize messages
         return {'Reply-To': context['append_content_address']}
 
     def process_context(self, context):
@@ -769,6 +749,7 @@ class GroupMessagingEmailAlert(BaseEmail):
             'recipient_user': get_user()
         }
 
+
 class FeedbackEmail(BaseEmail):
     template_path = 'email/feedback'
     title = _('Feedback email')
@@ -791,3 +772,4 @@ class FeedbackEmail(BaseEmail):
         if 'email' in context:
             return {'Reply-To': context['email']}
         return {}
+

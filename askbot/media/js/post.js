@@ -23,7 +23,7 @@ var lanai = {
     }
 };
 
-//todo: clean-up now there is utils:WaitIcon
+//TODO: clean-up now there is utils:WaitIcon
 function appendLoader(element) {
     loading = gettext('loading...');
     element.append('<img class="ajax-loader" ' +
@@ -770,7 +770,7 @@ var Vote = (function () {
 
     var pleaseLogin = ' <a href="' + askbot.urls.user_signin + '">' + gettext('please login') + '</a>';
 
-    //todo: this below is probably not used
+    //TODO: this below is probably not used
     var subscribeAnonymousMessage = gettext('anonymous users cannot subscribe to questions') + pleaseLogin;
     var voteAnonymousMessage = gettext('anonymous users cannot vote') + pleaseLogin;
     //there were a couple of more messages...
@@ -1037,7 +1037,7 @@ var Vote = (function () {
 
     var callback_offensive = function (object, voteType, data) {
         /*jshint eqeqeq:false */
-        //todo: transfer proper translations of these from i18n.js
+        //TODO: transfer proper translations of these from i18n.js
         //to django.po files
         //_('anonymous users cannot flag offensive posts') + pleaseLogin;
         if (data.success == '1') {
@@ -1068,7 +1068,7 @@ var Vote = (function () {
 
     var callback_remove_offensive = function (object, voteType, data) {
         /*jshint eqeqeq:false */
-        //todo: transfer proper translations of these from i18n.js
+        //TODO: transfer proper translations of these from i18n.js
         //to django.po files
         //_('anonymous users cannot flag offensive posts') + pleaseLogin;
         if (data.success == '1') {
@@ -1102,7 +1102,7 @@ var Vote = (function () {
 
     var callback_remove_all_offensive = function (object, voteType, data) {
         /*jshint eqeqeq:false */
-        //todo: transfer proper translations of these from i18n.js
+        //TODO: transfer proper translations of these from i18n.js
         //to django.po files
         //_('anonymous users cannot flag offensive posts') + pleaseLogin;
         if (data.success == '1') {
@@ -1648,7 +1648,7 @@ DeletePostLink.prototype.getDeleteHandler = function () {
     return function () {
         var data = {
             'post_id': me.getPostId(),
-            //todo rename cancel_vote -> undo
+            //TODO rename cancel_vote -> undo
             'cancel_vote': me.isPostDeleted() ? true : false
         };
         $.ajax({
@@ -1759,7 +1759,7 @@ var WMD = function () {
 };
 inherits(WMD, SimpleEditor);
 
-//@todo: implement getHtml method that runs text through showdown renderer
+//@TODO: implement getHtml method that runs text through showdown renderer
 
 WMD.prototype.setEnabledButtons = function (buttons) {
     this._enabled_buttons = buttons;
@@ -1878,13 +1878,13 @@ TinyMCE.prototype.focus = function (onFocus) {
     var edY = this._element.offset().top;
     var edH = this._element.height();
 
-    //@todo: the fallacy of this method is timeout - should instead use queue
+    //@TODO: the fallacy of this method is timeout - should instead use queue
     //because at the time of calling focus() the editor may not be initialized yet
     setTimeout(
         function () {
             tinyMCE.execCommand('mceFocus', false, editorId);
 
-            //@todo: make this general to all editors
+            //@TODO: make this general to all editors
 
             //if editor bottom is below viewport
             var isBelow = ((edY + edH) > (winY + winH));
@@ -2019,7 +2019,7 @@ EditCommentForm.prototype.startEditor = function () {
     var editorType = this.getEditorType();
     if (editorType === 'tinymce') {
         this.startTinyMCEEditor();
-        //@todo: implement save on enter and character counter in tinyMCE
+        //@TODO: implement save on enter and character counter in tinyMCE
         return;
     } else if (editorType === 'markdown') {
         this.startWMDEditor();
@@ -2039,7 +2039,7 @@ EditCommentForm.prototype.startEditor = function () {
 
     var updateCounter = this.getCounterUpdater();
     var escapeHandler = makeKeyHandler(27, this.getCancelHandler());
-    //todo: try this on the div
+    //TODO: try this on the div
     //this should be set on the textarea!
     editorElement.blur(updateCounter);
     editorElement.focus(updateCounter);
@@ -2114,7 +2114,7 @@ EditCommentForm.prototype.getCounterUpdater = function () {
             length2 = Math.round(0.9 * maxCommentLength);
         }
 
-        /* todo make smooth color transition, from gray to red
+        /* TODO make smooth color transition, from gray to red
          * or rather - from start color to end color */
         var color = 'maroon';
         var chars = askbot.settings.minCommentBodyLength;
@@ -2160,7 +2160,7 @@ EditCommentForm.prototype.getCommentTruncator = function () {
 };
 
 /**
- * @todo: clean up this method so it does just one thing
+ * @TODO: clean up this method so it does just one thing
  */
 EditCommentForm.prototype.canCancel = function () {
     if (this._element === null) {
@@ -2452,7 +2452,7 @@ Comment.prototype.decorate = function (element) {
     this._data.comment_added_at = timestamp.attr('title');
     var userLink = this._element.find('.author');
     this._data.user_display_name = userLink.html();
-    // @todo: read other data
+    // @TODO: read other data
 
     var commentBody = this._element.find('.comment-body');
     if (commentBody.length > 0) {
@@ -2498,7 +2498,7 @@ Comment.prototype.decorate = function (element) {
 
 Comment.prototype.setDraftStatus = function (isDraft) {
     return;
-    //@todo: implement nice feedback about posting in progress
+    //@TODO: implement nice feedback about posting in progress
     //maybe it should be an element that lasts at least a second
     //to avoid the possible brief flash
     // if (isDraft === true) {
@@ -2964,7 +2964,7 @@ var socialSharing = (function () {
                 window.location.href = url;
             }
             return false;
-            //@todo: change to some other url shortening service
+            //@TODO: change to some other url shortening service
             // $.ajax({
             //     url: "http://json-tinyurl.appspot.com/?&callback=?",
             //     dataType: 'json',
@@ -3154,7 +3154,7 @@ FoldedEditor.prototype.decorate = function (element) {
 
 /**
  * @constructor
- * @todo: change this to generic object description editor
+ * @TODO: change this to generic object description editor
  */
 var TagWikiEditor = function () {
     WrappedElement.call(this);
@@ -3257,7 +3257,7 @@ TagWikiEditor.prototype.saveData = function () {
     var text = this._editor.getText();
     var data = {
         object_id: me.getTagId(),
-        model_name: 'Group',//todo: fixme
+        model_name: 'Group',//TODO: fixme
         text: text
     };
     $.ajax({
@@ -3739,7 +3739,7 @@ TagEditor.prototype.addTag = function (tag_name) {
 TagEditor.prototype.immediateClearErrorMessage = function () {
     this._error_alert.html('');
     this._error_alert.show();
-    //this._element.css('margin-top', '18px');//todo: the margin thing is a hack
+    //this._element.css('margin-top', '18px');//TODO: the margin thing is a hack
 };
 
 TagEditor.prototype.clearErrorMessage = function (fade) {
@@ -3760,7 +3760,7 @@ TagEditor.prototype.setErrorMessage = function (text) {
         this._error_alert.hide();
         this._error_alert.fadeIn(100);
     }
-    //this._element.css('margin-top', '0');//todo: remove this hack
+    //this._element.css('margin-top', '0');//TODO: remove this hack
 };
 
 TagEditor.prototype.getAddTagHandler = function () {
@@ -3832,7 +3832,7 @@ TagEditor.prototype.saveHeight = function () {
 TagEditor.prototype.fixHeight = function () {
     return;
     // var new_height = this._visible_tags_input.offset().top;
-    // //@todo: replace this by real measurement
+    // //@TODO: replace this by real measurement
     // var element_height = parseInt(
     //     this._element.css('height').replace('px', '')
     // );
@@ -4150,7 +4150,7 @@ Category.prototype.addControls = function () {
     var edit_button = this.makeButton(
         gettext('edit'),
         function () {
-            //todo: I would like to make only one at a time editable
+            //TODO: I would like to make only one at a time editable
             //var tree = me.getCategoryTree();
             //tree.closeAllEditors();
             //tree.setState('editable');
@@ -4588,7 +4588,7 @@ CategorySelector.prototype.getSelectBox = function (level) {
 };
 
 CategorySelector.prototype.getSelectedPath = function (selected_level) {
-    var path = [0];//root, todo: better use names for path???
+    var path = [0];//root, TODO: better use names for path???
     /*
      * upper limit capped by current clicked level
      * we ignore all selection above the current level
@@ -4911,7 +4911,7 @@ $(document).ready(function () {
         deleter.setPostId(post_id);
         deleter.decorate($(element).find('.question-delete'));
     });
-    //todo: convert to "control" class
+    //TODO: convert to "control" class
     var publishBtns = $('.answer-publish, .answer-unpublish');
     publishBtns.each(function (idx, btn) {
         setupButtonEventHandlers($(btn), function () {

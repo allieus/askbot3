@@ -77,7 +77,7 @@ PostModerationControls.prototype.getModHandler = function (action, items, optRea
             me.showMessage(gettext('Please select at least one item'));
             return;
         }
-        //@todo: implement undo
+        //@TODO: implement undo
         var postData = {
             'edit_ids': selectedEditIds,//revision ids
             'action': action,

@@ -18,7 +18,7 @@ Ajax upload
  * Upload call. Used only once in the wmd file upload
  * this is used in the wmd file uploader and the
  * askbots image and attachment upload plugins
- * @todo refactor this code to "new style"
+ * @TODO refactor this code to "new style"
  */
 function ajaxFileUpload(options) {
 

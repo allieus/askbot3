@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 import datetime
 import logging
-import re
 from django.db import models
 from django.db.backends.dummy.base import IntegrityError
 from django.contrib.contenttypes.models import ContentType
@@ -9,18 +8,18 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group as AuthGroup
 from django.core import exceptions
-from django.forms import EmailField, URLField
-from django.utils import six
+from django.forms import EmailField
 from django.utils import translation
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext_lazy
-from django.utils.html import strip_tags
 from askbot import const
 from askbot.conf import settings as askbot_settings
 from askbot.utils import functions
 from askbot.models.base import BaseQuerySetManager
 from collections import defaultdict
+
 
 PERSONAL_GROUP_NAME_PREFIX = '_personal_'
 
@@ -73,7 +72,7 @@ class ResponseAndMentionActivityManager(models.Manager):
 class ActivityQuerySet(models.query.QuerySet):
     """query set for the `Activity` model"""
     def get_all_origin_posts(self):
-        #todo: redo this with query sets
+        # TODO: redo this with query sets
         origin_posts = set()
         for m in self.all():
             post = m.content_object
@@ -90,14 +89,14 @@ class ActivityQuerySet(models.query.QuerySet):
         """return a dictionary where keys are activity ids
         and values - content objects"""
         content_object_ids = defaultdict(list)# lists of c.object ids by c.types
-        activity_type_ids = dict()#links c.objects back to activity objects
+        activity_type_ids = dict()# links c.objects back to activity objects
         for act in self:
             content_type_id = act.content_type_id
             object_id = act.object_id
             content_object_ids[content_type_id].append(object_id)
             activity_type_ids[(content_type_id, object_id)] = act.id
 
-        #3) get links from activity objects to content objects
+        # 3) get links from activity objects to content objects
         objects_by_activity = dict()
         for content_type_id, object_id_list in content_object_ids.items():
             content_type = ContentType.objects.get_for_id(content_type_id)
@@ -116,22 +115,16 @@ class ActivityManager(BaseQuerySetManager):
     def get_query_set(self):
         return ActivityQuerySet(self.model)
 
-    def create_new_mention(
-                self,
-                mentioned_by = None,
-                mentioned_whom = None,
-                mentioned_at = None,
-                mentioned_in = None,
-                reported = None
-            ):
+    def create_new_mention(self, mentioned_by=None, mentioned_whom=None, mentioned_at=None, mentioned_in=None,
+                           reported=None):
 
-        #todo: automate this using python inspect module
+        # TODO: automate this using python inspect module
         kwargs = dict()
 
         kwargs['activity_type'] = const.TYPE_ACTIVITY_MENTION
 
         if mentioned_at:
-            #todo: handle cases with rich lookups here like __lt
+            # TODO: handle cases with rich lookups here like __lt
             kwargs['active_at'] = mentioned_at
 
         if mentioned_by:
@@ -145,7 +138,7 @@ class ActivityManager(BaseQuerySetManager):
                 kwargs['content_type'] = post_content_type
                 kwargs['object_id'] = mentioned_in.id
 
-        if reported == True:
+        if reported is True:
             kwargs['is_auditted'] = True
         else:
             kwargs['is_auditted'] = False
@@ -161,17 +154,10 @@ class ActivityManager(BaseQuerySetManager):
 
         return mention_activity
 
-    def get_mentions(
-                self,
-                mentioned_by = None,
-                mentioned_whom = None,
-                mentioned_at = None,
-                mentioned_in = None,
-                reported = None,
-                mentioned_at__lt = None,
-            ):
+    def get_mentions(self, mentioned_by=None, mentioned_whom=None, mentioned_at=None, mentioned_in=None,
+                     reported=None, mentioned_at__lt=None):
         """extract mention-type activity objects
-        todo: implement better rich field lookups
+        TODO: implement better rich field lookups
         """
 
         kwargs = dict()
@@ -179,8 +165,9 @@ class ActivityManager(BaseQuerySetManager):
         kwargs['activity_type'] = const.TYPE_ACTIVITY_MENTION
 
         if mentioned_at:
-            #todo: handle cases with rich lookups here like __lt, __gt and others
+            # TODO: handle cases with rich lookups here like __lt, __gt and others
             kwargs['active_at'] = mentioned_at
+
         elif mentioned_at__lt:
             kwargs['active_at__lt'] = mentioned_at__lt
 
@@ -202,7 +189,7 @@ class ActivityManager(BaseQuerySetManager):
                 kwargs['content_type'] = post_content_type
                 kwargs['object_id'] = mentioned_in.id
 
-        if reported == True:
+        if reported is True:
             kwargs['is_auditted'] = True
         else:
             kwargs['is_auditted'] = False
@@ -231,7 +218,7 @@ class ActivityAuditStatus(models.Model):
         return (self.status == self.STATUS_NEW)
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class Activity(models.Model):
     """
     We keep some history data for user activities
@@ -244,11 +231,11 @@ class Activity(models.Model):
     object_id = models.PositiveIntegerField(db_index=True)
     content_object = GenericForeignKey('content_type', 'object_id')
 
-    #todo: remove this denorm question field when Post model is set up
+    # TODO: remove this denorm question field when Post model is set up
     question = models.ForeignKey('Post', null=True)
 
     is_auditted = models.BooleanField(default=False)
-    #add summary field.
+    # add summary field.
     summary = models.TextField(default='')
 
     objects = ActivityManager()
@@ -266,7 +253,7 @@ class Activity(models.Model):
         auto-adding to M2M with "through" model
         """
         for recipient in recipients:
-            #todo: may optimize for bulk addition
+            # TODO: may optimize for bulk addition
             aas = ActivityAuditStatus(user = recipient, activity = self)
             aas.save()
 
@@ -298,7 +285,7 @@ class EmailFeedSettingManager(models.Manager):
 
         otherwise search is unrestricted
 
-        todo: when EmailFeedSetting is merged into user table
+        TODO: when EmailFeedSetting is merged into user table
         this method may become unnecessary
         """
         matching_feeds = self.filter(
@@ -316,24 +303,24 @@ class EmailFeedSettingManager(models.Manager):
         return subscriber_set
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class EmailFeedSetting(models.Model):
-    #definitions of delays before notification for each type of notification frequency
+    # definitions of delays before notification for each type of notification frequency
     DELTA_TABLE = {
-        'i':datetime.timedelta(-1),#instant emails are processed separately
+        'i':datetime.timedelta(-1),# instant emails are processed separately
         'd':datetime.timedelta(1),
         'w':datetime.timedelta(7),
         'n':datetime.timedelta(-1),
     }
-    #definitions of feed schedule types
+    # definitions of feed schedule types
     FEED_TYPES = (
-            'q_ask', #questions that user asks
-            'q_all', #enture forum, tag filtered
-            'q_ans', #questions that user answers
-            'q_sel', #questions that user decides to follow
-            'm_and_c' #comments and mentions of user anywhere
+            'q_ask', # questions that user asks
+            'q_all', # enture forum, tag filtered
+            'q_ans', # questions that user answers
+            'q_sel', # questions that user decides to follow
+            'm_and_c' # comments and mentions of user anywhere
     )
-    #email delivery schedule when no email is sent at all
+    # email delivery schedule when no email is sent at all
     NO_EMAIL_SCHEDULE = {
         'q_ask': 'n',
         'q_ans': 'n',
@@ -348,7 +335,7 @@ class EmailFeedSetting(models.Model):
         'q_sel': 'i',
         'm_and_c': 'i'
     }
-    #todo: words
+    # TODO: words
     FEED_TYPE_CHOICES = (
                     ('q_all', ugettext_lazy('Entire forum')),
                     ('q_ask', ugettext_lazy('Questions that I asked')),
@@ -376,7 +363,7 @@ class EmailFeedSetting(models.Model):
     objects = EmailFeedSettingManager()
 
     class Meta:
-        #added to make account merges work properly
+        # added to make account merges work properly
         unique_together = ('subscriber', 'feed_type')
         app_label = 'askbot'
 
@@ -410,7 +397,7 @@ class EmailFeedSetting(models.Model):
     def should_send_now(self):
         now = datetime.datetime.now()
         cutoff_time = self.get_previous_report_cutoff_time()
-        if self.reported_at == None or self.reported_at <= cutoff_time:
+        if self.reported_at is None or self.reported_at <= cutoff_time:
             return True
         else:
             return False
@@ -438,10 +425,10 @@ class GroupMembershipManager(models.Manager):
         user = kwargs['user']
         group = kwargs['group']
         try:
-            #need this for the cases where auth User_groups is there,
-            #but ours is not
+            # need this for the cases where auth User_groups is there,
+            # but ours is not
             auth_gm = AuthUserGroups.objects.get(user=user, group=group)
-            #use this as link for the One to One relation
+            # use this as link for the One to One relation
             kwargs['authusergroups_ptr'] = auth_gm
         except AuthUserGroups.DoesNotExist:
             pass
@@ -451,11 +438,11 @@ class GroupMembershipManager(models.Manager):
 class GroupMembership(AuthUserGroups):
     """contains one-to-one relation to ``auth_user_group``
     and extra membership profile fields"""
-    #note: this may hold info on when user joined, etc
-    NONE = -1#not part of the choices as for this records should be just missing
+    # note: this may hold info on when user joined, etc
+    NONE = -1# not part of the choices as for this records should be just missing
     PENDING = 0
     FULL = 1
-    LEVEL_CHOICES = (#'none' is by absence of membership
+    LEVEL_CHOICES = (# 'none' is by absence of membership
         (PENDING, 'pending'),
         (FULL, 'full')
     )
@@ -506,7 +493,7 @@ class GroupQuerySet(models.query.QuerySet):
             return self.filter(user=user)
 
     def get_by_name(self, group_name = None):
-        from askbot.models.tag import clean_group_name#todo - delete this
+        from askbot.models.tag import clean_group_name  # TODO - delete this
         return self.get(name = clean_group_name(group_name))
 
 
@@ -520,10 +507,10 @@ class GroupManager(BaseQuerySetManager):
         """Returns the global group,
         if necessary, creates one
         """
-        #todo: when groups are disconnected from tags,
-        #find comment as shown below in the test cases and
-        #revert the values
-        #todo: change groups to django groups
+        # TODO: when groups are disconnected from tags,
+        # find comment as shown below in the test cases and
+        # revert the values
+        # TODO: change groups to django groups
         group_name = askbot_settings.GLOBAL_GROUP_NAME
         try:
             return self.get_query_set().get(name=group_name)
@@ -541,10 +528,10 @@ class GroupManager(BaseQuerySetManager):
 
     def get_or_create(self, name = None, user = None, openness=None):
         """creates a group tag or finds one, if exists"""
-        #todo: here we might fill out the group profile
+        # TODO: here we might fill out the group profile
         try:
-            #iexact is important!!! b/c we don't want case variants
-            #of tags
+            # iexact is important!!! b/c we don't want case variants
+            # of tags
             group = self.get(name__iexact = name)
         except self.model.DoesNotExist:
             if openness is None:
@@ -577,12 +564,12 @@ class Group(AuthGroup):
                                 'selected by the group moderators.'
                     )
     openness = models.SmallIntegerField(default=CLOSED, choices=OPENNESS_CHOICES)
-    #preapproved email addresses and domain names to auto-join groups
-    #trick - the field is padded with space and all tokens are space separated
+    # preapproved email addresses and domain names to auto-join groups
+    # trick - the field is padded with space and all tokens are space separated
     preapproved_emails = models.TextField(
                             null = True, blank = True, default = ''
                         )
-    #only domains - without the '@' or anything before them
+    # only domains - without the '@' or anything before them
     preapproved_email_domains = models.TextField(
                             null = True, blank = True, default = ''
                         )
@@ -628,11 +615,11 @@ class Group(AuthGroup):
         if user.is_anonymous():
             return 'closed'
 
-        #a special case - automatic global group cannot be joined or left
+        # a special case - automatic global group cannot be joined or left
         if self.name == askbot_settings.GLOBAL_GROUP_NAME:
             return 'closed'
 
-        #todo - return 'closed' for internal per user groups too
+        # TODO - return 'closed' for internal per user groups too
 
         if self.openness == Group.OPEN:
             return 'open'
@@ -640,7 +627,7 @@ class Group(AuthGroup):
         if user.is_administrator_or_moderator():
             return 'open'
 
-        #relying on a specific method of storage
+        # relying on a specific method of storage
         from askbot.utils.forms import email_is_allowed
         if email_is_allowed(
             user.email,
@@ -739,7 +726,7 @@ class BulkTagSubscriptionManager(BaseQuerySetManager):
         if group_list:
             group_ids = []
             for group in group_list:
-                #TODO: do the group marked tag thing here
+                # TODO: do the group marked tag thing here
                 group_ids.append(group.id)
             new_object.groups.add(*group_ids)
 

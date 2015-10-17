@@ -17,16 +17,16 @@ class ManagementCommandTests(AskbotTestCase):
                         frequency = 'd',
                         password = password
                      )
-        #check that we have the user
+        # check that we have the user
         users = models.User.objects.filter(username = username)
         self.assertEquals(users.count(), 1)
         user = users[0]
-        #check thath subscrptions are correct
+        # check thath subscrptions are correct
         subs = models.EmailFeedSetting.objects.filter(
                                                 subscriber = user,
                                             )
         self.assertEquals(subs.count(), 5)
-        #try to log in
+        # try to log in
         user = auth.authenticate(username = username, password = password)
         self.assertTrue(user is not None)
 
@@ -140,16 +140,16 @@ class ManagementCommandTests(AskbotTestCase):
 
         tag_count = models.Tag.objects.count()
 
-        #create some unused tags
+        # create some unused tags
         self.create_tag("picasso", user)
         self.create_tag("renoir", user)
         self.create_tag("pissarro", user)
 
-        #check they're in the db
+        # check they're in the db
         self.assertEqual(models.Tag.objects.count(), tag_count+3)
         management.call_command('delete_unused_tags')
 
-        #now they should be removed
+        # now they should be removed
         self.assertEqual(models.Tag.objects.count(), tag_count)
 
     @with_settings(CONTENT_MODERATION_MODE='premoderation')
@@ -164,6 +164,6 @@ class ManagementCommandTests(AskbotTestCase):
         self.post_question(user=usr)
         mail.outbox = list()
         management.call_command('askbot_send_moderation_alerts')
-        #command sends alerts to three moderators at a time
+        # command sends alerts to three moderators at a time
         self.assertEqual(len(mail.outbox), 3)
         self.assertTrue('moderation' in mail.outbox[0].subject)

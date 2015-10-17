@@ -9,9 +9,9 @@ def hide_passwords(data):
     if not data:
         return data
 
-    #names of the fields are taken from forms
-    #askbot.utils.forms.SetPasswordForm
-    #todo: forms need to be consolidated and names of the fields normalized
+    # names of the fields are taken from forms
+    # askbot.utils.forms.SetPasswordForm
+    # TODO: forms need to be consolidated and names of the fields normalized
     fields = (
         'password',
         'password1',

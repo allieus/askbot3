@@ -28,7 +28,7 @@ class WidgetViewsTests(AskbotTestCase):
         self.client.logout()
 
     def test_post_without_auth(self):
-        #weird issue
+        # weird issue
         response = self.client.post(reverse('ask_by_widget', args=(self.widget.id, )), self.good_data)
         self.assertEquals(response.status_code, 302)
         self.assertTrue('widget_question' in self.client.session)
@@ -56,7 +56,7 @@ class WidgetViewsTests(AskbotTestCase):
         )
         self.assertFalse('widget_question' in self.client.session)
         self.assertEquals(response.status_code, 302)
-        #verify posting question
+        # verify posting question
 
     def test_render_widget_view(self):
         response = self.client.get(reverse('render_ask_widget', args=(self.widget.id, )))
@@ -130,8 +130,8 @@ class WidgetCreatorViewsTests(AskbotTestCase):
             args=('ask', self.widget.id, )))
         self.assertEquals(response.status_code, 302)
 
-    #this test complains about 404.html template but it's correct
-    #def test_bad_url(self):
+    # this test complains about 404.html template but it's correct
+    # def test_bad_url(self):
     #    self.client.login(username='user1', password='testpass')
     #    response = self.client.get('/widgets/foo/create/')
     #    self.assertEquals(404, response.status_code)
@@ -147,7 +147,7 @@ class QuestionWidgetViewsTests(AskbotTestCase):
                                    question_number=5, search_query='test',
                                    tagnames='test')
 
-        #we post 6 questions!
+        # we post 6 questions!
         titles = (
             'test question 1', 'this is a test',
             'without the magic word', 'test test test',

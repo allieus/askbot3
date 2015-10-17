@@ -8,15 +8,16 @@ from django.conf import settings
 from django.core.urlresolvers import resolve
 from askbot.shims.django_shims import ResolverMatch
 from askbot.conf import settings as askbot_settings
-import urllib
 
-PROTECTED_VIEW_MODULES = (
-    'askbot.views',
-    'askbot.feed',
-)
-ALLOWED_VIEWS = (
-    'askbot.views.meta.config_variable',
-)
+try:
+    from urllib.parse import quote_plus
+except ImportError:
+    from urllib import quote_plus
+
+PROTECTED_VIEW_MODULES = ['askbot.views', 'askbot.feed']
+
+ALLOWED_VIEWS = ['askbot.views.meta.config_variable']
+
 
 def is_view_protected(view_func):
     """True if view belongs to one of the
@@ -26,6 +27,7 @@ def is_view_protected(view_func):
         if view_func.__module__.startswith(protected_module):
             return True
     return False
+
 
 def is_view_allowed(func):
     """True, if view is allowed to access
@@ -39,6 +41,7 @@ def is_view_allowed(func):
         view_path = ''
 
     return view_path in ALLOWED_VIEWS
+
 
 class ForumModeMiddleware(object):
     """protects forum views is the closed forum mode"""
@@ -61,12 +64,12 @@ class ForumModeMiddleware(object):
 
             if is_view_protected(resolver_match.func):
                 request.user.message_set.create(
-                    _('Please log in to use %s') % \
-                    askbot_settings.APP_SHORT_NAME
+                    _('Please log in to use %s') % askbot_settings.APP_SHORT_NAME
                 )
                 redirect_url = '%s?next=%s' % (
                     settings.LOGIN_URL,
-                    urllib.quote_plus(request.get_full_path())
+                    quote_plus(request.get_full_path())
                 )
                 return HttpResponseRedirect(redirect_url)
         return None
+

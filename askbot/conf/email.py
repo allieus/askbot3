@@ -382,7 +382,7 @@ settings.register(
         'REPLY_BY_EMAIL',
         default = False,
         description=_('Enable posting answers and comments by email'),
-        #TODO give a better explanation depending on lamson startup procedure
+        # TODO give a better explanation depending on lamson startup procedure
         help_text=_(
             'To enable this feature make sure lamson is running'
 
@@ -402,8 +402,8 @@ settings.register(
     )
 )
 
-#not implemented at this point
-#settings.register(
+# not implemented at this point
+# settings.register(
 #    livesettings.IntegerValue(
 #        EMAIL,
 #        'SELF_NOTIFY_WEB_POST_AUTHOR_WHEN',
@@ -421,7 +421,7 @@ settings.register(
         'REPLY_BY_EMAIL_HOSTNAME',
         default = "",
         description=_('Reply by email hostname'),
-        #TODO give a better explanation depending on lamson startup procedure
+        # TODO give a better explanation depending on lamson startup procedure
 
     )
 )

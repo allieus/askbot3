@@ -107,9 +107,9 @@ class SearchState(object):
         self.query = query.strip() if query else None
 
         if self.query:
-            #pull out values of [title:xxx], [user:some one]
+            # pull out values of [title:xxx], [user:some one]
             #[tag: sometag], title:'xxx', title:"xxx", @user, @'some user',
-            #and  #tag - (hash symbol to delineate the tag
+            # and  # tag - (hash symbol to delineate the tag
             query_bits = parse_query(self.query)
             self.stripped_query = query_bits['stripped_query']
             self.query_tags = query_bits['query_tags']
@@ -126,7 +126,7 @@ class SearchState(object):
         else:
             self.sort = sort
 
-        #patch for empty stripped query, relevance sorting is useless then
+        # patch for empty stripped query, relevance sorting is useless then
         if self.stripped_query in (None, '') and sort == 'relevance-desc':
             self.sort = const.DEFAULT_POST_SORT_METHOD
 
@@ -202,7 +202,7 @@ class SearchState(object):
             r'(%s)?' % r'/query:(?P<query>.+)' +  # INFO: query is last, b/c it can contain slash!!!
         """
 
-        #order of items is important!!!
+        # order of items is important!!!
         if self.tags:
             lst.append('tags:' + quote(smart_str(const.TAG_SEP.join(self.tags)), safe=self.SAFE_CHARS))
         if self.author:
@@ -215,24 +215,24 @@ class SearchState(object):
 
     def deepcopy(self): # TODO: test me
         "Used to contruct a new SearchState for manipulation, e.g. for adding/removing tags"
-        ss = copy.copy(self) #SearchState.get_empty()
+        ss = copy.copy(self) # SearchState.get_empty()
 
-        #ss.scope = self.scope
-        #ss.sort = self.sort
-        #ss.query = self.query
+        # ss.scope = self.scope
+        # ss.sort = self.sort
+        # ss.query = self.query
         if ss.tags is not None: # it's important to test against None, because empty lists should also be cloned!
             ss.tags = ss.tags[:]  # create a copy
-        #ss.author = self.author
-        #ss.page = self.page
+        # ss.author = self.author
+        # ss.page = self.page
 
-        #ss.stripped_query = self.stripped_query
+        # ss.stripped_query = self.stripped_query
         if ss.query_tags: # Here we don't have empty lists, only None
             ss.query_tags = ss.query_tags[:]
         if ss.query_users:
             ss.query_users = ss.query_users[:]
-        #ss.query_title = self.query_title
+        # ss.query_title = self.query_title
 
-        #ss._questions_url = self._questions_url
+        # ss._questions_url = self._questions_url
 
         return ss
 

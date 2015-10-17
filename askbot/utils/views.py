@@ -11,7 +11,7 @@ class PjaxView(object):
     of content in the traditional way, where
     the only the :method:`get_context` would be used.
     """
-    template_name = None #used only for the "GET" method
+    template_name = None # used only for the "GET" method
     http_method_names = ('GET', 'POST')
 
     def render_to_response(self, context, template_name=None):

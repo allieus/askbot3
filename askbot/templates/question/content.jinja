@@ -13,7 +13,7 @@
     </div>
     <div class="clean"></div>
 
-    {% if settings.SHOW_ACCEPTED_ANSWER_FIRST == False %}
+    {% if not settings.SHOW_ACCEPTED_ANSWER_FIRST %}
         {% if thread.has_accepted_answer() and answers and thread.accepted_answer != answers[0] %}
             <a class="best-answer-link" href="{{ thread.accepted_answer.get_absolute_url() }}">
                 {% trans %}See the accepted answer{% endtrans %}
@@ -40,6 +40,7 @@
 {% endif %}
 
 {# buttons below cannot be cached yet #}
+
 {% if new_answer_allowed %}
     {% include "question/new_answer_form.jinja" %}
 {% else %}
@@ -55,11 +56,11 @@
         </div>
     </div>
 {% endif %}
-{% if question.closed == False and request.user.pk == question.author_id %}{# this is outside the form on purpose #}
-<input 
-  type="button"
-  class="submit answer-own-question"
-  id="fmanswer_button"
-  value="{{ settings.WORDS_ANSWER_YOUR_OWN_QUESTION|escape }}"
-/>
+
+{% if (not question.closed) and request.user.pk == question.author_id %}{# this is outside the form on purpose #}
+    <input
+        type="button"
+        class="submit answer-own-question"
+        id="fmanswer_button"
+        value="{{ settings.WORDS_ANSWER_YOUR_OWN_QUESTION|escape }}" />
 {% endif %}

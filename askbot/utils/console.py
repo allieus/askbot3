@@ -31,7 +31,7 @@ def choice_dialog(prompt_phrase, choices = None, invalid_phrase = None):
         )
         if response in choices:
             return response
-        elif invalid_phrase != None:
+        elif invalid_phrase is not None:
             opt_string = ','.join(choices)
             print(invalid_phrase % {'opt_string': opt_string})
         time.sleep(1)
@@ -58,7 +58,7 @@ def numeric_choice_dialog(prompt_phrase, choices):
             index = int(response)
         except ValueError:
             index = False
-        if index is False or index < 0 or index >= len(choices):
+        if (not index) or index < 0 or index >= len(choices):
             print("\n*** Please enter a number between 0 and %d ***" % (len(choices)-1))
         else:
             return index
@@ -122,7 +122,7 @@ def simple_dialog(prompt_phrase, required=False):
 
         response = raw_input(prompt_phrase + '\n> ').strip()
 
-        if response or required is False:
+        if response or (not required):
             return response
 
         time.sleep(1)
@@ -171,32 +171,34 @@ def open_new_file(prompt_phrase, extension = '', hint = None):
         file_path = path.extend_file_name(hint, extension)
         file_object = path.create_file_if_does_not_exist(file_path, print_warning = True)
 
-    while file_object == None:
+    while file_object is None:
         file_path = raw_input(prompt_phrase)
         file_path = path.extend_file_name(file_path, extension)
         file_object = path.create_file_if_does_not_exist(file_path, print_warning = True)
 
     return file_object
 
-def print_action(action_text, nowipe = False):
+
+def print_action(action_text, nowipe=False):
     """print the string to the standard output
     then wipe it out to clear space
     """
-    #for some reason sys.stdout.write does not work here
-    #when action text is unicode
+    # for some reason sys.stdout.write does not work here
+    # when action text is unicode
     print(action_text, end=' ')
     sys.stdout.flush()
-    if nowipe == False:
-        #return to the beginning of the word
+    if not nowipe:
+        # return to the beginning of the word
         sys.stdout.write('\b' * len(action_text))
-        #white out the printed text
+        # white out the printed text
         sys.stdout.write(' ' * len(action_text))
-        #return again
+        # return again
         sys.stdout.write('\b' * len(action_text))
     else:
         sys.stdout.write('\n')
 
-def print_progress(elapsed, total, nowipe = False):
+
+def print_progress(elapsed, total, nowipe=False):
     """print dynamic output of progress of some
     operation, in percent, to the console and clear the output with
     a backspace character to have the number increment
@@ -204,11 +206,13 @@ def print_progress(elapsed, total, nowipe = False):
     output = '%6.2f%%' % (100 * float(elapsed)/float(total))
     print_action(output, nowipe)
 
+
 class ProgressBar(object):
     """A wrapper for an iterator, that prints
     a progress bar along the way of iteration
     """
-    def __init__(self, iterable, length, message = ''):
+
+    def __init__(self, iterable, length, message=''):
         self.iterable = iterable
         self.length = length
         self.counter = float(0)
@@ -217,7 +221,6 @@ class ProgressBar(object):
         self.progress = ''
         if message and length > 0:
             print(message)
-
 
     def __iter__(self):
         return self

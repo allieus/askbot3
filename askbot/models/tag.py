@@ -2,31 +2,29 @@ from __future__ import unicode_literals
 import re
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils import six
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import get_language
-from django.utils.translation import ugettext as _
-from django.utils.translation import ugettext_lazy
+from django.utils.translation import ugettext_lazy as _
 from django.conf import settings as django_settings
 from askbot.models.base import BaseQuerySetManager
 from askbot import const
 from askbot.conf import settings as askbot_settings
 from askbot.utils import category_tree
 
+
 def delete_tags(tags):
     """deletes tags in the list"""
     tag_ids = [tag.id for tag in tags]
     Tag.objects.filter(id__in=tag_ids).delete()
 
+
 def get_tags_by_names(tag_names, language_code=None):
     """returns query set of tags
     and a set of tag names that were not found
     """
-    tags = Tag.objects.filter(
-                    name__in=tag_names,
-                    language_code=language_code
-                )
-    #if there are brand new tags, create them
-    #and finalize the added tag list
+    tags = Tag.objects.filter(name__in=tag_names, language_code=language_code)
+    # if there are brand new tags, create them
+    # and finalize the added tag list
     if tags.count() < len(tag_names):
         found_tag_names = set([tag.name for tag in tags])
         new_tag_names = set(tag_names) - found_tag_names
@@ -35,32 +33,38 @@ def get_tags_by_names(tag_names, language_code=None):
 
     return tags, new_tag_names
 
-def filter_tags_by_status(tags, status = None):
+
+def filter_tags_by_status(tags, status=None):
     """returns a list or a query set of tags which are accepted"""
     if isinstance(tags, models.query.QuerySet):
-        return tags.filter(status = status)
+        return tags.filter(status=status)
     else:
         return [tag for tag in tags if tag.status == status]
 
+
 def filter_accepted_tags(tags):
-    return filter_tags_by_status(tags, status = Tag.STATUS_ACCEPTED)
+    return filter_tags_by_status(tags, status=Tag.STATUS_ACCEPTED)
+
 
 def filter_suggested_tags(tags):
-    return filter_tags_by_status(tags, status = Tag.STATUS_SUGGESTED)
+    return filter_tags_by_status(tags, status=Tag.STATUS_SUGGESTED)
+
 
 def format_personal_group_name(user):
-    #todo: after migration of groups away from tags,
-    #this function will be moved somewhere else
+    # TODO: after migration of groups away from tags,
+    # this function will be moved somewhere else
     from askbot.models.user import PERSONAL_GROUP_NAME_PREFIX as prefix
     return '%s%d' % (prefix, user.id)
+
 
 def is_preapproved_tag_name(tag_name):
     """true if tag name is in the category tree
     or any other container of preapproved tags"""
-    #get list of preapproved tags, to make exceptions for
+    # get list of preapproved tags, to make exceptions for
     if askbot_settings.TAG_SOURCE == 'category-tree':
         return tag_name in category_tree.get_leaf_names()
     return False
+
 
 def separate_unused_tags(tags):
     """returns two lists::
@@ -77,6 +81,7 @@ def separate_unused_tags(tags):
             used.append(tag)
     return used, unused
 
+
 def tags_match_some_wildcard(tag_names, wildcard_tags):
     """Same as
     :meth:`~askbot.models.tag.TagQuerySet.tags_match_some_wildcard`
@@ -88,26 +93,27 @@ def tags_match_some_wildcard(tag_names, wildcard_tags):
                 return True
     return False
 
+
 def get_mandatory_tags():
     """returns list of mandatory tags,
     or an empty list, if there aren't any"""
     from askbot.conf import settings as askbot_settings
-    #TAG_SOURCE setting is hidden
-    #and only is accessible via livesettings overrides
+    # TAG_SOURCE setting is hidden
+    # and only is accessible via livesettings overrides
     if askbot_settings.TAG_SOURCE == 'category-tree':
-        return []#hack: effectively we disable the mandatory tags feature
+        return []  # hack: effectively we disable the mandatory tags feature
     else:
-        #todo - in the future clean this up
-        #we might need to have settings:
-        #* prepopulated tags - json structure - either a flat list or a tree
+        # TODO - in the future clean this up
+        # we might need to have settings:
+        # * prepopulated tags - json structure - either a flat list or a tree
         #  if structure is tree - then use some multilevel selector for choosing tags
         #  if it is a list - then make users click on tags to select them
-        #* use prepopulated tags (boolean)
-        #* tags are required
-        #* regular users can create tags (boolean)
-        #the category tree and the mandatory tag lists can be merged
-        #into the same setting - and mandatory tags should use json
-        #keep in mind that in the future multiword tags will be allowed
+        # * use prepopulated tags (boolean)
+        # * tags are required
+        # * regular users can create tags (boolean)
+        # the category tree and the mandatory tag lists can be merged
+        # into the same setting - and mandatory tags should use json
+        # keep in mind that in the future multiword tags will be allowed
         raw_mandatory_tags = askbot_settings.MANDATORY_TAGS.strip()
         if len(raw_mandatory_tags) == 0:
             return []
@@ -129,19 +135,18 @@ class TagQuerySet(models.query.QuerySet):
 
     def mark_undeleted(self):
         """removes deleted(+at/by) marks"""
-        self.update(#undelete them
-            deleted = False,
-            deleted_by = None,
-            deleted_at = None
-        )
+        self.update(  # undelete them
+            deleted=False,
+            deleted_by=None,
+            deleted_at=None)
 
-    def tags_match_some_wildcard(self, wildcard_tags = None):
+    def tags_match_some_wildcard(self, wildcard_tags=None):
         """True if any one of the tags in the query set
         matches a wildcard
 
         :arg:`wildcard_tags` is an iterable of wildcard tag strings
 
-        todo: refactor to use :func:`tags_match_some_wildcard`
+        TODO: refactor to use :func:`tags_match_some_wildcard`
         """
         for tag in self.all():
             for wildcard_tag in sorted(wildcard_tags):
@@ -149,7 +154,7 @@ class TagQuerySet(models.query.QuerySet):
                     return True
         return False
 
-    def get_by_wildcards(self, wildcards = None):
+    def get_by_wildcards(self, wildcards=None):
         """returns query set of tags that match the wildcard tags
         wildcard tag is guaranteed to end with an asterisk and has
         at least one character preceding the the asterisk. and there
@@ -158,17 +163,19 @@ class TagQuerySet(models.query.QuerySet):
         if wildcards is None or len(wildcards) == 0:
             return self.none()
         first_tag = wildcards.pop()
-        tag_filter = models.Q(name__startswith = first_tag[:-1])
+        tag_filter = models.Q(name__startswith=first_tag[:-1])
         for next_tag in wildcards:
-            tag_filter |= models.Q(name__startswith = next_tag[:-1])
+            tag_filter |= models.Q(name__startswith=next_tag[:-1])
         return self.filter(tag_filter & models.Q(language_code=get_language()))
 
     def get_related_to_search(self, threads, ignored_tag_names):
         """Returns at least tag names, along with use counts"""
-        tags = self.filter(threads__in=threads).annotate(local_used_count=models.Count('id')).order_by('-local_used_count', 'name')
+        tags = self.filter(threads__in=threads).\
+            annotate(local_used_count=models.Count('id')).\
+            order_by('-local_used_count', 'name')
         if ignored_tag_names:
             tags = tags.exclude(name__in=ignored_tag_names)
-        tags = tags.exclude(deleted = True)
+        tags = tags.exclude(deleted=True)
         return list(tags[:50])
 
 
@@ -207,19 +214,19 @@ class TagManager(BaseQuerySetManager):
         if `auto_approve` is True then tags are auto-accepted
         """
 
-        #load suggested tags
+        # load suggested tags
         pre_suggested_tags = self.filter(
             name__in=tag_names,
             status=Tag.STATUS_SUGGESTED,
             language_code=language_code
         )
 
-        #deal with suggested tags
+        # deal with suggested tags
         if auto_approve or user.can_create_tags():
-            #turn previously suggested tags into accepted
-            pre_suggested_tags.update(status = Tag.STATUS_ACCEPTED)
+            # turn previously suggested tags into accepted
+            pre_suggested_tags.update(status=Tag.STATUS_ACCEPTED)
         else:
-            #increment use count and add user to "suggested_by"
+            # increment use count and add user to "suggested_by"
             for tag in pre_suggested_tags:
                 tag.used_count += 1
                 tag.suggested_by.add(user)
@@ -232,13 +239,12 @@ class TagManager(BaseQuerySetManager):
             created_tags.append(tag)
 
         for tag_name in set(tag_names) - set(pre_suggested_tag_names):
-            #status for the new tags is automatically set within the create()
+            # status for the new tags is automatically set within the create()
             new_tag = Tag.objects.create(
-                                    name=tag_name,
-                                    created_by=user,
-                                    language_code=language_code,
-                                    auto_approve=auto_approve
-                                )
+                name=tag_name,
+                created_by=user,
+                language_code=language_code,
+                auto_approve=auto_approve)
             created_tags.append(new_tag)
 
             if new_tag.status == Tag.STATUS_SUGGESTED:
@@ -246,46 +252,41 @@ class TagManager(BaseQuerySetManager):
 
         return created_tags
 
+
 def clean_group_name(name):
-    """todo: move to the models/user.py
+    """TODO: move to the models/user.py
     group names allow spaces,
     tag names do not, so we use this method
     to replace spaces with dashes"""
     return re.sub('\s+', '-', name.strip())
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class Tag(models.Model):
-    #a couple of status constants
+    # a couple of status constants
     STATUS_SUGGESTED = 0
     STATUS_ACCEPTED = 1
 
     name = models.CharField(max_length=255)
     created_by = models.ForeignKey(User, related_name='created_tags')
     language_code = models.CharField(
-                                choices=django_settings.LANGUAGES,
-                                default=django_settings.LANGUAGE_CODE,
-                                max_length=16,
-                            )
-    suggested_by = models.ManyToManyField(
-        User, related_name='suggested_tags',
-        help_text = 'Works only for suggested tags for tag moderation'
-    )
+        choices=django_settings.LANGUAGES,
+        default=django_settings.LANGUAGE_CODE,
+        max_length=16)
 
-    status = models.SmallIntegerField(default = STATUS_ACCEPTED)
+    suggested_by = models.ManyToManyField(User, related_name='suggested_tags',
+                                          help_text='Works only for suggested tags for tag moderation')
+
+    status = models.SmallIntegerField(default=STATUS_ACCEPTED)
 
     # Denormalised data
     used_count = models.PositiveIntegerField(default=0)
 
-    deleted     = models.BooleanField(default=False)
-    deleted_at  = models.DateTimeField(null=True, blank=True)
-    deleted_by  = models.ForeignKey(User, null=True, blank=True, related_name='deleted_tags')
+    deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(User, null=True, blank=True, related_name='deleted_tags')
 
-    tag_wiki = models.OneToOneField(
-                                'Post',
-                                null=True,
-                                related_name = 'described_tag'
-                            )
+    tag_wiki = models.OneToOneField('Post', null=True, related_name='described_tag')
 
     objects = TagManager()
 
@@ -298,11 +299,12 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
+
 class MarkedTag(models.Model):
     TAG_MARK_REASONS = (
-        ('good', ugettext_lazy('interesting')),
-        ('bad', ugettext_lazy('ignored')),
-        ('subscribed', ugettext_lazy('subscribed')),
+        ('good', _('interesting')),
+        ('bad', _('ignored')),
+        ('subscribed', _('subscribed')),
     )
     tag = models.ForeignKey('Tag', related_name='user_selections')
     user = models.ForeignKey(User, related_name='tag_selections')
@@ -312,7 +314,7 @@ class MarkedTag(models.Model):
         app_label = 'askbot'
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class TagSynonym(models.Model):
 
     source_tag_name = models.CharField(max_length=255, unique=True)
@@ -322,10 +324,9 @@ class TagSynonym(models.Model):
     auto_rename_count = models.IntegerField(default=0)
     last_auto_rename_at = models.DateTimeField(auto_now=True)
     language_code = models.CharField(
-                                choices=django_settings.LANGUAGES,
-                                default=django_settings.LANGUAGE_CODE,
-                                max_length=16,
-                            )
+        choices=django_settings.LANGUAGES,
+        default=django_settings.LANGUAGE_CODE,
+        max_length=16)
 
     class Meta:
         app_label = 'askbot'

@@ -155,7 +155,7 @@
         gettext('Nov'),
         gettext('Dec')
     ];
-    //todo: rewrite this in javascript
+    //TODO: rewrite this in javascript
     if (days > 2){
         var month_date = months[date.getMonth()] + ' ' + date.getDate()
         if (years == 0){

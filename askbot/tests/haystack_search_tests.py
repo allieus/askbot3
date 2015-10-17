@@ -27,7 +27,7 @@ class HaystackSearchTests(AskbotTestCase):
         magna et pulvinar mid est urna ultricies, turpis tristique nisi,
         cum. Urna. Purus elit porttitor nisi porttitor ridiculus tincidunt
         amet duis, gepeto'''
-        #from Baldy of Nome by Esther Birdsall Darling
+        # from Baldy of Nome by Esther Birdsall Darling
         body_2 = ''' With unseeing eyes and dragging steps, the boy trudged along the snowy
         trail, dreading the arrival at Golconda Camp. For there was the House of
         Judgment, where all of the unfortunate events of that most unhappy day
@@ -60,7 +60,7 @@ class HaystackSearchTests(AskbotTestCase):
     @skipIf('haystack' not in settings.INSTALLED_APPS,
         'Haystack not setup')
     def test_title_search(self):
-        #title search
+        # title search
         title_search_qs = models.Thread.objects.get_for_query('title')
         title_search_qs_2  = models.Thread.objects.get_for_query('Nome')
         self.assertEquals(title_search_qs.count(), 2)
@@ -70,7 +70,7 @@ class HaystackSearchTests(AskbotTestCase):
         'Haystack not setup')
     def test_body_search(self):
 
-        #bodysearch
+        # bodysearch
         body_search_qs = models.Thread.objects.get_for_query('Lorem')
         self.assertEquals(body_search_qs.count(), 2)
         body_search_qs_2 = models.Thread.objects.get_for_query('steps')
@@ -79,12 +79,12 @@ class HaystackSearchTests(AskbotTestCase):
     @skipIf('haystack' not in settings.INSTALLED_APPS,
         'Haystack not setup')
     def test_user_profile_search(self):
-        #must return pinocho
+        # must return pinocho
         user_profile_qs = models.get_users_by_text_query('wood')
         self.assertEquals(user_profile_qs.count(), 1)
 
-        #returns both gepeto and pinocho because gepeto nickname
-        #and gepeto name in pinocho's profile
+        # returns both gepeto and pinocho because gepeto nickname
+        # and gepeto name in pinocho's profile
         user_profile_qs = models.get_users_by_text_query('gepeto')
         self.assertEquals(user_profile_qs.count(), 2)
 
@@ -92,7 +92,7 @@ class HaystackSearchTests(AskbotTestCase):
         'Haystack not setup')
     def test_get_django_queryset(self):
         '''makes a query that can return multiple models'''
-        #gepeto is present in profile and in question
+        # gepeto is present in profile and in question
         from askbot.search.haystack.helpers import get_threads_from_query, get_users_from_query
 
         qs = get_users_from_query(query='gepeto')

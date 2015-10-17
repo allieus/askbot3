@@ -22,7 +22,7 @@ class CacheTests(AskbotTestCase):
         self.visit_question()
         before_count = len(connection.queries)
         self.visit_question()
-        #second hit to the same question should give fewer queries
+        # second hit to the same question should give fewer queries
         after_count = len(connection.queries)
         self.assertTrue(before_count > after_count,
                 ('Expected fewer queries after calling visit_question. ' +

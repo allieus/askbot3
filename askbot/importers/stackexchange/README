@@ -1,9 +1,9 @@
 this app's function will be to:
 
-* install it's own tables (#todo: not yet automated)
+* install it's own tables (#TODO: not yet automated)
 * read SE xml dump into DjangoDB (automated)
 * populate askbot database (automated)
-* remove SE tables (#todo: not done yet)
+* remove SE tables (#TODO: not done yet)
 
 Current process to load SE data into Askbot is:
 ==============================================
@@ -51,7 +51,7 @@ it assumes that SE dump has been unzipped inside the tmp directory
     python manage.py load_stackexchange tmp
 
 Untested parts are tagged with comments starting with 
-#todo:
+#TODO:
 
 The test set did not have all the usage cases of StackExchange represented so
 it may break with other sets.

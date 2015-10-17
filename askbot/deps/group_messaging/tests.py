@@ -24,7 +24,7 @@ def create_user(name):
     """creates a user and a personal group,
     returns the created user"""
     user = User.objects.create_user(name, name + '@example.com')
-    #note that askbot will take care of three lines below automatically
+    # note that askbot will take care of three lines below automatically
     try:
         group = get_personal_group(user)
     except Group.DoesNotExist:
@@ -98,67 +98,31 @@ class ViewsTests(GroupMessagingTests):
 
     def test_new_response_marks_thread_heading_as_new(self):
         root = self.create_thread_for_user(self.sender, self.recipient)
-        response = Message.objects.create_response(
-                                        sender=self.recipient,
-                                        text='some response',
-                                        parent=root
-                                    )
-        #response must show as "new" to the self.sender
-        context = self.get_view_context(
-                                ThreadsList,
-                                data={'sender_id': '-1'},
-                                user=self.sender
-                            )
+        response = Message.objects.create_response(sender=self.recipient, text='some response', parent=root)
+        # response must show as "new" to the self.sender
+        context = self.get_view_context(ThreadsList, data={'sender_id': '-1'}, user=self.sender)
         self.assertEqual(context['threads_data'][root.id]['status'], 'new')
-        #"visit" the thread: todo - make a method
+        # "visit" the thread: TODO - make a method
         self.visit_thread(root, self.sender)
 
-        #response must show as "seen"
-        context = self.get_view_context(
-                                ThreadsList,
-                                data={'sender_id': '-1'},
-                                user=self.sender
-                            )
+        # response must show as "seen"
+        context = self.get_view_context(ThreadsList, data={'sender_id': '-1'}, user=self.sender)
         self.assertEqual(context['threads_data'][root.id]['status'], 'seen')
-        #self.recipient makes another response
-        response = Message.objects.create_response(
-                                        sender=self.recipient,
-                                        text='some response',
-                                        parent=response
-                                    )
-        #thread must be "new" again
-        context = self.get_view_context(
-                                ThreadsList,
-                                data={'sender_id': '-1'},
-                                user=self.sender
-                            )
+        # self.recipient makes another response
+        response = Message.objects.create_response(sender=self.recipient, text='some response', parent=response)
+        # thread must be "new" again
+        context = self.get_view_context(ThreadsList, data={'sender_id': '-1'}, user=self.sender)
         self.assertEqual(context['threads_data'][root.id]['status'], 'new')
 
     def test_answer_to_deleted_thread_undeletes_thread(self):
-        #setup: message, reply, responder deletes thread
+        # setup: message, reply, responder deletes thread
         root_message = self.create_thread_for_user(self.sender, self.recipient)
-        response = Message.objects.create_response(
-                                        sender=self.recipient,
-                                        text='some response',
-                                        parent=root_message
-                                    )
-        memo1, created = MessageMemo.objects.get_or_create(
-                                        message=root_message,
-                                        user=self.recipient,
-                                        status=MessageMemo.ARCHIVED
-                                    )
-        #OP sends reply to reply
-        response2 = Message.objects.create_response(
-                                        sender=self.sender,
-                                        text='some response2',
-                                        parent=response
-                                    )
+        response = Message.objects.create_response(sender=self.recipient, text='some response', parent=root_message)
+        memo1, created = MessageMemo.objects.get_or_create(message=root_message, user=self.recipient, status=MessageMemo.ARCHIVED)
+        # OP sends reply to reply
+        response2 = Message.objects.create_response(sender=self.sender, text='some response2', parent=response)
 
-        context = self.get_view_context(
-                                ThreadsList,
-                                data={'sender_id': '-1'},
-                                user=self.recipient
-                            )
+        context = self.get_view_context(ThreadsList, data={'sender_id': '-1'}, user=self.recipient)
 
         self.assertEqual(len(context['threads']), 1)
         thread_id = context['threads'][0].id
@@ -199,21 +163,21 @@ class ModelsTests(GroupMessagingTests):
         """the basic create thread with one recipient
         tests that the recipient is there"""
         message = self.create_thread_for_user(self.sender, self.recipient)
-        #message type is stored
+        # message type is stored
         self.assertEqual(message.message_type, Message.STORED)
-        #recipient is in the list of recipients
+        # recipient is in the list of recipients
         recipients = set(message.recipients.all())
         recipient_group = get_personal_group(self.recipient)
-        #sender_group = get_personal_group(self.sender) #maybe add this too
+        # sender_group = get_personal_group(self.sender) # maybe add this too
         expected_recipients = set([recipient_group])
         self.assertEqual(recipients, expected_recipients)
-        #self.assertRaises(
+        # self.assertRaises(
         #    MessageMemo.DoesNotExist,
         #    MessageMemo.objects.get,
         #    message=message
         #)
-        #make sure that the original senders memo to the root
-        #message is marke ad seen
+        # make sure that the original senders memo to the root
+        # message is marke ad seen
         memos = MessageMemo.objects.filter(
                                 message=message,
                                 user=self.sender
@@ -270,14 +234,14 @@ class ModelsTests(GroupMessagingTests):
                                     )
         self.assertEqual(response.message_type, Message.STORED)
 
-        #assert that there is only one "seen" memo for the response
+        # assert that there is only one "seen" memo for the response
         memos = MessageMemo.objects.filter(message=response)
         self.assertEqual(memos.count(), 1)
         self.assertEqual(memos[0].user, self.recipient)
         self.assertEqual(memos[0].status, MessageMemo.SEEN)
 
-        #assert that recipients are the two people who are part of
-        #this conversation
+        # assert that recipients are the two people who are part of
+        # this conversation
         recipients = set(response.recipients.all())
         sender_group = get_personal_group(self.sender)
         recipient_group = get_personal_group(self.recipient)
@@ -370,14 +334,14 @@ class ModelsTests(GroupMessagingTests):
                     )
         root3, re31, re32 = self.setup_three_message_thread()
 
-        #mark root2 as seen
+        # mark root2 as seen
         root2.mark_as_seen(self.sender)
-        #mark root3 as deleted
+        # mark root3 as deleted
         root3.archive(self.sender)
 
         threads = Message.objects.get_sent_threads(sender=self.sender)
         self.assertEqual(threads.count(), 2)
-        self.assertEqual(set(threads), set([root1, root2]))#root3 is deleted
+        self.assertEqual(set(threads), set([root1, root2]))# root3 is deleted
 
     def test_recipient_lists_are_in_senders_info(self):
         thread = self.create_thread_for_user(self.sender, self.recipient)

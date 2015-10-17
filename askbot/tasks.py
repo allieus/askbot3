@@ -19,12 +19,9 @@ That is the reason for having two types of methods here:
 """
 import logging
 import json
-import sys
 import traceback
 import uuid
 
-from django.template import Context
-from django.template.loader import get_template
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 from django.utils.translation import activate as activate_language
@@ -34,12 +31,11 @@ from celery.utils.log import get_task_logger
 
 from askbot.conf import settings as askbot_settings
 from askbot import const
-from askbot import mail
 from askbot.mail.messages import (
-                        InstantEmailAlert,
-                        ApprovedPostNotification,
-                        ApprovedPostNotificationRespondable
-                    )
+    InstantEmailAlert,
+    ApprovedPostNotification,
+    ApprovedPostNotificationRespondable,
+)
 from askbot.models import (
     Activity,
     Post,
@@ -89,9 +85,9 @@ def tweet_new_post_task(post_id):
 
 @task(ignore_result=True)
 def notify_author_of_published_revision_celery_task(revision_id):
-    #todo: move this to ``askbot.mail`` module
-    #for answerable email only for now, because
-    #we don't yet have the template for the read-only notification
+    # TODO: move this to ``askbot.mail`` module
+    # for answerable email only for now, because
+    # we don't yet have the template for the read-only notification
 
     try:
         revision = PostRevision.objects.get(pk=revision_id)
@@ -101,27 +97,23 @@ def notify_author_of_published_revision_celery_task(revision_id):
 
     activate_language(revision.post.language_code)
 
-    if askbot_settings.REPLY_BY_EMAIL == False:
+    if not askbot_settings.REPLY_BY_EMAIL:
         email = ApprovedPostNotification({
             'post': revision.post,
             'recipient_user': revision.author
         })
-        email.send([revision.author.email,])
+        email.send([revision.author.email])
     else:
-        #generate two reply codes (one for edit and one for addition)
-        #to format an answerable email or not answerable email
+        # generate two reply codes (one for edit and one for addition)
+        # to format an answerable email or not answerable email
         reply_options = {
             'user': revision.author,
             'post': revision.post,
             'reply_action': 'append_content'
         }
-        append_content_address = ReplyAddress.objects.create_new(
-                                                        **reply_options
-                                                    ).as_email_address()
+        append_content_address = ReplyAddress.objects.create_new(**reply_options).as_email_address()
         reply_options['reply_action'] = 'replace_content'
-        replace_content_address = ReplyAddress.objects.create_new(
-                                                        **reply_options
-                                                    ).as_email_address()
+        replace_content_address = ReplyAddress.objects.create_new(**reply_options).as_email_address()
 
         if revision.post.post_type == 'question':
             mailto_link_subject = revision.post.thread.title
@@ -135,32 +127,20 @@ def notify_author_of_published_revision_celery_task(revision_id):
             'append_content_address': append_content_address,
             'replace_content_address': replace_content_address
         })
-        email.send([revision.author.email,])
+        email.send([revision.author.email])
 
 
 @task(ignore_result=True)
-def record_post_update_celery_task(
-        post_id,
-        newly_mentioned_user_id_list=None,
-        updated_by_id=None,
-        suppress_email=False,
-        timestamp=None,
-        created=False,
-        diff=None,
-    ):
-    #reconstitute objects from the database
+def record_post_update_celery_task(post_id, newly_mentioned_user_id_list=None, updated_by_id=None, suppress_email=False,
+        timestamp=None, created=False, diff=None):
+    # reconstitute objects from the database
     updated_by = User.objects.get(id=updated_by_id)
     post = Post.objects.get(id=post_id)
-    newly_mentioned_users = User.objects.filter(
-                                id__in=newly_mentioned_user_id_list
-                            )
+    newly_mentioned_users = User.objects.filter(id__in=newly_mentioned_user_id_list)
     try:
-        notify_sets = post.get_notify_sets(
-                                mentioned_users=newly_mentioned_users,
-                                exclude_list=[updated_by,]
-                            )
-        #todo: take into account created == True case
-        #update_object is not used
+        notify_sets = post.get_notify_sets(mentioned_users=newly_mentioned_users, exclude_list=[updated_by])
+        # TODO: take into account created is True case
+        # update_object is not used
         (activity_type, update_object) = post.get_updated_activity_data(created)
 
         post.issue_update_notifications(
@@ -169,26 +149,20 @@ def record_post_update_celery_task(
             activity_type=activity_type,
             suppress_email=suppress_email,
             timestamp=timestamp,
-            diff=diff
-        )
-
+            diff=diff)
     except Exception:
         logger.error(force_text(traceback.format_exc()).encode('utf-8'))
 
+
 @task(ignore_result=True)
-def record_question_visit(
-    language_code=None,
-    question_post_id=None,
-    update_view_count=False,
-    user_id=None
-):
+def record_question_visit(language_code=None, question_post_id=None, update_view_count=False, user_id=None):
     """celery task which records question visit by a person
     updates view counter, if necessary,
     and awards the badges associated with the
     question visit
     """
     activate_language(language_code)
-    #1) maybe update the view count
+    # 1) maybe update the view count
 
     try:
         question_post = Post.objects.get(id=question_post_id)
@@ -205,26 +179,22 @@ def record_question_visit(
 
     user = User.objects.get(id=user_id)
 
-    #2) question view count per user and clear response displays
+    # 2) question view count per user and clear response displays
     if user.is_authenticated():
-        #get response notifications
+        # get response notifications
         user.visit_question(question_post)
 
-    #3) send award badges signal for any badges
-    #that are awarded for question views
-    award_badges_signal.send(None,
-                    event = 'view_question',
-                    actor = user,
-                    context_object = question_post,
-                )
+    # 3) send award badges signal for any badges
+    # that are awarded for question views
+    award_badges_signal.send(
+        None,
+        event='view_question',
+        actor=user,
+        context_object=question_post)
+
 
 @task()
-def send_instant_notifications_about_activity_in_post(
-                                                activity_id=None,
-                                                post_id=None,
-                                                recipients=None,
-                                            ):
-
+def send_instant_notifications_about_activity_in_post(activity_id=None, post_id=None, recipients=None):
     if recipients is None:
         return
 
@@ -241,7 +211,7 @@ def send_instant_notifications_about_activity_in_post(
         logger.error("Unable to fetch post with id %s" % post_id)
         return
 
-    if post.is_approved() is False:
+    if not post.is_approved():
         return
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
@@ -258,11 +228,11 @@ def send_instant_notifications_about_activity_in_post(
         activate_language(post.language_code)
 
         email = InstantEmailAlert({
-                        'to_user': user,
-                        'from_user': update_activity.user,
-                        'post': post,
-                        'update_activity': update_activity
-                    })
+            'to_user': user,
+            'from_user': update_activity.user,
+            'post': post,
+            'update_activity': update_activity,
+        })
         try:
             email.send([user.email])
         except askbot_exceptions.EmailNotSent as error:
@@ -271,3 +241,4 @@ def send_instant_notifications_about_activity_in_post(
             )
         else:
             logger.debug('success %s, logId=%s' % (user.email, log_id))
+

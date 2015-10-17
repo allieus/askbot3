@@ -59,7 +59,7 @@ settings.register(
         description=_('Loss for giving a downvote')
     )
 )
-#'lose_by_downvoted',
+# 'lose_by_downvoted',
 
 settings.register(
     IntegerValue(
@@ -69,7 +69,7 @@ settings.register(
         description=_('Loss for owner of post that was flagged offensive')
     )
 )
-#'lose_by_flagged',
+# 'lose_by_flagged',
 
 settings.register(
     IntegerValue(
@@ -79,7 +79,7 @@ settings.register(
         description=_('Loss for owner of post that was downvoted')
     )
 )
-#'lose_by_downvoting',
+# 'lose_by_downvoting',
 
 settings.register(
     IntegerValue(
@@ -89,7 +89,7 @@ settings.register(
         description=_('Loss for owner of post that was flagged 3 times per same revision')
     )
 )
-#'lose_by_flagged_lastrevision_3_times',
+# 'lose_by_flagged_lastrevision_3_times',
 
 settings.register(
     IntegerValue(
@@ -99,4 +99,4 @@ settings.register(
         description=_('Loss for owner of post that was flagged 5 times per same revision')
     )
 )
-#'lose_by_flagged_lastrevision_5_times',
+# 'lose_by_flagged_lastrevision_5_times',

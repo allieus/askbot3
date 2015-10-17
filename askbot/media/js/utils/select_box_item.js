@@ -40,7 +40,7 @@ SelectBoxItem.prototype.setDescription = function (description) {
 };
 
 SelectBoxItem.prototype.getData = function () {
-    //todo: stuck using old key names, change after merge
+    //TODO: stuck using old key names, change after merge
     //with the user-groups branch
     return {
         id: this._id,

@@ -28,14 +28,15 @@ def split_at_break_point(directory):
 
     exception will be raised if directory in fact exists
     """
-    assert(os.path.exists(directory) == False)
+    assert(os.path.exists(directory) is False)
 
     head = directory
     tail_bits = list()
-    while os.path.exists(head) == False:
+    while os.path.exists(head) is False:
         head, tail = os.path.split(head)
         tail_bits.insert(0, tail)
     return head, os.path.join(*tail_bits)
+
 
 def clean_directory(directory):
     """Returns normalized absolute path to the directory
@@ -63,7 +64,7 @@ def directory_is_writable(directory):
     """
     tempfile.tempdir = directory
     try:
-        #run writability test
+        # run writability test
         temp_path = tempfile.mktemp()
         assert(os.path.dirname(temp_path) == directory)
         temp_file = open(temp_path, 'w')
@@ -97,7 +98,7 @@ def has_existing_django_project(directory):
     file_list = glob.glob(directory  + os.path.sep + '*.py')
     for file_name in file_list:
         if file_name.endswith(os.path.sep + 'manage.py'):
-            #a hack allowing to install into the distro directory
+            # a hack allowing to install into the distro directory
             continue
         py_file = open(file_name)
         for line in py_file:
@@ -141,23 +142,25 @@ def create_path(directory):
     else:
         os.makedirs(directory)
 
+
 def touch(file_path, times = None):
     """implementation of unix ``touch`` in python"""
-    #http://stackoverflow.com/questions/1158076/implement-touch-using-python
+    # http://stackoverflow.com/questions/1158076/implement-touch-using-python
     fhandle = file(file_path, 'a')
     try:
         os.utime(file_path, times)
     finally:
         fhandle.close()
 
+
 SOURCE_DIR = os.path.dirname(os.path.dirname(__file__))
 def get_path_to_help_file():
     """returns path to the main plain text help file"""
     return os.path.join(SOURCE_DIR, 'doc', 'INSTALL')
 
-def deploy_into(directory, new_project = False, verbosity = 1, context = None):
-    """will copy necessary files into the directory
-    """
+
+def deploy_into(directory, new_project=False, verbosity=1, context=None):
+    """will copy necessary files into the directory"""
     assert(isinstance(new_project, bool))
     if new_project:
         copy_files = FILES_TO_CREATE
@@ -171,7 +174,7 @@ def deploy_into(directory, new_project = False, verbosity = 1, context = None):
                     continue
                 else:
                     if file_name == 'urls.py' and new_project:
-                        #overwrite urls.py
+                        # overwrite urls.py
                         shutil.copy(src, directory)
                     else:
                         if verbosity >= 1:
@@ -181,24 +184,24 @@ def deploy_into(directory, new_project = False, verbosity = 1, context = None):
                 if verbosity >= 1:
                     print('* %s ' % file_name)
                 shutil.copy(src, directory)
-        #copy log directory
+        # copy log directory
         src = os.path.join(SOURCE_DIR, 'setup_templates', LOG_DIR_NAME)
         log_dir = os.path.join(directory, LOG_DIR_NAME)
         create_path(log_dir)
         touch(os.path.join(log_dir, 'askbot.log'))
 
-        #creating settings file from template
+        # creating settings file from template
         if verbosity >= 1:
             print("Creating settings file")
         settings_contents = SettingsTemplate(context).render()
         settings_path = os.path.join(directory, 'settings.py')
-        if os.path.exists(settings_path) and new_project == False:
+        if os.path.exists(settings_path) and not new_project:
             if verbosity >= 1:
                 print("* you already have a settings file please merge the contents")
-        elif new_project == True:
+        elif new_project is True:
             settings_file = open(settings_path, 'w+')
             settings_file.write(settings_contents)
-            #Grab the file!
+            # Grab the file!
             if os.path.exists(context['local_settings']):
                 local_settings = open(context['local_settings'], 'r').read()
                 settings_file.write('\n')
@@ -236,11 +239,13 @@ def deploy_into(directory, new_project = False, verbosity = 1, context = None):
     if verbosity >= 1:
         print('')
 
+
 def dir_name_unacceptable_for_django_project(directory):
     dir_name = os.path.basename(directory)
     if re.match(r'[_a-zA-Z][\w-]*$', dir_name):
         return False
     return True
+
 
 def dir_taken_by_python_module(directory):
     """True if directory is not taken by another python module"""
@@ -250,6 +255,7 @@ def dir_taken_by_python_module(directory):
         return True
     except ImportError:
         return False
+
 
 def get_install_directory(force = False):
     """returns a directory where a new django app/project
@@ -269,7 +275,7 @@ def get_install_directory(force = False):
     if directory is None:
         return None
 
-    if can_create_path(directory) == False:
+    if not can_create_path(directory):
         print(messages.format_msg_dir_not_writable(directory))
         return None
 
@@ -277,19 +283,17 @@ def get_install_directory(force = False):
         if path_is_clean_for_django(directory):
             if has_existing_django_project(directory):
                 if not force:
-                    print(messages.CANNOT_OVERWRITE_DJANGO_PROJECT % \
-                        {'directory': directory})
+                    print(messages.CANNOT_OVERWRITE_DJANGO_PROJECT % {'directory': directory})
                     return None
         else:
             print(messages.format_msg_dir_unclean_django(directory))
             return None
-    elif force == False:
+    elif not force:
         message = messages.format_msg_create(directory)
         should_create_new = console.choice_dialog(
-                            message,
-                            choices = ['yes','no'],
-                            invalid_phrase = messages.INVALID_INPUT
-                        )
+            message,
+            choices=['yes', 'no'],
+            invalid_phrase=messages.INVALID_INPUT)
         if should_create_new == 'no':
             return None
 

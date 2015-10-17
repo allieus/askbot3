@@ -42,14 +42,14 @@ class Badge(object):
     upon correct event, i.e. it is the responsibility of
     the caller to try awarding badges at appropriate times
     """
-    key = 'base-badge' #override this
+    key = 'base-badge' # override this
     def __init__(self,
                 name='',
                 level=None,
                 description=None,
                 multiple=False):
 
-        #key - must be an ASCII only word
+        # key - must be an ASCII only word
         self.name = name
         self.level = level
         self.description = description
@@ -95,8 +95,8 @@ class Badge(object):
         Returns True, if awarded, or False
         """
         from askbot.models.repute import Award
-        if self.multiple == False:
-            if recipient.badges.filter(slug = self.key).count() != 0:
+        if not self.multiple:
+            if recipient.badges.filter(slug=self.key).count() != 0:
                 return False
         else:
             content_type = ContentType.objects.get_for_model(context_object)
@@ -106,7 +106,7 @@ class Badge(object):
                 'content_type': content_type,
                 'badge__slug': self.key,
             }
-            #multiple badge is not re-awarded for the same post
+            # multiple badge is not re-awarded for the same post
             if Award.objects.filter(**filters).count() != 0:
                 return False
 
@@ -117,7 +117,7 @@ class Badge(object):
                     awarded_at = timestamp,
                     content_object = context_object
                 )
-        award.save()#note: there are signals that listen to saving the Award
+        award.save()# note: there are signals that listen to saving the Award
         return True
 
     def consider_award(self, actor = None,
@@ -703,7 +703,7 @@ class Editor(EditorTypeBadge):
         return self
 
 class AssociateEditor(EditorTypeBadge):
-    key = 'associate-editor'#legacy copycat name from stackoverflow
+    key = 'associate-editor'# legacy copycat name from stackoverflow
 
     def __new__(cls):
         self = super(AssociateEditor, cls).__new__(cls)
@@ -767,8 +767,8 @@ class FavoriteTypeBadge(Badge):
     def consider_award(self, actor = None,
             context_object = None, timestamp = None):
         question = context_object
-        #model FavoriteQuestion imported under alias of Fave
-        from askbot.models.question import FavoriteQuestion as Fave#name collision
+        # model FavoriteQuestion imported under alias of Fave
+        from askbot.models.question import FavoriteQuestion as Fave# name collision
         count = Fave.objects.filter(
                                         thread = question.thread
                                     ).exclude(
@@ -938,13 +938,13 @@ def extend_badge_events(e_to_b):
     return e_to_b
 
 
-#events are sent as a parameter via signal award_badges_signal
-#from appropriate locations in the code of askbot application
-#most likely - from manipulator functions that are added to the User objects
+# events are sent as a parameter via signal award_badges_signal
+# from appropriate locations in the code of askbot application
+# most likely - from manipulator functions that are added to the User objects
 EVENTS_TO_BADGES = {
     'accept_best_answer': (Scholar, Guru, Enlightened),
     'delete_post': (Disciplined, PeerPressure,),
-    'downvote': (Critic, CivicDuty),#no regard for question or answer for now
+    'downvote': (Critic, CivicDuty),# no regard for question or answer for now
     'edit_answer': (Editor, AssociateEditor),
     'edit_question': (Editor, AssociateEditor),
     'flag_post': (CitizenPatrol,),
@@ -965,7 +965,7 @@ EVENTS_TO_BADGES = {
                     NiceQuestion, GoodQuestion,
                     GreatQuestion, Student, Supporter, CivicDuty
                 ),
-    'upvote_comment':(),#todo - add some badges here
+    'upvote_comment':(),# TODO - add some badges here
     'view_question': (PopularQuestion, NotableQuestion, FamousQuestion,),
     'manually_triggered': ()
 }
@@ -986,13 +986,13 @@ def init_badges():
     int the database for each badge enumerated in the
     `BADGES` dictionary
     """
-    #todo: maybe better to redo individual badges
-    #so that get_stored_data() is called implicitly
-    #from the __init__ function?
+    # TODO: maybe better to redo individual badges
+    # so that get_stored_data() is called implicitly
+    # from the __init__ function?
     for key in BADGES.keys():
         get_badge(key).get_stored_data()
-    #remove any badges from the database
-    #that are no longer in the BADGES dictionary
+    # remove any badges from the database
+    # that are no longer in the BADGES dictionary
     from askbot.models.repute import BadgeData
     BadgeData.objects.exclude(
         slug__in = map(slugify, BADGES.keys())
@@ -1003,9 +1003,9 @@ award_badges_signal = Signal(
                             'actor', 'event', 'context_object', 'timestamp'
                         ]
                     )
-#actor - user who triggers the event
-#event - string name of the event, e.g 'downvote'
-#context_object - database object related to the event, e.g. question
+# actor - user who triggers the event
+# event - string name of the event, e.g 'downvote'
+# context_object - database object related to the event, e.g. question
 
 @auto_now_timestamp
 def award_badges(event=None, actor=None,

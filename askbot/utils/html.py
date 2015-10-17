@@ -61,18 +61,18 @@ class HTMLSanitizer(tokenizer.HTMLTokenizer, HTMLSanitizerMixin):
 def absolutize_urls(html):
     """turns relative urls in <img> and <a> tags to absolute,
     starting with the ``askbot_settings.APP_URL``"""
-    #temporal fix for bad regex with wysiwyg editor
+    # temporal fix for bad regex with wysiwyg editor
     url_re1 = re.compile(r'(?P<prefix><img[^<]+src=)"(?P<url>/[^"]+)"', re.I)
     url_re2 = re.compile(r"(?P<prefix><img[^<]+src=)'(?P<url>/[^']+)'", re.I)
     url_re3 = re.compile(r'(?P<prefix><a[^<]+href=)"(?P<url>/[^"]+)"', re.I)
     url_re4 = re.compile(r"(?P<prefix><a[^<]+href=)'(?P<url>/[^']+)'", re.I)
-    base_url = site_url('')#important to have this without the slash
+    base_url = site_url('')# important to have this without the slash
     img_replacement = '\g<prefix>"%s/\g<url>"' % base_url
     replacement = '\g<prefix>"%s\g<url>"' % base_url
     html = url_re1.sub(img_replacement, html)
     html = url_re2.sub(img_replacement, html)
     html = url_re3.sub(replacement, html)
-    #temporal fix for bad regex with wysiwyg editor
+    # temporal fix for bad regex with wysiwyg editor
     return url_re4.sub(replacement, html).replace('%s//' % base_url, '%s/' % base_url)
 
 def get_word_count(html):
@@ -98,8 +98,8 @@ def urlize_html(html, trim_url_limit=40):
         if set(parent_tags) & set(skip_tags):
             continue
 
-        #bs4 is weird, so we work around to replace nodes
-        #maybe there is a better way though
+        # bs4 is weird, so we work around to replace nodes
+        # maybe there is a better way though
         urlized_text = urlize(node, trim_url_limit=trim_url_limit)
         if force_text(node) == urlized_text:
             continue
@@ -108,10 +108,10 @@ def urlize_html(html, trim_url_limit=40):
         contents = sub_soup.find('body').contents
         num_items = len(contents)
         for i in range(num_items):
-            #there is strange thing in bs4, can't iterate
-            #as the tag seemingly can't belong to >1 soup object
-            child = contents[0] #always take first element
-            #insure that text nodes are sandwiched by space
+            # there is strange thing in bs4, can't iterate
+            # as the tag seemingly can't belong to >1 soup object
+            child = contents[0] # always take first element
+            # insure that text nodes are sandwiched by space
             have_string = (not hasattr(child, 'name'))
             if have_string:
                 node.insert_before(soup.new_string(' '))
@@ -121,7 +121,7 @@ def urlize_html(html, trim_url_limit=40):
 
         extract_nodes.append(node)
 
-    #extract the nodes that we replaced
+    # extract the nodes that we replaced
     for node in extract_nodes:
         node.extract()
 
@@ -149,7 +149,7 @@ def replace_links_with_text(html):
         url = link.get('href', '')
         text = ''.join(link.text) or ''
 
-        if text == '':#this is due to an issue with url inlining in comments
+        if text == '':# this is due to an issue with url inlining in comments
             link.replaceWith('')
         elif url == '' or re.match(abs_url_re, url):
             link.replaceWith(format_url_replacement(url, text))
@@ -162,21 +162,21 @@ def get_text_from_html(html_text):
     """
     soup = BeautifulSoup(html_text, 'html5lib')
 
-    #replace <a> links with plain text
+    # replace <a> links with plain text
     links = soup.find_all('a')
     for link in links:
         url = link.get('href', '')
         text = ''.join(link.text) or ''
         link.replaceWith(format_url_replacement(url, text))
 
-    #replace <img> tags with plain text
+    # replace <img> tags with plain text
     images = soup.find_all('img')
     for image in images:
         url = image.get('src', '')
         text = image.get('alt', '')
         image.replaceWith(format_url_replacement(url, text))
 
-    #extract and join phrases
+    # extract and join phrases
     body_element = soup.find('body')
     filter_func = lambda s: bool(s.strip())
     phrases = map(
@@ -187,11 +187,11 @@ def get_text_from_html(html_text):
 
 def strip_tags(html, tags=None):
     """strips tags from given html output"""
-    #a corner case
+    # a corner case
     if html.strip() == '':
         return html
 
-    assert(tags != None)
+    assert(tags is not None)
 
     soup = BeautifulSoup(html, 'html5lib')
     for tag in tags:
@@ -265,7 +265,7 @@ def site_url(url):
 
 def internal_link(url_name, title, kwargs=None, anchor=None, absolute=False):
     """returns html for the link to the given url
-    todo: may be improved to process url parameters, keyword
+    TODO: may be improved to process url parameters, keyword
     and other arguments
 
     link url does not have domain
@@ -297,17 +297,17 @@ def get_visible_text(html):
     return soup.get_text()
 
 def unescape(text):
-    """source: http://effbot.org/zone/re-sub.htm#unescape-html
+    """source: http://effbot.org/zone/re-sub.htm# unescape-html
     Removes HTML or XML character references and entities from a text string.
     @param text The HTML (or XML) source text.
     @return The plain text, as a Unicode string, if necessary.
     """
     def fixup(m):
         text = m.group(0)
-        if text[:2] == "&#":
+        if text[:2] == "&# ":
             # character reference
             try:
-                if text[:3] == "&#x":
+                if text[:3] == "&# x":
                     return unichr(int(text[3:-1], 16))
                 else:
                     return unichr(int(text[2:-1]))

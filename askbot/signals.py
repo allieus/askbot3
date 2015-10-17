@@ -33,7 +33,7 @@ flag_offensive = django.dispatch.Signal(providing_args=['instance', 'mark_by'])
 remove_flag_offensive = django.dispatch.Signal(providing_args=['instance', 'mark_by'])
 user_updated = django.dispatch.Signal(providing_args=['instance', 'updated_by'])
 user_registered = django.dispatch.Signal(providing_args=['user',])
-#todo: move this to authentication app
+# TODO: move this to authentication app
 user_logged_in = django.dispatch.Signal(providing_args=['session'])
 
 new_answer_posted = django.dispatch.Signal(
@@ -98,11 +98,11 @@ def pop_all_db_signal_receivers():
     dictionary where signals are keys
     and lists of receivers are values
     """
-    #this is the only askbot signal that is not defined here
-    #must use this to avoid a circular import
+    # this is the only askbot signal that is not defined here
+    # must use this to avoid a circular import
     from askbot.models.badges import award_badges_signal
     signals = (
-        #askbot signals
+        # askbot signals
         tags_updated,
         after_post_removed,
         after_post_restored,
@@ -113,7 +113,7 @@ def pop_all_db_signal_receivers():
         user_registered,
         post_updated,
         award_badges_signal,
-        #django signals
+        # django signals
         pre_save,
         post_save,
         pre_delete,

@@ -7,7 +7,7 @@ from askbot import forms
 from askbot.utils import forms as util_forms
 from askbot import models
 
-EMAIL_CASES = (#test should fail if the second item is None
+EMAIL_CASES = (# test should fail if the second item is None
     ('user@example.com', 'user@example.com'),
     ('Name Name <name@example.com>', 'name@example.com'),
     ('"Name Name [example.com]" <name@example.com>', 'name@example.com'),
@@ -28,7 +28,7 @@ EMAIL_CASES = (#test should fail if the second item is None
     ('<summary@example.com>', 'summary@example.com'),
     ('some text without an email adderess', None)
 )
-SUBJECT_LINE_CASES = (#test fails if second item is None
+SUBJECT_LINE_CASES = (# test fails if second item is None
     (
         ' [ tag1;long  tag, another] question title',
         ('tag1 long-tag another', 'question title')
@@ -43,7 +43,7 @@ class AskByEmailFormTests(AskbotTestCase):
     """Tests :class:`~askbot.forms.AskByEmailForm`
     form"""
     def setUp(self):
-        #benign data set that must pass
+        # benign data set that must pass
         self.data = {
             'sender': 'someone@example.com',
             'subject': '[tag-one] where is titanic?',
@@ -157,13 +157,13 @@ class EditQuestionAnonymouslyFormTests(AskbotTestCase):
         (0, 1, 0, 0, False),
         (0, 1, 0, 1, False),
         (0, 1, 1, 0, False),
-        (0, 1, 1, 1, False),#all up to this point are False
+        (0, 1, 1, 1, False),# all up to this point are False
         (1, 0, 0, 0, False),
         (1, 1, 0, 0, False),
         (1, 1, 1, 0, False),
         (1, 1, 1, 1, True),
     )
-    #legend: is_anon - question is anonymous
+    # legend: is_anon - question is anonymous
     #        can - askbot_settings.ALLOW_ASK_ANONYMOUSLY
     #        owner - editor is question owner
     #        checked - the checkbox "reveal_identity" is marked
@@ -171,7 +171,7 @@ class EditQuestionAnonymouslyFormTests(AskbotTestCase):
         self.create_user()
         self.create_user(
             username = 'other_user',
-            status = 'm'#must be able to edit
+            status = 'm'# must be able to edit
         )
         super(EditQuestionAnonymouslyFormTests, self).setUp()
 
@@ -228,7 +228,7 @@ class AskFormTests(AskbotTestCase):
             'text': 'test content',
             'tags': 'test',
         }
-        if ask_anonymously == True:
+        if ask_anonymously:
             data['ask_anonymously'] = 'on'
         self.form = forms.AskForm(data, user=AnonymousUser())
         self.form.full_clean()
@@ -282,7 +282,7 @@ class UserStatusFormTest(AskbotTestCase):
         self.setup_data('m')
         self.assertEquals(self.form.is_valid(), False)
 
-#Test for askbot.utils.forms
+# Test for askbot.utils.forms
 class UserNameFieldTest(AskbotTestCase):
     def setUp(self):
         self.u1 = self.create_user('user1')
@@ -290,25 +290,25 @@ class UserNameFieldTest(AskbotTestCase):
 
     def test_clean(self):
         self.username_field.skip_clean = True
-        self.assertEquals(self.username_field.clean('bar'), 'bar')#will pass anything
+        self.assertEquals(self.username_field.clean('bar'), 'bar')# will pass anything
 
         self.username_field.skip_clean = False
 
-        #will not pass b/c instance is not User model
+        # will not pass b/c instance is not User model
         self.username_field.user_instance = dict(foo=1)
         self.assertRaises(TypeError, self.username_field.clean, 'foo')
 
         self.username_field.user_instance = self.u1
-        self.assertEquals(self.username_field.clean('user1'), self.u1.username) #will pass
+        self.assertEquals(self.username_field.clean('user1'), self.u1.username) # will pass
 
-        #not pass username required
+        # not pass username required
         self.assertRaises(django_forms.ValidationError, self.username_field.clean, '')
 
-        #invalid username and username in reserved words
+        # invalid username and username in reserved words
         self.assertRaises(django_forms.ValidationError, self.username_field.clean, '  ')
         self.assertRaises(django_forms.ValidationError, self.username_field.clean, 'fuck')
         self.assertEqual(self.username_field.clean('......'), '......')
-        #TODO: test more things
+        # TODO: test more things
 
 class AnswerEditorFieldTests(AskbotTestCase):
     """don't need to test the QuestionEditorFieldTests, b/c the

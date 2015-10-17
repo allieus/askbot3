@@ -155,7 +155,7 @@ SearchDropMenu.prototype.makeKeyHandler = function () {
     };
 };
 
-/** todo: change this to state management as >1 thing happens */
+/** TODO: change this to state management as >1 thing happens */
 SearchDropMenu.prototype.showWaitIcon = function () {
     if (this._askButtonEnabled) {
         this._waitIcon.show();
@@ -208,7 +208,7 @@ SearchDropMenu.prototype.createDom = function () {
     this._element.append(waitIcon.getElement());
     this._waitIcon = waitIcon;
 
-    //add ask button, @todo: make into separate class?
+    //add ask button, @TODO: make into separate class?
     var footer = this.makeElement('div');
     this._element.append(footer);
     this._footer = footer;
@@ -374,7 +374,7 @@ var FullTextSearch = function () {
     this._running = false;
     this._baseUrl = askbot.urls.questions;
     this._q_list_sel = 'question-list';//id of question listing div
-    /** @todo: the questions/ needs translation... */
+    /** @TODO: the questions/ needs translation... */
     this._searchUrl = '/scope:all/sort:activity-desc/page:1/';
     this._askButtonEnabled = true;
     this._fullTextSearchEnabled = true;
@@ -882,7 +882,7 @@ FullTextSearch.prototype.decorate = function (element) {
     $.each(search_tags, function (idx, element) {
         var tag = new Tag();
         tag.decorate($(element));
-        //todo: setDeleteHandler and setHandler
+        //TODO: setDeleteHandler and setHandler
         //must work after decorate & must have getName
         tag.setDeleteHandler(
             function () {
@@ -934,7 +934,7 @@ TagSearch.prototype.setQuery = function (val) {
 };
 
 TagSearch.prototype.getSort = function () {
-    //todo: read it off the page
+    //TODO: read it off the page
     var link = $('.tabBar a.on');
     if (link.length === 1) {
         var sort = link.attr('id').replace('sort_', '');

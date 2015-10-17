@@ -3,25 +3,22 @@ from askbot.utils import decorators
 from askbot import const
 from askbot.conf import settings as askbot_settings
 from askbot import models
-from askbot import mail
-from datetime import datetime
 from django.http import Http404
 from django.utils.translation import string_concat
 from django.utils.translation import ungettext
 from django.utils.translation import ugettext as _
-from django.template.loader import get_template
 from django.conf import settings as django_settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.utils.encoding import force_text
 from django.shortcuts import render
-from django.template import RequestContext
-from django.views.decorators import csrf
-from django.utils.encoding import force_text
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_POST
 from django.core import exceptions
 
-#some utility functions
+
+# some utility functions
 def get_object(memo):
     content_object = memo.activity.content_object
     if isinstance(content_object, models.PostRevision):
@@ -43,14 +40,14 @@ def get_revision_set(memo_set):
 def expand_revision_set(revs):
     """returns lists of ips and users,
     seeded by given revisions"""
-    #1) get post edits and ips from them
+    # 1) get post edits and ips from them
     ips, users = get_revision_ips_and_authors(revs)
-    #2) get revs by those ips and users
+    # 2) get revs by those ips and users
     revs_filter = Q(ip_addr__in=ips) | Q(author__in=users)
     more_revs = models.PostRevision.objects.filter(revs_filter)
 
-    #return ips and users when number of revisions loaded by
-    #users and ip addresses stops growing
+    # return ips and users when number of revisions loaded by
+    # users and ip addresses stops growing
     diff_count = more_revs.count() - revs.count()
     if diff_count == 0:
         return revs
@@ -90,7 +87,7 @@ def get_editors(memo_set):
     who was the editor that we want to block!!!
     this applies to flagged posts.
 
-    todo: an inconvenience is that "offensive flags" are stored
+    TODO: an inconvenience is that "offensive flags" are stored
     differently in the Activity vs. "new moderated posts" or "post edits"
     """
     editors = set()
@@ -103,8 +100,8 @@ def get_editors(memo_set):
             for rev in obj.revisions.all():
                 rev_authors.add(rev.author)
 
-            #if we have > 1 author we skip, b/c don't know
-            #which user we want to block
+            # if we have > 1 author we skip, b/c don't know
+            # which user we want to block
             if len(rev_authors) == 1:
                 editors.update(rev_authors)
     return editors
@@ -145,8 +142,8 @@ def moderation_queue(request):
 
     activity_types = get_activity_types()
 
-    #2) load the activity notifications according to activity types
-    #todo: insert pagination code here
+    # 2) load the activity notifications according to activity types
+    # TODO: insert pagination code here
     memo_set = request.user.get_notifications(activity_types)
     memo_set = memo_set.select_related(
                     'activity',
@@ -159,19 +156,19 @@ def moderation_queue(request):
                     '-activity__active_at'
                 )[:const.USER_VIEW_DATA_SIZE]
 
-    #3) "package" data for the output
+    # 3) "package" data for the output
     queue = list()
     for memo in memo_set:
         obj = memo.activity.content_object
         if obj is None:
             memo.activity.delete()
-            continue#a temp plug due to bug in the comment deletion
+            continue# a temp plug due to bug in the comment deletion
 
         act = memo.activity
         if act.activity_type == const.TYPE_ACTIVITY_MARK_OFFENSIVE:
-            #todo: two issues here - flags are stored differently
-            #from activity of new posts and edits
-            #second issue: on posts with many edits we don't know whom to block
+            # TODO: two issues here - flags are stored differently
+            # from activity of new posts and edits
+            # second issue: on posts with many edits we don't know whom to block
             act_user = act.content_object.author
             act_message = _('post was flagged as offensive')
             act_type = 'flag'
@@ -210,8 +207,8 @@ def moderation_queue(request):
     return render(request, template, data)
 
 
-@csrf.csrf_protect
-@decorators.post_only
+@csrf_protect
+@require_POST
 @decorators.ajax_only
 def moderate_post_edits(request):
     if request.user.is_anonymous():
@@ -228,8 +225,8 @@ def moderate_post_edits(request):
         'memo_ids': set()
     }
 
-    #if we are approving or declining users we need to expand the memo_set
-    #to all of their edits of those users
+    # if we are approving or declining users we need to expand the memo_set
+    # to all of their edits of those users
     if post_data['action'] in ('block', 'approve') and 'users' in post_data['items']:
         editors = exclude_admins(get_editors(memo_set))
         items = models.Activity.objects.filter(
@@ -246,7 +243,7 @@ def moderate_post_edits(request):
         if 'posts' in post_data['items']:
             for memo in memo_set:
                 if memo.activity.activity_type == const.TYPE_ACTIVITY_MARK_OFFENSIVE:
-                    #unflag the post
+                    # unflag the post
                     content_object = memo.activity.content_object
                     request.user.flag_post(content_object, cancel_all=True, force=True)
                     num_posts += 1
@@ -272,7 +269,7 @@ def moderate_post_edits(request):
                 result['message'] = concat_messages(result['message'], users_message)
 
     elif post_data['action'] == 'decline-with-reason':
-        #todo: bunch notifications - one per recipient
+        # TODO: bunch notifications - one per recipient
         num_posts = 0
         for memo in memo_set:
             post = get_object(memo)
@@ -287,7 +284,7 @@ def moderate_post_edits(request):
             email.send([post.author.email,])
             num_posts += 1
 
-        #message to moderator
+        # message to moderator
         if num_posts:
             posts_message = ungettext('%d post deleted', '%d posts deleted', num_posts) % num_posts
             result['message'] = concat_messages(result['message'], posts_message)
@@ -312,14 +309,14 @@ def moderate_post_edits(request):
             ips, users = get_revision_ips_and_authors(revs)
             memo_set = get_memos_by_revisions(revs, request.user)
 
-            #to make sure to not block the admin and
-            #in case REMOTE_ADDR is a proxy server - not
-            #block access to the site
+            # to make sure to not block the admin and
+            # in case REMOTE_ADDR is a proxy server - not
+            # block access to the site
             my_ip = request.META.get('REMOTE_ADDR')
             if my_ip in ips:
                 ips.remove(my_ip)
 
-            #block IPs
+            # block IPs
             from stopforumspam.models import Cache
             already_blocked = Cache.objects.filter(ip__in=ips)
             already_blocked.update(permanent=True)
@@ -329,11 +326,11 @@ def moderate_post_edits(request):
                 cache = Cache(ip=ip, permanent=True)
                 cache.save()
 
-            #block users and all their content
+            # block users and all their content
             users = exclude_admins(users)
             for user in users:
                 user.set_status('b')
-                #delete all content by the user
+                # delete all content by the user
                 num_posts += request.user.delete_all_content_authored_by_user(user)
 
             num_ips = len(ips)
@@ -343,9 +340,9 @@ def moderate_post_edits(request):
             editors = exclude_admins(get_editors(memo_set))
             assert(request.user not in editors)
             for editor in editors:
-                #block user
+                # block user
                 editor.set_status('b')
-                #delete all content by the user
+                # delete all content by the user
                 num_posts += request.user.delete_all_content_authored_by_user(editor)
             num_users = len(editors)
 
@@ -361,10 +358,10 @@ def moderate_post_edits(request):
             posts_message = ungettext('%d post deleted', '%d posts deleted', num_posts) % num_posts
             result['message'] = concat_messages(result['message'], posts_message)
 
-    result['memo_ids'] = [memo.id for memo in memo_set]#why values_list() fails here?
+    result['memo_ids'] = [memo.id for memo in memo_set]# why values_list() fails here?
     result['message'] = force_text(result['message'])
 
-    #delete items from the moderation queue
+    # delete items from the moderation queue
     act_ids = list(memo_set.values_list('activity_id', flat=True))
     acts = models.Activity.objects.filter(id__in=act_ids)
 

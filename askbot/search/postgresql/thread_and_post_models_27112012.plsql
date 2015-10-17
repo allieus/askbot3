@@ -72,7 +72,7 @@ CREATE OR REPLACE FUNCTION get_thread_tsv(title text, tagnames text)
 RETURNS tsvector AS
 $$
 BEGIN
-    /* todo add weight depending on votes */
+    /* TODO add weight depending on votes */
     RETURN  setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
             setweight(to_tsvector('english', coalesce(tagnames, '')), 'A');
 END;
@@ -83,11 +83,11 @@ CREATE OR REPLACE FUNCTION get_post_tsv(text text, post_type text)
 RETURNS tsvector AS
 $$
 BEGIN
-    /* todo adjust weights to reflect votes */
+    /* TODO adjust weights to reflect votes */
     IF post_type='question' THEN
         RETURN setweight(to_tsvector('english', coalesce(text, '')), 'B');
     ELSIF post_type='answer' THEN
-        /* todo reflect whether the answer acepted or has many points */
+        /* TODO reflect whether the answer acepted or has many points */
         RETURN setweight(to_tsvector('english', coalesce(text, '')), 'C');
     ELSIF post_type='comment' THEN
         RETURN setweight(to_tsvector('english', coalesce(text, '')), 'D');

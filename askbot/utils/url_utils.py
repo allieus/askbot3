@@ -13,7 +13,7 @@ from django.utils import translation
 
 def reverse_i18n(lang, *args, **kwargs):
     """reverses url in requested language"""
-    assert(lang != None)
+    assert(lang is not None)
     current_lang = translation.get_language()
     translation.activate(lang)
     url = reverse(*args, **kwargs)
@@ -73,7 +73,7 @@ def urls_equal(url1, url2, ignore_trailing_slash=False):
     if normfunc(purl1.path) != normfunc(purl2.path):
         return False
 
-    #test remaining items in the parsed url
+    # test remaining items in the parsed url
     return purl1[3:] == purl2[3:]
 
 def get_login_url():

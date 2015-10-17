@@ -1,8 +1,8 @@
 
 {%- macro share(site=None, site_label=None, icon=False) -%}
-    <a class="{{ site }}-share{% if icon == True %} icon{% endif %}"
+    <a class="{{ site }}-share{% if icon %} icon{% endif %}"
         title="{% trans %}Share this content on {{site}}{% endtrans %}"
-    >{% if icon == False %}{% if site_label %}{{ site_label }}{% else %}{{ site }}{% endif %}{% endif %}</a>
+    >{% if not icon %}{% if site_label %}{{ site_label }}{% else %}{{ site }}{% endif %}{% endif %}</a>
 {%- endmacro -%}
 
 {%- macro inbox_message_snippet(message) -%}
@@ -137,7 +137,7 @@
 {%- endmacro -%}
 
 {%- macro if_else(condition, if_true, if_false) -%}
-    {%- if condition == True -%}
+    {%- if condition -%}
         {{if_true}}
     {%- else -%}
         {{if_false}}
@@ -261,7 +261,7 @@
     {% endif %}
 {%- endmacro -%}
 
-{# todo: remove the extra content argument to make its usage more explicit #}
+{# TODO: remove the extra content argument to make its usage more explicit #}
 {%- macro tag_widget(
             tag,
             deletable=False,
@@ -324,7 +324,7 @@ for the purposes of the AJAX comment editor #}
 
 {%- macro comments_widget_buttons(post=None, max_comments=None) -%}
     {% if post.comment_count > max_comments %}
-        {% if settings.COMMENTS_REVERSED == False %}
+        {% if not settings.COMMENTS_REVERSED %}
             <a class="hidden js-open-editor-btn">{% trans %}add a comment{% endtrans %}</a>
         {% endif %}
         <a class="js-load-comments-btn">
@@ -335,7 +335,7 @@ for the purposes of the AJAX comment editor #}
             {% endif %}
         </a>
     {% else %}
-        {% if settings.COMMENTS_REVERSED == False %}
+        {% if not settings.COMMENTS_REVERSED %}
             <a class="js-open-editor-btn">{% trans %}add a comment{% endtrans %}</a>
         {% endif %}
     {% endif %}
@@ -497,7 +497,7 @@ for the purposes of the AJAX comment editor #}
 {%- endmacro -%}
 
 {%- macro edit_post(post_form, post_html=None) -%}
-    {# todo: retire this macro, this will require renaming
+    {# TODO: retire this macro, this will require renaming
     or using "set" on some template variables #}
     {% include "editors/rich_text.jinja" %}
 {%- endmacro -%}
@@ -561,7 +561,7 @@ for the purposes of the AJAX comment editor #}
     {% include "widgets/user_list.jinja" %}
 {%- endmacro -%}
 
-{#todo: rename this to avatar #}
+{# TODO: rename this to avatar #}
 {%- macro gravatar(user, size) -%}
 {% filter trim %}
 <a class="js-avatar-box"
@@ -580,7 +580,7 @@ for the purposes of the AJAX comment editor #}
         <a 
             href="{{user.website|escape}}"
             title="{% trans username=user.username|escape, url=user.website|escape %}{{username}}'s website is {{url}}{% endtrans %}"
-            {% if user.can_have_strong_url() == False %}
+            {% if not user.can_have_strong_url() %}
             rel="nofollow"
             {% endif %}
         >
@@ -613,7 +613,7 @@ for the purposes of the AJAX comment editor #}
             </span>
             <span class="leading-sep">...</span>
         </span>
-         
+
         <span class="main-pages-nav">
         {% for num in p.page_numbers %}
             {% if num == p.page %}

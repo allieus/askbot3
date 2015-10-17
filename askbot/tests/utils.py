@@ -73,11 +73,11 @@ def create_user(
     if date_joined is not None:
         user.date_joined = date_joined
         user.save()
-    if notification_schedule == None:
+    if notification_schedule is None:
         notification_schedule = models.EmailFeedSetting.NO_EMAIL_SCHEDULE
 
-    #a hack, we need to delete these, that will be created automatically
-    #because just below we will be replacing them with the new values
+    # a hack, we need to delete these, that will be created automatically
+    # because just below we will be replacing them with the new values
     user.notification_subscriptions.all().delete()
 
     for feed_type, frequency in notification_schedule.items():
@@ -140,14 +140,14 @@ class AskbotTestCase(TestCase):
     def assertRaisesRegexp(self, *args, **kwargs):
         """a shim for python < 2.7"""
         try:
-            #run assertRaisesRegex, if available
+            # run assertRaisesRegex, if available
             super(AskbotTestCase, self).assertRaisesRegexp(*args, **kwargs)
         except AttributeError:
-            #in this case lose testing for the error text
-            #second argument is the regex that is supposed
-            #to match the error text
-            args_list = list(args)#conv tuple to list
-            args_list.pop(1)#so we can remove an item
+            # in this case lose testing for the error text
+            # second argument is the regex that is supposed
+            # to match the error text
+            args_list = list(args)# conv tuple to list
+            args_list.pop(1)# so we can remove an item
             self.assertRaises(*args_list, **kwargs)
 
     def assertQuerysetEqual(self, qs1, qs2, transform=repr, ordered=True):
@@ -211,7 +211,7 @@ class AskbotTestCase(TestCase):
                 edit_anonymously=False,
                 is_private=False,
                 timestamp=None,
-                force=False,#if True - bypass the assert
+                force=False,# if True - bypass the assert
                 by_email=False
             ):
         """helper editing the question,
@@ -227,7 +227,7 @@ class AskbotTestCase(TestCase):
             edit_anonymously=edit_anonymously,
             is_private=is_private,
             timestamp=timestamp,
-            force=False,#if True - bypass the assert
+            force=False,# if True - bypass the assert
             by_email=False
         )
 
@@ -239,7 +239,7 @@ class AskbotTestCase(TestCase):
             wiki=False,
             is_private=False,
             timestamp=None,
-            force=False,#if True - bypass the assert
+            force=False,# if True - bypass the assert
             by_email=False
         ):
         user.edit_answer(

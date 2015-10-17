@@ -19,7 +19,6 @@ def timedelta_total_seconds(td):
     """
     if hasattr(td, 'total_seconds'):
         return td.total_seconds()
-    from future import __division__
     return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
 
 
@@ -39,8 +38,8 @@ def enumerate_string_list(strings):
     """for a list or a tuple ('one', 'two',) return
     a list formatted as ['1) one', '2) two',]
     """
-    numbered_strings = enumerate(strings, start = 1)
-    return [ '%d) %s' % item for item in numbered_strings ]
+    numbered_strings = enumerate(strings, start=1)
+    return ['%d) %s' % item for item in numbered_strings]
 
 
 def format_setting_name(token):
@@ -83,15 +82,10 @@ def is_iterable(thing):
     else:
         return isinstance(thing, six.string_types)
 
-BOT_REGEX = re.compile(
-    r'bot|http|\.com|crawl|spider|python|curl|yandex'
-)
-BROWSER_REGEX = re.compile(
-    r'^(Mozilla.*(Gecko|KHTML|MSIE|Presto|Trident)|Opera).*$'
-)
-MOBILE_REGEX = re.compile(
-    r'(BlackBerry|HTC|LG|MOT|Nokia|NOKIAN|PLAYSTATION|PSP|SAMSUNG|SonyEricsson)'
-)
+
+BOT_REGEX = re.compile(r'bot|http|\.com|crawl|spider|python|curl|yandex')
+BROWSER_REGEX = re.compile(r'^(Mozilla.*(Gecko|KHTML|MSIE|Presto|Trident)|Opera).*$')
+MOBILE_REGEX = re.compile(r'(BlackBerry|HTC|LG|MOT|Nokia|NOKIAN|PLAYSTATION|PSP|SAMSUNG|SonyEricsson)')
 
 
 def strip_plus(text):
@@ -120,8 +114,9 @@ def not_a_robot_request(request):
 
     return False
 
-def diff_date(date, use_on_prefix = False):
-    now = datetime.datetime.now()#datetime(*time.localtime()[0:6])#???
+
+def diff_date(date, use_on_prefix=False):
+    now = datetime.datetime.now()  # datetime(*time.localtime()[0:6])#???
     diff = now - date
     days = diff.days
     hours = int(diff.seconds/3600)
@@ -133,7 +128,7 @@ def diff_date(date, use_on_prefix = False):
         else:
             date_token = date.strftime("%b %d '%y")
         if use_on_prefix:
-            return _('on %(date)s') % { 'date': date_token }
+            return _('on %(date)s') % {'date': date_token}
         else:
             return date_token
     elif days == 2:
@@ -145,15 +140,16 @@ def diff_date(date, use_on_prefix = False):
             '%(hr)d hour ago',
             '%(hr)d hours ago',
             hours
-        ) % {'hr':hours}
+        ) % {'hr': hours}
     else:
         return ungettext(
             '%(min)d min ago',
             '%(min)d mins ago',
             minutes
-        ) % {'min':minutes}
+        ) % {'min': minutes}
 
-#todo: this function may need to be removed to simplify the paginator functionality
+
+# TODO: this function may need to be removed to simplify the paginator functionality
 LEADING_PAGE_RANGE_DISPLAYED = TRAILING_PAGE_RANGE_DISPLAYED = 5
 LEADING_PAGE_RANGE = TRAILING_PAGE_RANGE = 4
 NUM_PAGES_OUTSIDE_RANGE = 1
@@ -170,22 +166,36 @@ def setup_paginator(context):
 
         if (context["pages"] <= LEADING_PAGE_RANGE_DISPLAYED):
             in_leading_range = in_trailing_range = True
-            page_numbers = [n for n in range(1, context["pages"] + 1) if n > 0 and n <= context["pages"]]
+            page_numbers = [
+                n for n in range(1, context["pages"] + 1)
+                if n > 0 and n <= context["pages"]]
+
         elif (context["current_page_number"] <= LEADING_PAGE_RANGE):
             in_leading_range = True
-            page_numbers = [n for n in range(1, LEADING_PAGE_RANGE_DISPLAYED + 1) if n > 0 and n <= context["pages"]]
+            page_numbers = [
+                n for n in range(1, LEADING_PAGE_RANGE_DISPLAYED + 1)
+                if n > 0 and n <= context["pages"]]
             pages_outside_leading_range = [n + context["pages"] for n in range(0, -NUM_PAGES_OUTSIDE_RANGE, -1)]
+
         elif (context["current_page_number"] > context["pages"] - TRAILING_PAGE_RANGE):
             in_trailing_range = True
-            page_numbers = [n for n in range(context["pages"] - TRAILING_PAGE_RANGE_DISPLAYED + 1, context["pages"] + 1) if n > 0 and n <= context["pages"]]
+            b = context["pages"] - TRAILING_PAGE_RANGE_DISPLAYED + 1
+            e = context["pages"] + 1
+            page_numbers = [
+                n for n in range(b, e)
+                if n > 0 and n <= context["pages"]]
             pages_outside_trailing_range = [n + 1 for n in range(0, NUM_PAGES_OUTSIDE_RANGE)]
         else:
-            page_numbers = [n for n in range(context["current_page_number"] - ADJACENT_PAGES, context["current_page_number"] + ADJACENT_PAGES + 1) if n > 0 and n <= context["pages"]]
+            b = context["current_page_number"] - ADJACENT_PAGES
+            e = context["current_page_number"] + ADJACENT_PAGES + 1
+            page_numbers = [
+                n for n in range(b, e)
+                if n > 0 and n <= context["pages"]]
             pages_outside_leading_range = [n + context["pages"] for n in range(0, -NUM_PAGES_OUTSIDE_RANGE, -1)]
             pages_outside_trailing_range = [n + 1 for n in range(0, NUM_PAGES_OUTSIDE_RANGE)]
 
         page_object = context['page_object']
-        #patch for change in django 1.5
+        # patch for change in django 1.5
         if page_object.has_previous():
             previous_page_number = page_object.previous_page_number()
         else:

@@ -203,7 +203,7 @@ def render_text_into_skin(text, data, request):
 
 class Loader(BaseLoader):
     """skins template loader for Django > 1.2
-    todo: verify that this actually follows django's convention correctly
+    TODO: verify that this actually follows django's convention correctly
     """
     is_usable = True
 

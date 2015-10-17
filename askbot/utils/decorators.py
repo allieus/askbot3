@@ -11,14 +11,13 @@ import os
 import datetime
 import functools
 import inspect
-import json
 import logging
 from django.conf import settings
 from django.core import exceptions as django_exceptions
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpResponse, HttpResponseForbidden, Http404
-from django.http import HttpResponseRedirect
+from django.http import JsonResponse, HttpResponse, HttpResponseForbidden, Http404
+from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_text
 from django.utils.encoding import smart_str
@@ -31,7 +30,7 @@ from askbot import get_version
 
 def auto_now_timestamp(func):
     """decorator that will automatically set
-    argument named timestamp to the "now" value if timestamp == None
+    argument named timestamp to the "now" value if timestamp is None
 
     if there is no timestamp argument, then exception is raised
     """
@@ -50,8 +49,7 @@ def ajax_login_required(view_func):
         if request.user.is_authenticated():
             return view_func(request, *args, **kwargs)
         else:
-            json_s = json.dumps({'login_required': True})
-            return HttpResponseForbidden(json_s, content_type='application/json')
+            return JsonResponse({'login_required': True}, status=403)
     return wrap
 
 
@@ -64,29 +62,6 @@ def anonymous_forbidden(view_func):
     return wrapper
 
 
-def get_only(view_func):
-    @functools.wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if request.method != 'GET':
-            raise django_exceptions.PermissionDenied(
-                'request method %s is not supported for this function' % \
-                request.method
-            )
-        return view_func(request, *args, **kwargs)
-    return wrapper
-
-
-def post_only(view_func):
-    @functools.wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if request.method != 'POST':
-            raise django_exceptions.PermissionDenied(
-                'request method %s is not supported for this function' % \
-                request.method
-            )
-        return view_func(request, *args, **kwargs)
-    return wrapper
-
 def ajax_only(view_func):
     @functools.wraps(view_func)
     def wrapper(request, *args, **kwargs):
@@ -97,7 +72,7 @@ def ajax_only(view_func):
             if data is None:
                 data = {}
         except Exception as e:
-            #todo: also check field called "message"
+            # TODO: also check field called "message"
             if hasattr(e, 'messages'):
                 if len(e.messages) > 1:
                     message = '<ul>' + \
@@ -112,19 +87,17 @@ def ajax_only(view_func):
             if message == '':
                 message = _('Oops, apologies - there was some error')
             logging.debug(message)
-            data = {
+            return JsonResponse({
                 'message': message,
                 'success': 0
-            }
-            return HttpResponse(json.dumps(data), content_type='application/json')
+            })
 
-        if isinstance(data, HttpResponse):#is this used?
+        if isinstance(data, HttpResponse):  # is this used?
             data.mimetype = 'application/json'
             return data
         else:
             data['success'] = 1
-            json_s = json.dumps(data)
-            return HttpResponse(json_s, content_type='application/json')
+            return JsonResponse(data)
     return wrapper
 
 def check_authorization_to_post(func_or_message):
@@ -136,11 +109,11 @@ def check_authorization_to_post(func_or_message):
         @functools.wraps(view_func)
         def wrapper(request, *args, **kwargs):
             if request.user.is_anonymous():
-                #todo: expand for handling ajax responses
-                if askbot_settings.ALLOW_POSTING_BEFORE_LOGGING_IN is False:
+                # TODO: expand for handling ajax responses
+                if not askbot_settings.ALLOW_POSTING_BEFORE_LOGGING_IN:
                     request.user.message_set.create(message=force_text(message))
                     params = 'next=%s' % request.path
-                    return HttpResponseRedirect(url_utils.get_login_url() + '?' + params)
+                    return redirect(url_utils.get_login_url() + '?' + params)
             return view_func(request, *args, **kwargs)
         return wrapper
 
@@ -228,13 +201,10 @@ def check_spam(field):
                         'for if this is a mistake'
                     )
                     if request.is_ajax():
-                        return HttpResponseForbidden(
-                                spam_message,
-                                mimetype="application/json"
-                            )
+                        return HttpResponseForbidden(spam_message, mimetype="application/json")
                     else:
                         request.user.message_set.create(message=spam_message)
-                        return HttpResponseRedirect(reverse('index'))
+                        return redirect('index')
 
             return view_func(request, *args, **kwargs)
         return wrapper
@@ -274,7 +244,7 @@ def reject_forbidden_phrases(func):
 
     assumes that first of *args is User
 
-    todo: this might be factored out into
+    TODO: this might be factored out into
     moderation module
     """
 
@@ -302,7 +272,7 @@ def reject_forbidden_phrases(func):
                     user=user,
                     ip_addr=kwargs.get('ip_addr', 'unknown')
                 )
-                raise ValueError #cause 500
+                raise ValueError # cause 500
         return func(*args, **kwargs)
 
     return wrapped

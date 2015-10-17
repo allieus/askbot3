@@ -276,7 +276,7 @@ settings.register(
         FORUM_DATA_RULES,
         'TAG_SOURCE',
         description = _('Source of tags'),
-        #hidden = True,
+        # hidden = True,
         choices = TAG_SOURCE_CHOICES,
         default = 'user-input'
     )
@@ -534,8 +534,8 @@ settings.register(
     )
 )
 
-#todo: looks like there is a bug in askbot.deps.livesettings
-#that does not allow Integer values with defaults and choices
+# TODO: looks like there is a bug in askbot.deps.livesettings
+# that does not allow Integer values with defaults and choices
 settings.register(
     livesettings.StringValue(
         FORUM_DATA_RULES,

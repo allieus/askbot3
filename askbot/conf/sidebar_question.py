@@ -6,11 +6,12 @@ from askbot.deps.livesettings import ConfigurationGroup
 from askbot.deps.livesettings import values
 from django.utils.translation import ugettext_lazy as _
 from askbot.conf.super_groups import CONTENT_AND_UI
-SIDEBAR_QUESTION = ConfigurationGroup(#shitty name - why sidebar?
-                    'SIDEBAR_QUESTION',
-                    _('Question page banners and sidebar'),
-                    super_group = CONTENT_AND_UI
-                )
+
+SIDEBAR_QUESTION = ConfigurationGroup(  # shitty name - why sidebar?
+    'SIDEBAR_QUESTION',
+    _('Question page banners and sidebar'),
+    super_group=CONTENT_AND_UI
+)
 
 settings.register(
     values.LongStringValue(

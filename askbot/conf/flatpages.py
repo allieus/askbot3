@@ -76,8 +76,7 @@ settings.register(
         'FORUM_PRIVACY',
         description=_('Text of the Q&amp;A forum Privacy Policy (html format)'),
         localized=True,
-        help_text=\
-        _(
+        help_text=_(
             'Save, then <a href="http://validator.w3.org/">'
             'use HTML validator</a> on the "privacy" page to check your input.'
         )
@@ -101,15 +100,16 @@ settings.register(
     )
 )
 
-#todo: merge this with mandatory tags
-settings.register(#this field is not editable manually
+# TODO: merge this with mandatory tags
+settings.register(  # this field is not editable manually
     LongStringValue(
         FLATPAGES,
         'CATEGORY_TREE',
-        description='Category tree',#no need to translate
+        description='Category tree',  # no need to translate
         localized=True,
-        default='[["dummy",[]]]',#empty array of arrays in json
+        default='[["dummy",[]]]',  # empty array of arrays in json
         help_text=_('Do not edit this field manually!!!')
-        #hidden = True
+        # hidden = True
     )
 )
+

@@ -175,7 +175,7 @@
                     var answer_id = 'post-id-' + post_id;
                     var answer_container = document.getElementById(answer_id);
                     var answerBody = findChildrenByClassName(answer_container, 'post-body')[0];
-                    //todo: this is not reliable
+                    //TODO: this is not reliable
                     var answerBodyNodes = answerBody.childNodes;
                     var answerElement = answerBodyNodes[answerBodyNodes.length - 1];
                     if (trim(getTextContent(answerElement)).length > askbot['data']['maxCommentLength']) {
@@ -247,7 +247,7 @@
                     return;//all remaining functions stay on
                 }
 
-                {% if settings.COMMENTING_CLOSED_QUESTIONS_ENABLED == False %}
+                {% if not settings.COMMENTING_CLOSED_QUESTIONS_ENABLED %}
                 if (data['threadIsClosed']) {
                     var buttons = findChildrenByClassName(document, 'js-open-editor-btn');
                     for (var i = 0; i < buttons.length; i++) {

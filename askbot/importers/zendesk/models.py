@@ -1,12 +1,10 @@
-import re
 from django.db import models
 from django.contrib.auth.models import User as DjangoUser
-from django.utils.html import strip_tags
 from askbot.utils.html import unescape
 
-TAGS = {}#internal cache for mappings forum id _> forum name
+TAGS = {}  # internal cache for mappings forum id _> forum name
 
-# todo: don't allow nulls in char fields that should just allow empty strings
+# TODO: don't allow nulls in char fields that should just allow empty strings
 
 class Entry(models.Model):
     """
@@ -154,7 +152,7 @@ class Forum(models.Model):
             return True
 
 class Ticket(models.Model):
-    """todo: custom fields"""
+    """TODO: custom fields"""
     assigned_at = models.DateTimeField(null=True)
     assignee_id = models.IntegerField(null=True)
     base_score = models.IntegerField()
@@ -208,7 +206,7 @@ class Ticket(models.Model):
             return "ticket %s" % self.current_tags.lower()
 
 class Comment(models.Model):
-    """todo: attachments"""
+    """TODO: attachments"""
     author_id = models.IntegerField()
     created_at = models.DateTimeField()
     is_public = models.BooleanField(default = True)

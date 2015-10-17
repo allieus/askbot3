@@ -86,7 +86,7 @@ TwoStateToggle.prototype.getDefaultHandler = function () {
         }
         var data = me.getPostData();
         data.disable = me.isOn();
-        /* @todo: need ability to prevent the ajax call
+        /* @TODO: need ability to prevent the ajax call
          * and do something else in certain conditions.
          * For example - invite an unauthenticated user to log in.
          * This functionality can be better

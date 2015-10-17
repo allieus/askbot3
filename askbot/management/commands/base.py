@@ -31,7 +31,7 @@ class BaseImportXMLCommand(BaseCommand):
 
         activate_language(django_settings.LANGUAGE_CODE)
 
-        #init the redirects file format table
+        # init the redirects file format table
         self.redirect_format = self.get_redirect_format(kwargs['redirect_format'])
 
         self.setup_run()
@@ -164,7 +164,7 @@ class BaseImportXMLCommand(BaseCommand):
     def get_deserialized_object(self, xml_soup):
         """returns deserialized django object for xml soup with one item"""
         item_xml = smart_str(xml_soup)
-        #below call assumes a single item within
+        # below call assumes a single item within
         obj = serializers.deserialize('xml', item_xml).next().object
         obj._source_xml = item_xml
         return obj

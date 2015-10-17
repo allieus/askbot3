@@ -8,7 +8,7 @@ def internal_error(request):
     try:
         result = template.render(RequestContext(request))
     except Exception:
-        #if context loading fails, we try to get settings separately
+        # if context loading fails, we try to get settings separately
         from askbot.conf import settings as askbot_settings
         data = {'settings': askbot_settings.as_dict()}
         result = template.render(RequestContext(request, data))

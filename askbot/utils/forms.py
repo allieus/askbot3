@@ -53,7 +53,7 @@ def get_db_object_or_404(params):
         obj_id = forms.IntegerField().clean(params['object_id'])
         return get_object_or_404(model, id=obj_id)
     except Exception:
-        #need catch-all b/c of the nature of the function
+        # need catch-all b/c of the nature of the function
         raise Http404
 
 def format_errors(error_list):
@@ -138,7 +138,7 @@ class UserNameField(StrippedNonEmptyCharField):
 
     def clean(self,username):
         """ validate username """
-        if self.skip_clean == True:
+        if self.skip_clean:
             logging.debug('username accepted with no validation')
             return username
         if self.user_instance is None:
@@ -156,8 +156,8 @@ class UserNameField(StrippedNonEmptyCharField):
             raise forms.ValidationError(self.error_messages['required'])
 
         username_re_string = const.USERNAME_REGEX_STRING
-        #attention: here we check @ symbol in two places: input and the regex
-        if askbot_settings.ALLOW_EMAIL_ADDRESS_IN_USERNAME is False:
+        # attention: here we check @ symbol in two places: input and the regex
+        if not askbot_settings.ALLOW_EMAIL_ADDRESS_IN_USERNAMEFalse:
             if '@' in username:
                 raise forms.ValidationError(self.error_messages['noemail'])
 

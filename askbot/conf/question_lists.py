@@ -7,10 +7,9 @@ from askbot.deps import livesettings
 from django.utils.translation import ugettext_lazy as _
 
 QUESTION_LISTS = livesettings.ConfigurationGroup(
-            'QUESTION_LISTS',
-            _('Listings of questions'),
-            super_group=DATA_AND_FORMATTING
-        )
+    'QUESTION_LISTS',
+    _('Listings of questions'),
+    super_group=DATA_AND_FORMATTING)
 
 settings.register(
     livesettings.BooleanValue(
@@ -18,9 +17,7 @@ settings.register(
         'ALL_SCOPE_ENABLED',
         default=True,
         description=_('Enable "All Questions" selector'),
-        help_text=_('At least one of these selectors must be enabled')
-    )
-)
+        help_text=_('At least one of these selectors must be enabled')))
 
 settings.register(
     livesettings.BooleanValue(
@@ -28,9 +25,7 @@ settings.register(
         'UNANSWERED_SCOPE_ENABLED',
         default=True,
         description=_('Enable "Unanswered Questions" selector'),
-        help_text=_('At least one of these selectors must be enabled')
-    )
-)
+        help_text=_('At least one of these selectors must be enabled')))
 
 settings.register(
     livesettings.BooleanValue(
@@ -38,14 +33,12 @@ settings.register(
         'FOLLOWED_SCOPE_ENABLED',
         default=True,
         description=_('Enable "Followed Questions" selector'),
-        help_text=_('At least one of these selectors must be enabled')
-    )
-)
+        help_text=_('At least one of these selectors must be enabled')))
 
 def enable_default_selector_if_disabled(old_value, new_value):
     scope_switch_name = new_value.upper() + '_SCOPE_ENABLED'
     is_enabled = getattr(settings, scope_switch_name)
-    if is_enabled is False:
+    if not is_enabled:
         settings.update(scope_switch_name, True)
     return new_value
 
@@ -66,7 +59,7 @@ settings.register(
     )
 )
 
-SCOPE_CHOICES_ANONYMOUS = (#anonymous users can't see followed questions
+SCOPE_CHOICES_ANONYMOUS = (  # anonymous users can't see followed questions
     ('all', _('All Questions')),
     ('unanswered', _('Unanswered Questions')),
 )

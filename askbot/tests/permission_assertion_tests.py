@@ -2,7 +2,6 @@ import datetime
 from django.test.client import Client
 from django.core.urlresolvers import reverse
 from django.conf import settings
-from django.test import TestCase
 from django.core import exceptions
 from askbot.tests import utils
 from askbot.tests.utils import with_settings
@@ -20,166 +19,108 @@ class PermissionAssertionTestCase(AskbotTestCase):
     """
 
     def setUp(self):
-        self.user = utils.create_user(
-                            username = 'test',
-                            email = 'test@test.com'
-                        )
+        self.user = utils.create_user(username='test', email='test@test.com')
         self.extraSetUp()
 
     def extraSetUp(self):
         pass
 
     def create_other_user(self):
-        return utils.create_user(
-                        username = 'other',
-                        email = 'other@test.com'
-                    )
+        return utils.create_user(username='other', email='other@test.com')
 
-    def post_question(self, author = None, timestamp = None):
+    def post_question(self, author=None, timestamp=None):
         if author is None:
             author = self.user
         return author.post_question(
-                            title = 'test question title',
-                            body_text = 'test question body',
-                            tags = 'test',
-                            timestamp = timestamp
-                        )
+            title='test question title',
+            body_text='test question body',
+            tags='test',
+            timestamp=timestamp)
 
-    def post_answer(self, question = None, author = None):
+    def post_answer(self, question=None, author=None):
         if author is None:
             author = self.user
         return author.post_answer(
-                        question = question,
-                        body_text = 'test answer'
-                    )
+            question=question,
+            body_text='test answer')
+
 
 class SeeOffensiveFlagsPermissionAssertionTests(utils.AskbotTestCase):
 
     def setUp(self):
         super(SeeOffensiveFlagsPermissionAssertionTests, self).setUp()
         self.create_user()
-        self.create_user(username = 'other_user')
+        self.create_user(username='other_user')
         self.min_rep = askbot_settings.MIN_REP_TO_VIEW_OFFENSIVE_FLAGS
 
     def setup_answer(self):
         question = self.post_question()
-        answer = self.post_answer(question = question)
+        answer = self.post_answer(question=question)
         return answer
 
     def test_low_rep_user_cannot_see_flags(self):
         question = self.post_question()
         assert(self.other_user.reputation < self.min_rep)
-        self.assertFalse(
-            template_filters.can_see_offensive_flags(
-                self.other_user,
-                question
-            )
-        )
+        self.assertFalse(template_filters.can_see_offensive_flags(self.other_user, question))
 
     def test_high_rep_user_can_see_flags(self):
         question = self.post_question()
         self.other_user.reputation = self.min_rep
-        self.assertTrue(
-            template_filters.can_see_offensive_flags(
-                self.other_user,
-                question
-            )
-        )
+        self.assertTrue(template_filters.can_see_offensive_flags(self.other_user, question))
 
     def test_low_rep_owner_can_see_flags(self):
         question = self.post_question()
         assert(self.user.reputation < self.min_rep)
-        self.assertTrue(
-            template_filters.can_see_offensive_flags(
-                self.user,
-                question
-            )
-        )
+        self.assertTrue(template_filters.can_see_offensive_flags(self.user, question))
 
     def test_admin_can_see_flags(self):
         question = self.post_question()
         self.other_user.set_admin_status()
         self.other_user.save()
         assert(self.other_user.reputation < self.min_rep)
-        self.assertTrue(
-            template_filters.can_see_offensive_flags(
-                self.other_user,
-                question
-            )
-        )
+        self.assertTrue(template_filters.can_see_offensive_flags(self.other_user, question))
 
     def test_moderator_can_see_flags(self):
         question = self.post_question()
         self.other_user.set_status('m')
         assert(self.other_user.reputation < self.min_rep)
-        self.assertTrue(
-            template_filters.can_see_offensive_flags(
-                self.other_user,
-                question
-            )
-        )
+        self.assertTrue(template_filters.can_see_offensive_flags(self.other_user, question))
 
-    #tests below test answers only
+    # tests below test answers only
     def test_suspended_owner_can_see_flags(self):
         answer = self.setup_answer()
         self.user.set_status('s')
         assert(self.user.reputation < self.min_rep)
-        self.assertTrue(
-            template_filters.can_see_offensive_flags(
-                self.user,
-                answer
-            )
-        )
+        self.assertTrue(template_filters.can_see_offensive_flags(self.user, answer))
 
     def test_blocked_owner_can_see_flags(self):
         answer = self.setup_answer()
         self.user.set_status('b')
         assert(self.user.reputation < self.min_rep)
-        self.assertTrue(
-            template_filters.can_see_offensive_flags(
-                self.user,
-                answer
-            )
-        )
+        self.assertTrue(template_filters.can_see_offensive_flags(self.user, answer))
 
     def test_suspended_user_cannot_see_flags(self):
         answer = self.setup_answer()
         self.other_user.set_status('s')
-        self.assertFalse(
-            template_filters.can_see_offensive_flags(
-                self.other_user,
-                answer
-            )
-        )
+        self.assertFalse(template_filters.can_see_offensive_flags(self.other_user, answer))
 
     def test_blocked_user_cannot_see_flags(self):
         answer = self.setup_answer()
         self.other_user.set_status('b')
-        self.assertFalse(
-            template_filters.can_see_offensive_flags(
-                self.other_user,
-                answer
-            )
-        )
+        self.assertFalse(template_filters.can_see_offensive_flags(self.other_user, answer))
+
 
 class DeleteAnswerPermissionAssertionTests(utils.AskbotTestCase):
-
     def setUp(self):
         self.create_user()
-        self.create_user(username = 'other_user')
+        self.create_user(username='other_user')
         self.question = self.post_question()
         self.min_rep = askbot_settings.MIN_REP_TO_DELETE_OTHERS_POSTS
 
-    def post_answer(self, user = None):
+    def post_answer(self, user=None):
         if user is None:
             user = self.user
-        self.answer = super(
-                            DeleteAnswerPermissionAssertionTests,
-                            self
-                        ).post_answer(
-                            question = self.question,
-                            user = user
-                        )
+        self.answer = super(DeleteAnswerPermissionAssertionTests, self).post_answer(question=self.question, user=user)
 
     def assert_can_delete(self):
         self.user.assert_can_delete_answer(self.answer)
@@ -188,16 +129,15 @@ class DeleteAnswerPermissionAssertionTests(utils.AskbotTestCase):
         self.assertRaises(
             exceptions.PermissionDenied,
             self.user.assert_can_delete_answer,
-            answer = self.answer
-        )
+            answer=self.answer)
 
     def test_low_rep_user_cannot_delete(self):
-        self.post_answer(user = self.other_user)
+        self.post_answer(user=self.other_user)
         assert(self.user.reputation < self.min_rep)
         self.assert_cannot_delete()
 
     def test_high_rep_user_can_delete(self):
-        self.post_answer(user = self.other_user)
+        self.post_answer(user=self.other_user)
         self.user.reputation = self.min_rep
         self.assert_can_delete()
 
@@ -219,7 +159,7 @@ class DeleteAnswerPermissionAssertionTests(utils.AskbotTestCase):
         self.assert_cannot_delete()
 
     def test_blocked_user_cannot_delete(self):
-        self.post_answer(user = self.other_user)
+        self.post_answer(user=self.other_user)
         self.user.set_status('b')
         self.assert_cannot_delete()
 
@@ -230,17 +170,18 @@ class DeleteAnswerPermissionAssertionTests(utils.AskbotTestCase):
         self.assert_cannot_delete()
 
     def test_low_rep_admin_can_delete(self):
-        self.post_answer(user = self.other_user)
+        self.post_answer(user=self.other_user)
         self.user.set_admin_status()
         self.user.save()
         assert(self.user.reputation < self.min_rep)
         self.assert_can_delete()
 
     def test_low_rep_moderator_can_delete(self):
-        self.post_answer(user = self.other_user)
+        self.post_answer(user=self.other_user)
         self.user.set_status('m')
         assert(self.user.reputation < self.min_rep)
         self.assert_can_delete()
+
 
 class DeleteQuestionPermissionAssertionTests(utils.AskbotTestCase):
     """These specifically test cases where user is
@@ -251,54 +192,36 @@ class DeleteQuestionPermissionAssertionTests(utils.AskbotTestCase):
 
     def setUp(self):
         self.create_user()
-        self.create_user(username = 'other_user')
+        self.create_user(username='other_user')
         self.question = self.post_question()
 
     def assert_can_delete(self):
-        self.user.assert_can_delete_question(
-                                question = self.question
-                            )
+        self.user.assert_can_delete_question(question=self.question)
 
     def assert_cannot_delete(self):
         self.assertRaises(
             exceptions.PermissionDenied,
             self.user.assert_can_delete_question,
-            question = self.question
-        )
+            question=self.question)
 
-    def upvote_answer(self, answer = None, user = None):
+    def upvote_answer(self, answer=None, user=None):
         if user is None:
             user = self.user
         user.reputation = askbot_settings.MIN_REP_TO_VOTE_UP
         user.upvote(answer)
 
     def test_owner_can_delete_question_with_nonvoted_answer_by_other(self):
-        self.post_answer(
-                    user = self.other_user,
-                    question = self.question
-                )
+        self.post_answer(user=self.other_user, question=self.question)
         self.assert_can_delete()
 
     def test_owner_can_delete_question_with_upvoted_answer_posted_by_self(self):
-        answer = self.post_answer(
-                    user = self.user,
-                    question = self.question
-                )
-        self.upvote_answer(
-                    answer = answer,
-                    user = self.other_user
-                )
+        answer = self.post_answer(user=self.user, question=self.question)
+        self.upvote_answer(answer=answer, user=self.other_user)
         self.assert_can_delete()
 
     def test_owner_cannot_delete_question_with_upvoted_answer_posted_by_other(self):
-        answer = self.post_answer(
-                    user = self.other_user,
-                    question = self.question
-                )
-        self.upvote_answer(
-                    answer = answer,
-                    user = self.user
-                )
+        answer = self.post_answer(user=self.other_user, question=self.question)
+        self.upvote_answer(answer=answer, user=self.user)
         self.assert_cannot_delete()
 
     def test_owner_can_delete_question_without_answers(self):
@@ -306,10 +229,7 @@ class DeleteQuestionPermissionAssertionTests(utils.AskbotTestCase):
 
     def test_moderator_can_delete_question_with_upvoted_answer_by_other(self):
         self.user.set_status('m')
-        answer = self.post_answer(
-                    user = self.other_user,
-                    question = self.question
-                )
+        answer = self.post_answer(user=self.other_user, question=self.question)
         self.user.upvote(answer)
         self.assert_can_delete()
 
@@ -319,42 +239,32 @@ class CloseQuestionPermissionAssertionTests(utils.AskbotTestCase):
     def setUp(self):
         super(CloseQuestionPermissionAssertionTests, self).setUp()
         self.create_user()
-        self.create_user(username = 'other_user')
+        self.create_user(username='other_user')
         self.question = self.post_question()
         self.min_rep = askbot_settings.MIN_REP_TO_CLOSE_OTHERS_QUESTIONS
 
-    def assert_can_close(self, user = None):
+    def assert_can_close(self, user=None):
         user.assert_can_close_question(self.question)
-        self.assertTrue(
-            template_filters.can_close_question(
-                user,
-                self.question
-            )
-        )
+        self.assertTrue(template_filters.can_close_question(user, self.question))
 
-    def assert_cannot_close(self, user = None):
+    def assert_cannot_close(self, user=None):
         self.assertRaises(
             exceptions.PermissionDenied,
             user.assert_can_close_question,
             self.question
         )
-        self.assertFalse(
-            template_filters.can_close_question(
-                user,
-                self.question
-            )
-        )
+        self.assertFalse(template_filters.can_close_question(user, self.question))
 
     def test_low_rep_admin_can_close(self):
         self.other_user.set_admin_status()
         self.other_user.save()
         assert(self.other_user.reputation < self.min_rep)
-        self.assert_can_close(user = self.other_user)
+        self.assert_can_close(user=self.other_user)
 
     def test_low_rep_moderator_can_close(self):
         self.other_user.set_status('m')
         assert(self.other_user.reputation < self.min_rep)
-        self.assert_can_close(user = self.other_user)
+        self.assert_can_close(user=self.other_user)
 
     def test_low_rep_owner_cannot_close(self):
         assert(self.user.reputation < self.min_rep)
@@ -362,46 +272,46 @@ class CloseQuestionPermissionAssertionTests(utils.AskbotTestCase):
 
     def test_high_rep_owner_can_close(self):
         self.user.reputation = self.min_rep
-        self.assert_can_close(user = self.user)
+        self.assert_can_close(user=self.user)
 
     def test_high_rep_other_can_close(self):
         self.other_user.reputation = self.min_rep
-        self.assert_can_close(user = self.other_user)
+        self.assert_can_close(user=self.other_user)
 
     def test_low_rep_blocked_cannot_close(self):
         self.other_user.set_status('b')
         assert(self.other_user.reputation < self.min_rep)
-        self.assert_cannot_close(user = self.other_user)
+        self.assert_cannot_close(user=self.other_user)
 
     def test_high_rep_blocked_cannot_close(self):
         self.other_user.set_status('b')
         self.other_user.reputation = self.min_rep
-        self.assert_cannot_close(user = self.other_user)
+        self.assert_cannot_close(user=self.other_user)
 
     def test_high_rep_blocked_owner_cannot_close(self):
         self.user.set_status('b')
         self.user.reputation = 2*self.min_rep
-        self.assert_cannot_close(user = self.user)
+        self.assert_cannot_close(user=self.user)
 
     def test_low_rep_suspended_cannot_close(self):
         self.other_user.set_status('s')
         assert(self.other_user.reputation < self.min_rep)
-        self.assert_cannot_close(user = self.other_user)
+        self.assert_cannot_close(user=self.other_user)
 
     def test_high_rep_suspended_cannot_close(self):
         self.other_user.set_status('s')
         self.other_user.reputation = self.min_rep
-        self.assert_cannot_close(user = self.other_user)
+        self.assert_cannot_close(user=self.other_user)
 
     def test_medium_rep_suspended_owner_cannot_close(self):
         self.user.set_status('s')
         self.user.reputation = self.min_rep
-        self.assert_cannot_close(user = self.user)
+        self.assert_cannot_close(user=self.user)
 
     def test_high_rep_suspended_owner_cannot_close(self):
         self.user.set_status('s')
         self.user.reputation = 2*self.min_rep
-        self.assert_cannot_close(user = self.user)
+        self.assert_cannot_close(user=self.user)
 
 
 class ReopenQuestionPermissionAssertionTests(utils.AskbotTestCase):
@@ -418,40 +328,38 @@ class ReopenQuestionPermissionAssertionTests(utils.AskbotTestCase):
     def setUp(self):
         self.min_rep = askbot_settings.MIN_REP_TO_CLOSE_OTHERS_QUESTIONS
         self.create_user()
-        self.create_user(username = 'other_user')
+        self.create_user(username='other_user')
         self.question = self.post_question()
         self.user.set_status('m')
         self.user.close_question(self.question)
         self.user.set_status('a')
 
-    def assert_can_reopen(self, user = None):
-        if user == None:
+    def assert_can_reopen(self, user=None):
+        if user is None:
             user = self.user
 
         user.assert_can_reopen_question(self.question)
 
-    def assert_cannot_reopen(self, user = None):
-        if user == None:
+    def assert_cannot_reopen(self, user=None):
+        if user is None:
             user = self.user
 
         self.assertRaises(
             exceptions.PermissionDenied,
             user.assert_can_reopen_question,
-            question = self.question
-        )
-
+            question=self.question)
 
     def test_high_rep_nonowner_can_reopen(self):
         self.other_user.reputation = 1000000
-        self.assert_can_reopen(user = self.other_user)
+        self.assert_can_reopen(user=self.other_user)
 
     def test_low_rep_admin_can_reopen(self):
         self.other_user.set_admin_status()
-        self.assert_can_reopen(user = self.other_user)
+        self.assert_can_reopen(user=self.other_user)
 
     def test_low_rep_moderator_can_reopen(self):
         self.other_user.set_status('m')
-        self.assert_can_reopen(user = self.other_user)
+        self.assert_can_reopen(user=self.other_user)
 
     def test_low_rep_owner_cannot_reopen(self):
         self.assert_cannot_reopen()
@@ -468,18 +376,18 @@ class ReopenQuestionPermissionAssertionTests(utils.AskbotTestCase):
     def test_high_rep_blocked_cannot_reopen(self):
         self.other_user.reputation = self.min_rep
         self.other_user.set_status('b')
-        self.assert_cannot_reopen(user = self.other_user)
+        self.assert_cannot_reopen(user=self.other_user)
 
     def test_high_rep_suspended_cannot_reopen(self):
         self.other_user.reputation = self.min_rep
         self.other_user.set_status('s')
-        self.assert_cannot_reopen(user = self.other_user)
+        self.assert_cannot_reopen(user=self.other_user)
+
 
 class EditQuestionPermissionAssertionTests(utils.AskbotTestCase):
-
     def setUp(self):
         self.create_user()
-        self.create_user(username = 'other_user')
+        self.create_user(username='other_user')
         self.post = self.post_question()
         self.min_rep = askbot_settings.MIN_REP_TO_EDIT_OTHERS_POSTS
         self.min_rep_wiki = askbot_settings.MIN_REP_TO_EDIT_WIKI
@@ -494,19 +402,16 @@ class EditQuestionPermissionAssertionTests(utils.AskbotTestCase):
     def assert_user_cannot(self, user=None):
         user = user or self.user
         self.assertRaises(
-                    exceptions.PermissionDenied,
-                    user.assert_can_edit_post,
-                    self.post
-                )
-        self.assertFalse(
-            template_filters.can_edit_post(user, self.post)
-        )
+            exceptions.PermissionDenied,
+            user.assert_can_edit_post,
+            self.post)
+        self.assertFalse(template_filters.can_edit_post(user, self.post))
 
     def assert_other_can(self):
-        self.assert_user_can(user = self.other_user)
+        self.assert_user_can(user=self.other_user)
 
     def assert_other_cannot(self):
-        self.assert_user_cannot(user = self.other_user)
+        self.assert_user_cannot(user=self.other_user)
 
     def test_admin_can_edit(self):
         self.other_user.set_admin_status()
@@ -545,10 +450,10 @@ class EditQuestionPermissionAssertionTests(utils.AskbotTestCase):
         self.other_user.reputation = self.min_rep
         self.assert_other_can()
 
-    #def test_medium_rep_user_can_edit_others_wiki(self):
-    #def test_low_rep_user_can_edit_own_wiki(self):
-    #def test_low_rep_user_cannot_edit_others_wiki(self):
-    #def test_high_rep_blocked_cannot_edit_others_wiki(self):
+    # def test_medium_rep_user_can_edit_others_wiki(self):
+    # def test_low_rep_user_can_edit_own_wiki(self):
+    # def test_low_rep_user_cannot_edit_others_wiki(self):
+    # def test_high_rep_blocked_cannot_edit_others_wiki(self):
     def test_medium_rep_user_cannot_edit_others_post(self):
         self.other_user.reputation = self.min_rep_wiki
         self.assert_other_cannot()
@@ -607,107 +512,77 @@ class EditQuestionPermissionAssertionTests(utils.AskbotTestCase):
         self.post.wiki = True
         self.assert_other_cannot()
 
-class EditAnswerPermissionAssertionTests(
-            EditQuestionPermissionAssertionTests
-        ):
-    def setUp(self):
-        super(
-                EditAnswerPermissionAssertionTests,
-                self,
-            ).setUp()
-        self.post = self.post_answer(question = self.post)
 
-    def assert_user_can(
-                    self,
-                    user = None,
-                ):
+class EditAnswerPermissionAssertionTests(EditQuestionPermissionAssertionTests):
+    def setUp(self):
+        super(EditAnswerPermissionAssertionTests, self).setUp()
+        self.post = self.post_answer(question=self.post)
+
+    def assert_user_can(self, user=None):
         if user is None:
             user = self.user
 
         user.assert_can_edit_answer(self.post)
-        self.assertTrue(
-            template_filters.can_edit_post(user, self.post)
-        )
+        self.assertTrue(template_filters.can_edit_post(user, self.post))
 
-    def assert_user_cannot(
-                    self,
-                    user = None,
-                ):
+    def assert_user_cannot(self, user=None):
         if user is None:
             user = self.user
 
         self.assertRaises(
-                    exceptions.PermissionDenied,
-                    user.assert_can_edit_answer,
-                    self.post
-                )
-        self.assertFalse(
-            template_filters.can_edit_post(user, self.post)
-        )
+            exceptions.PermissionDenied,
+            user.assert_can_edit_answer,
+            self.post)
+        self.assertFalse(template_filters.can_edit_post(user, self.post))
 
 
-class RetagQuestionPermissionAssertionTests(
-            EditQuestionPermissionAssertionTests
-        ):
-
+class RetagQuestionPermissionAssertionTests(EditQuestionPermissionAssertionTests):
     def setUp(self):
-        super(
-                RetagQuestionPermissionAssertionTests,
-                self,
-            ).setUp()
+        super(RetagQuestionPermissionAssertionTests, self).setUp()
         self.min_rep = askbot_settings.MIN_REP_TO_RETAG_OTHERS_QUESTIONS
 
-    def assert_user_can(
-                    self,
-                    user = None,
-                ):
+    def assert_user_can(self, user=None):
         if user is None:
             user = self.user
 
         user.assert_can_retag_question(self.post)
-        self.assertTrue(
-            template_filters.can_retag_question(user, self.post)
-        )
+        self.assertTrue(template_filters.can_retag_question(user, self.post))
 
-    def assert_user_cannot(
-                    self,
-                    user = None,
-                ):
+    def assert_user_cannot(self, user=None):
         if user is None:
             user = self.user
 
-        self.assertRaises(
-                    exceptions.PermissionDenied,
-                    user.assert_can_retag_question,
-                    self.post
-                )
-        self.assertFalse(
-            template_filters.can_edit_post(user, self.post)
-        )
+        self.assertRaises(exceptions.PermissionDenied, user.assert_can_retag_question, self.post)
+        self.assertFalse(template_filters.can_edit_post(user, self.post))
+
     def test_medium_rep_user_can_edit_others_wiki(self):
         pass
+
     def test_low_rep_user_can_edit_own_wiki(self):
         pass
+
     def test_low_rep_user_cannot_edit_others_wiki(self):
         pass
+
     def test_high_rep_blocked_cannot_edit_others_wiki(self):
         pass
+
     def test_medium_rep_user_cannot_edit_others_post(self):
         pass
+
 
 class FlagOffensivePermissionAssertionTests(PermissionAssertionTestCase):
 
     def extraSetUp(self):
         self.min_rep = askbot_settings.MIN_REP_TO_FLAG_OFFENSIVE
         self.question = self.post_question()
-        self.answer = self.post_answer(question = self.question)
+        self.answer = self.post_answer(question=self.question)
 
     def assert_user_cannot_flag(self):
         self.assertRaises(
             exceptions.PermissionDenied,
             self.user.flag_post,
-            post = self.question
-        )
+            post=self.question)
         self.assertFalse(
             template_filters.can_flag_offensive(
                 self.user,
@@ -717,7 +592,7 @@ class FlagOffensivePermissionAssertionTests(PermissionAssertionTestCase):
         self.assertRaises(
             exceptions.PermissionDenied,
             self.user.flag_post,
-            post = self.answer
+            post=self.answer
         )
         self.assertFalse(
             template_filters.can_flag_offensive(
@@ -727,14 +602,14 @@ class FlagOffensivePermissionAssertionTests(PermissionAssertionTestCase):
         )
 
     def assert_user_can_flag(self):
-        self.user.flag_post(post = self.question)
+        self.user.flag_post(post=self.question)
         self.assertTrue(
             template_filters.can_flag_offensive(
                 self.user,
                 self.question
             )
         )
-        self.user.flag_post(post = self.answer)
+        self.user.flag_post(post=self.answer)
         self.assertTrue(
             template_filters.can_flag_offensive(
                 self.user,
@@ -743,12 +618,12 @@ class FlagOffensivePermissionAssertionTests(PermissionAssertionTestCase):
         )
 
     def setup_high_rep(self):
-        #there is a catch - assert_user_can_flag
-        #flags twice and each time user reputation
-        #suffers a hit, so test may actually fail
-        #set amply high reputation
+        # there is a catch - assert_user_can_flag
+        # flags twice and each time user reputation
+        # suffers a hit, so test may actually fail
+        # set amply high reputation
         extra_rep = -100 * askbot_settings.REP_LOSS_FOR_RECEIVING_FLAG
-        #NB: REP_LOSS is negative
+        # NB: REP_LOSS is negative
         self.user.reputation = self.min_rep + extra_rep
         self.user.save()
 
@@ -817,8 +692,8 @@ class FlagOffensivePermissionAssertionTests(PermissionAssertionTestCase):
             self.user.flag_post,
             post = self.question
         )
-        #here is a deviation - the link will still be shown
-        #in templates
+        # here is a deviation - the link will still be shown
+        # in templates
         self.assertTrue(
             template_filters.can_flag_offensive(
                 self.user,
@@ -876,7 +751,7 @@ class FlagOffensivePermissionAssertionTests(PermissionAssertionTestCase):
 class CommentPermissionAssertionTests(PermissionAssertionTestCase):
 
     def extraSetUp(self):
-        self.min_rep = 10#askbot_settings.MIN_REP_TO_LEAVE_COMMENTS
+        self.min_rep = 10# askbot_settings.MIN_REP_TO_LEAVE_COMMENTS
         self.other_user = self.create_other_user()
 
     def test_blocked_user_cannot_comment_own_question(self):
@@ -1135,11 +1010,11 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         )
 
     def test_suspended_user_can_comment_own_question(self):
-        #post question
+        # post question
         question = self.post_question()
-        #suspend the poster
+        # suspend the poster
         self.user.set_status('s')
-        #attempt to post a comment under the same question
+        # attempt to post a comment under the same question
         comment = self.user.post_comment(
                             parent_post=question,
                             body_text='test comment'
@@ -1211,7 +1086,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
                                     timestamp = old_timestamp,
                                     body_text = 'blah'
                                 )
-        comment2 = self.other_user.post_comment(#post this one with the current timestamp
+        comment2 = self.other_user.post_comment(# post this one with the current timestamp
                                     parent_post = question,
                                     body_text = 'blah'
                                 )
@@ -1251,7 +1126,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         self.user.save()
         askbot_settings.update('USE_TIME_LIMIT_TO_EDIT_COMMENT', True)
         askbot_settings.update('MINUTES_TO_EDIT_COMMENT', 10)
-        #about 3 min ago
+        # about 3 min ago
         old_timestamp = datetime.datetime.now() - datetime.timedelta(0, 200)
         self.assert_user_can_edit_previous_comment(
                                 old_timestamp = old_timestamp,
@@ -1263,7 +1138,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         self.user.save()
         askbot_settings.update('USE_TIME_LIMIT_TO_EDIT_COMMENT', False)
         askbot_settings.update('MINUTES_TO_EDIT_COMMENT', 10)
-        old_timestamp = datetime.datetime.now() - datetime.timedelta(365)#a year ago
+        old_timestamp = datetime.datetime.now() - datetime.timedelta(365)# a year ago
         self.assert_user_can_edit_previous_comment(
                                 old_timestamp = old_timestamp,
                                 original_poster = self.user
@@ -1285,21 +1160,21 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
                                 )
         self.user.assert_can_edit_comment(comment)
 
-#def user_assert_can_post_comment(self, parent_post):
-#def user_assert_can_delete_comment(self, comment = None):
+# def user_assert_can_post_comment(self, parent_post):
+# def user_assert_can_delete_comment(self, comment = None):
 
-#def user_assert_can_vote_for_post(
-#def user_assert_can_revoke_old_vote(self, vote):
+# def user_assert_can_vote_for_post(
+# def user_assert_can_revoke_old_vote(self, vote):
 
-#def user_assert_can_flag_offensive(self):
+# def user_assert_can_flag_offensive(self):
 
-#def user_assert_can_upload_file(request_user):
-#def user_assert_can_post_question(self):
-#def user_assert_can_post_answer(self):
-#def user_assert_can_edit_post(self, post = None):
-#def user_assert_can_delete_Post(self, post = None):
-#def user_assert_can_close_question(self, question = None):
-#def user_assert_can_retag_questions(self):
+# def user_assert_can_upload_file(request_user):
+# def user_assert_can_post_question(self):
+# def user_assert_can_post_answer(self):
+# def user_assert_can_edit_post(self, post = None):
+# def user_assert_can_delete_Post(self, post = None):
+# def user_assert_can_close_question(self, question = None):
+# def user_assert_can_retag_questions(self):
 
 class AcceptBestAnswerPermissionAssertionTests(utils.AskbotTestCase):
 

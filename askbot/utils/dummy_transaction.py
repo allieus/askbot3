@@ -6,7 +6,7 @@ Usage::
 
     @transaction.commit_manually
     def do_something():
-        #your code making changes to the database
+        # your code making changes to the database
         transaction.commit()
         return
 """

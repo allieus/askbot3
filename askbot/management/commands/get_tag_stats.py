@@ -1,11 +1,11 @@
 from __future__ import print_function
-import sys
 import optparse
 from django.core.management.base import BaseCommand, CommandError
 from askbot import models
 from askbot import const
 
-def get_tag_lines(tag_marks, width = 25):
+
+def get_tag_lines(tag_marks, width=25):
     output = list()
     line = ''
     for name in tag_marks:
@@ -19,15 +19,18 @@ def get_tag_lines(tag_marks, width = 25):
     output.append(line)
     return output
 
+
 def get_empty_lines(num_lines):
     output = list()
     for idx in xrange(num_lines):
         output.append('')
     return output
 
+
 def pad_list(the_list, length):
     if len(the_list) < length:
         the_list.extend(get_empty_lines(length - len(the_list)))
+
 
 def format_table_row(*cols, **kwargs):
     max_len = max(map(len, cols))
@@ -94,7 +97,7 @@ class Command(BaseCommand):
         for user in users:
             tag_marks = user.tag_selections
 
-            #add names of explicitly followed tags
+            # add names of explicitly followed tags
             followed_tags = list()
             followed_tags.extend(
                 tag_marks.filter(
@@ -104,7 +107,7 @@ class Command(BaseCommand):
                         )
             )
 
-            #add wildcards to the list of interesting tags
+            # add wildcards to the list of interesting tags
             followed_tags.extend(user.interesting_tags.split())
 
             for good_tag in user.interesting_tags.split():
@@ -138,7 +141,7 @@ class Command(BaseCommand):
             ignored_count = len(ignored_tags)
             subscribed_count = len(subscribed_tags)
             total_count = followed_count + ignored_count + subscribed_count
-            if total_count == 0 and print_empty == False:
+            if total_count == 0 and not print_empty:
                 continue
             if item_count == 0:
                 print('%-28s %25s %25s %25s' % ('User (id)', 'Interesting tags', 'Ignored tags', 'Subscribed tags'))
@@ -173,7 +176,7 @@ class Command(BaseCommand):
         and values are two element lists with whe first value - follow count
         and the second value - ignore count
         """
-        wild = dict()#the dict that is returned in the end
+        wild = dict()# the dict that is returned in the end
 
         users = models.User.objects.all().order_by('username')
         for user in users:
@@ -215,12 +218,9 @@ class Command(BaseCommand):
                 (wild_follow, wild_ignore) = wild_tags[tag.name]
 
             tag_marks = tag.user_selections
-            follow_count = tag_marks.filter(reason='good').count() \
-                                                        + wild_follow
-            ignore_count = tag_marks.filter(reason='bad').count() \
-                                                        + wild_ignore
-            subscribe_count = tag_marks.filter(reason='subscribe').count() \
-                                                        + wild_sub
+            follow_count = tag_marks.filter(reason='good').count() + wild_follow
+            ignore_count = tag_marks.filter(reason='bad').count() + wild_ignore
+            subscribe_count = tag_marks.filter(reason='subscribe').count() + wild_sub
             follow_str = '%d (%d)' % (follow_count, wild_follow)
             ignore_str = '%d (%d)' % (ignore_count, wild_ignore)
             subscribe_str = '%d (%d)' % (subscribe_count, wild_sub)
@@ -229,7 +229,7 @@ class Command(BaseCommand):
             counts += (11-len(ignore_str)) * ' ' + ignore_str
 
             total_count = follow_count + ignore_count + subscribe_count
-            if total_count == 0 and print_empty == False:
+            if total_count == 0 and not print_empty:
                 continue
             if item_count == 0:
                 print('%-32s %12s %12s %12s' % ('', 'Subscribed', 'Ignored  ', 'Interesting'))

@@ -12,7 +12,7 @@ import askbot
 class SkinTests(TestCase):
 
     def setUp(self):
-        #create dummy skin
+        # create dummy skin
         self.temp_dir = tempfile.mkdtemp()
         self.skins_dir_backup = getattr(django_settings, 'ASKBOT_EXTRA_SKINS_DIR', None)
         setattr(django_settings, 'ASKBOT_EXTRA_SKINS_DIR', self.temp_dir)
@@ -32,7 +32,7 @@ class SkinTests(TestCase):
         shutil.copy(test_image_file, skin_image_dir)
 
     def tearDown(self):
-        #delete the dummy skin
+        # delete the dummy skin
         test_skin_dir = os.path.join(
                             self.temp_dir,
                             'test_skin'

@@ -47,7 +47,7 @@ class PostModelTests(AskbotTestCase):
             }
         )
 
-        #this test does not work
+        # this test does not work
         post_revision = PostRevision(
             text='blah',
             author=self.u1,
@@ -152,31 +152,31 @@ class PostModelTests(AskbotTestCase):
     def test_get_moderators_with_groups(self):
         groups_enabled_backup = askbot_settings.GROUPS_ENABLED
         askbot_settings.update('GROUPS_ENABLED', True)
-        #create group
+        # create group
         group = Group(name='testers', openness=Group.OPEN)
         group.save()
 
-        #create one admin and one moderator, and one reg user
+        # create one admin and one moderator, and one reg user
         mod1 = self.create_user('mod1', status='m')
         adm1 = self.create_user('adm1', status='d')
         reg1 = self.create_user('reg1')
-        #join them to the group
+        # join them to the group
         mod1.join_group(group)
         adm1.join_group(group)
         reg1.join_group(group)
-        #create one admin and one moderator, and one reg user
+        # create one admin and one moderator, and one reg user
         mod2 = self.create_user('mod2', status='m')
         adm2 = self.create_user('adm2', status='d')
         reg2 = self.create_user('reg2')
-        #make a post
+        # make a post
         question = self.post_question(user=reg1, group_id=group.id)
-        #run get_moderators and see that only one admin and one
+        # run get_moderators and see that only one admin and one
         mods = question.get_moderators()
         self.assertEqual(
             set([mod1, adm1]),
             set(mods)
         )
-        #moderator are in the set of moderators
+        # moderator are in the set of moderators
         askbot_settings.update('GROUPS_ENABLED', groups_enabled_backup)
 
 
@@ -238,7 +238,7 @@ class ThreadTagModelsTests(AskbotTestCase):
         qs, meta_data = Thread.objects.run_advanced_search(request_user=self.user, search_state=ss.add_tag('tag1').add_tag('tag3').add_tag('tag6'))
         self.assertEqual(1, qs.count())
 
-        ss = SearchState(scope=None, sort=None, query="#tag3", tags='tag1, tag6', author=None, page=None, user_logged_in=None)
+        ss = SearchState(scope=None, sort=None, query="# tag3", tags='tag1, tag6', author=None, page=None, user_logged_in=None)
         qs, meta_data = Thread.objects.run_advanced_search(request_user=self.user, search_state=ss)
         self.assertEqual(1, qs.count())
 
@@ -349,7 +349,7 @@ class ThreadRenderLowLevelCachingTests(AskbotTestCase):
         # UPDATE 2:Weird things happen with question summary (it's double escaped etc., really weird) so
         # let's just make sure that there are no tag placeholders left
         self.assertTrue('&lt;&lt;&lt;tag1&gt;&gt;&gt; fake title' in proper_html)
-        #self.assertTrue('&lt;&lt;&lt;tag2&gt;&gt;&gt; &lt;&lt;&lt;tag3&gt;&gt;&gt; cheating' in proper_html)
+        # self.assertTrue('&lt;&lt;&lt;tag2&gt;&gt;&gt; &lt;&lt;&lt;tag3&gt;&gt;&gt; cheating' in proper_html)
         self.assertFalse('<<<tag1>>>' in proper_html)
         self.assertFalse('<<<tag2>>>' in proper_html)
         self.assertFalse('<<<tag3>>>' in proper_html)
@@ -540,7 +540,7 @@ class ThreadRenderCacheUpdateTests(AskbotTestCase):
         question = self.post_question()
         self.assertEqual(1, Post.objects.count())
 
-        #thread = question.thread
+        # thread = question.thread
         # get fresh Thread instance so that on MySQL it has timestamps without microseconds
         thread = Thread.objects.get(id=question.thread.id)
 
@@ -611,7 +611,7 @@ class ThreadRenderCacheUpdateTests(AskbotTestCase):
         html = self._html_for_question(thread._question_post())
         self.assertEqual(html, thread.get_cached_summary_html())
 
-    @skipIf(django_settings.CELERY_ALWAYS_EAGER == True, 'celery deamon not running')
+    @skipIf(django_settings.CELERY_ALWAYS_EAGER is True, 'celery deamon not running')
     def test_view_count(self):
         question = self.post_question()
         self.assertEqual(0, question.thread.view_count)

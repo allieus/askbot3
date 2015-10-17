@@ -4,11 +4,12 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.auth.models import User
 from django.db import models
-from django.utils import six
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext as _
 from django.utils.html import escape
 from askbot import const
 from django.core.urlresolvers import reverse
+
 
 class VoteManager(models.Manager):
     def get_up_vote_count_from_user(self, user):
@@ -31,19 +32,19 @@ class VoteManager(models.Manager):
             return 0
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class Vote(models.Model):
     VOTE_UP = +1
     VOTE_DOWN = -1
     VOTE_CHOICES = (
-        (VOTE_UP,   'Up'),
+        (VOTE_UP, 'Up'),
         (VOTE_DOWN, 'Down'),
     )
     user = models.ForeignKey('auth.User', related_name='votes')
     voted_post = models.ForeignKey('Post', related_name='votes')
 
-    vote           = models.SmallIntegerField(choices=VOTE_CHOICES)
-    voted_at       = models.DateTimeField(default=datetime.datetime.now)
+    vote = models.SmallIntegerField(choices=VOTE_CHOICES)
+    voted_at = models.DateTimeField(default=datetime.datetime.now)
 
     objects = VoteManager()
 
@@ -53,7 +54,7 @@ class Vote(models.Model):
         db_table = 'vote'
 
     def __str__(self):
-        return '[%s] voted at %s: %s' %(self.user, self.voted_at, self.vote)
+        return '[%s] voted at %s: %s' % (self.user, self.voted_at, self.vote)
 
     def __int__(self):
         """1 if upvote -1 if downvote"""
@@ -76,7 +77,7 @@ class Vote(models.Model):
 
         return change in score on the post
         """
-        #importing locally because of circular dependency
+        # importing locally because of circular dependency
         from askbot import auth
         score_before = self.voted_post.points
         if self.vote > 0:
@@ -90,17 +91,15 @@ class Vote(models.Model):
         return score_after - score_before
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class BadgeData(models.Model):
     """Awarded for notable actions performed on the site by Users."""
     slug = models.SlugField(max_length=50, unique=True)
     awarded_count = models.PositiveIntegerField(default=0)
-    awarded_to = models.ManyToManyField(
-                    User, through='Award', related_name='badges'
-                )
-    #use this field if badges should be sorted
-    #on the badges page in some specific ordering
-    #and add setting ASKBOT_BADGE_ORDERING = 'custom'
+    awarded_to = models.ManyToManyField(User, through='Award', related_name='badges')
+    # use this field if badges should be sorted
+    # on the badges page in some specific ordering
+    # and add setting ASKBOT_BADGE_ORDERING = 'custom'
     display_order = models.PositiveIntegerField(default=0)
 
     def _get_meta_data(self):
@@ -128,7 +127,7 @@ class BadgeData(models.Model):
         return self._get_meta_data().css_class
 
     def get_type_display(self):
-        #todo - rename "type" -> "level" in this model
+        # TODO - rename "type" -> "level" in this model
         return self._get_meta_data().get_level_display()
 
     class Meta:
@@ -142,7 +141,7 @@ class BadgeData(models.Model):
         return '%s%s/' % (reverse('badge', args=[self.id]), self.slug)
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class Award(models.Model):
     """The awarding of a Badge to a User."""
     user       = models.ForeignKey(User, related_name='award_user')
@@ -189,11 +188,11 @@ class ReputeManager(models.Manager):
                 return 0
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class Repute(models.Model):
     """The reputation histories for user"""
     user     = models.ForeignKey(User)
-    #todo: combine positive and negative to one value
+    # TODO: combine positive and negative to one value
     positive = models.SmallIntegerField(default=0)
     negative = models.SmallIntegerField(default=0)
     question = models.ForeignKey('Post', null=True, blank=True)
@@ -201,9 +200,9 @@ class Repute(models.Model):
     reputation_type = models.SmallIntegerField(choices=const.TYPE_REPUTATION)
     reputation = models.IntegerField(default=1)
 
-    #comment that must be used if reputation_type == 10
-    #assigned_by_moderator - so that reason can be displayed
-    #in that case Question field will be blank
+    # comment that must be used if reputation_type == 10
+    # assigned_by_moderator - so that reason can be displayed
+    # in that case Question field will be blank
     comment = models.CharField(max_length=128, null=True)
 
     objects = ReputeManager()
@@ -224,19 +223,18 @@ class Repute(models.Model):
 
         part of the purpose of this method is to hide this idiosyncracy
         """
-        if self.reputation_type == 10:#todo: hide magic number
-            return  _('<em>Changed by moderator. Reason:</em> %(reason)s') \
-                                                    % {'reason':self.comment}
+        if self.reputation_type == 10:  # TODO: hide magic number
+            return _('<em>Changed by moderator. Reason:</em> %(reason)s') % {'reason': self.comment}
         else:
-            delta = self.positive + self.negative#.negative is < 0 so we add!
+            delta = self.positive + self.negative  # .negative is < 0 so we add!
             link_title_data = {
-                                'points': abs(delta),
-                                'username': self.user.username,
-                                'question_title': self.question.thread.title
-                            }
+                'points': abs(delta),
+                'username': self.user.username,
+                'question_title': self.question.thread.title
+            }
 
-            return '<a href="%(url)s">%(question_title)s</a>' \
-                            % {
-                               'url': self.question.get_absolute_url(),
-                               'question_title': escape(self.question.thread.title),
-                            }
+            return '<a href="%(url)s">%(question_title)s</a>' % {
+                'url': self.question.get_absolute_url(),
+                'question_title': escape(self.question.thread.title),
+            }
+

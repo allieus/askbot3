@@ -4,7 +4,10 @@ import json
 import pytz
 import re
 import time
-import urllib
+try:
+    from urllib.parse import quote, quote_plus
+except ImportError:
+    from urllib import quote, quote_plus
 from bs4 import BeautifulSoup
 from django.core import exceptions as django_exceptions
 from django.utils.translation import ugettext as _
@@ -15,6 +18,9 @@ from django.core.urlresolvers import reverse, resolve
 from django.http import Http404
 from django.utils.encoding import force_text
 from django.utils.text import Truncator
+from django_countries import countries
+from django_countries import settings as countries_settings
+from django_jinja import library
 from askbot import exceptions as askbot_exceptions
 from askbot.conf import settings as askbot_settings
 from django.conf import settings as django_settings
@@ -29,20 +35,10 @@ from askbot.utils.slug import slugify
 from askbot.utils.pluralization import py_pluralize as _py_pluralize
 from askbot.shims.django_shims import ResolverMatch
 
-from django_countries import countries
-from django_countries import settings as countries_settings
-
-from django_jinja import library
-
-
-
 absolutize_urls = library.filter(absolutize_urls)
 
-TIMEZONE_STR = pytz.timezone(
-                    django_settings.TIME_ZONE
-                ).localize(
-                    datetime.datetime.now()
-                ).strftime('%z')
+TIMEZONE_STR = pytz.timezone(django_settings.TIME_ZONE).localize(datetime.datetime.now()).strftime('%z')
+
 
 @library.filter
 def add_tz_offset(datetime_object):
@@ -64,11 +60,11 @@ def is_current_language(lang):
 
 @library.filter
 def is_empty_editor_value(value):
-    if value == None:
+    if value is None:
         return True
     if str(value).strip() == '':
         return True
-    #tinymce uses a weird sentinel placeholder
+    # tinymce uses a weird sentinel placeholder
     if askbot_settings.EDITOR_TYPE == 'tinymce':
         soup = BeautifulSoup(value, 'html5lib')
         return soup.getText().strip() == ''
@@ -79,11 +75,11 @@ def to_int(value):
     return int(value)
 
 @library.filter
-def safe_urlquote(text, quote_plus=False):
-    if quote_plus:
-        return urllib.quote_plus(text.encode('utf8'))
+def safe_urlquote(text, is_quote_plus=False):
+    if is_quote_plus:
+        return quote_plus(text.encode('utf8'))
     else:
-        return urllib.quote(text.encode('utf8'))
+        return quote(text.encode('utf8'))
 
 @library.filter
 def show_block_to(block_name, user):
@@ -91,7 +87,7 @@ def show_block_to(block_name, user):
     if block:
         flag_name = block_name + '_ANON_ONLY'
         require_anon = getattr(askbot_settings, flag_name, False)
-        return (require_anon is False) or user.is_anonymous()
+        return (not require_anon) or user.is_anonymous()
     return False
 
 @library.filter
@@ -110,9 +106,10 @@ def can_see_private_user_data(viewer, target):
         if viewer == target:
             return True
         if viewer.is_administrator_or_moderator():
-            #todo: take into account intersection of viewer and target user groups
+            # TODO: take into account intersection of viewer and target user groups
             return askbot_settings.SHOW_ADMINS_PRIVATE_USER_DATA
     return False
+
 
 @library.filter
 def clean_login_url(url):
@@ -126,6 +123,7 @@ def clean_login_url(url):
         pass
     return reverse('index')
 
+
 @library.filter
 def transurl(url):
     """translate url, when appropriate and percent-
@@ -138,8 +136,9 @@ def transurl(url):
             'string %s is not good for url - must be ascii' % url
         )
     if getattr(django_settings, 'ASKBOT_TRANSLATE_URL', False):
-        return urllib.quote(_(url).encode('utf-8'))
+        return quote(_(url).encode('utf-8'))
     return url
+
 
 @library.filter
 def truncate_html_post(post_html):
@@ -150,14 +149,17 @@ def truncate_html_post(post_html):
     post_html += '<div class="clearfix"></div></div>'
     return post_html
 
+
 @library.filter
 def country_display_name(country_code):
     country_dict = dict(countries.COUNTRIES)
     return country_dict[country_code]
 
+
 @library.filter
 def country_flag_url(country_code):
     return countries_settings.FLAG_URL % country_code
+
 
 @library.filter
 def collapse(input):
@@ -169,22 +171,26 @@ def collapse(input):
 def split(string, separator):
     return string.split(separator)
 
+
 @library.filter
 def get_age(birthday):
     current_time = datetime.datetime(*time.localtime()[0:6])
     year = birthday.year
     month = birthday.month
     day = birthday.day
-    diff = current_time - datetime.datetime(year,month,day,0,0,0)
+    diff = current_time - datetime.datetime(year, month, day, 0, 0, 0)
     return diff.days / 365
+
 
 @library.filter
 def equal(one, other):
     return one == other
 
+
 @library.filter
 def not_equal(one, other):
     return one != other
+
 
 @library.filter
 def media(url):
@@ -197,13 +203,16 @@ def media(url):
     else:
         return ''
 
+
 @library.filter
 def fullmedia(url):
     return site_url_func(media(url))
 
+
 @library.filter
 def site_url(url):
     return site_url_func(url)
+
 
 diff_date = library.filter(functions.diff_date)
 
@@ -217,16 +226,9 @@ library.filter(name='linebreaks', fn=defaultfilters.linebreaks)
 library.filter(name='default_if_none', fn=defaultfilters.default_if_none)
 
 
-def make_template_filter_from_permission_assertion(
-                                assertion_name = None,
-                                filter_name = None,
-                                allowed_exception = None
-                            ):
-    """a decorator-like function that will create a True/False test from
-    permission assertion
-    """
+def make_template_filter_from_permission_assertion(assertion_name=None, filter_name=None, allowed_exception=None):
+    """a decorator-like function that will create a True/False test from permission assertion"""
     def filter_function(user, post):
-
         if askbot_settings.ALWAYS_SHOW_ALL_UI_FUNCTIONS:
             return True
 
@@ -260,66 +262,55 @@ def can_moderate_user(user, other_user):
     return False
 
 can_flag_offensive = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_flag_offensive',
-                        filter_name = 'can_flag_offensive',
-                        allowed_exception = askbot_exceptions.DuplicateCommand
-                    )
+    assertion_name='assert_can_flag_offensive',
+    filter_name='can_flag_offensive',
+    allowed_exception=askbot_exceptions.DuplicateCommand)
 
 can_remove_flag_offensive = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_remove_flag_offensive',
-                        filter_name = 'can_remove_flag_offensive',
-                    )
+    assertion_name='assert_can_remove_flag_offensive',
+    filter_name='can_remove_flag_offensive')
 
 can_remove_all_flags_offensive = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_remove_all_flags_offensive',
-                        filter_name = 'can_remove_all_flags_offensive',
-                    )
+    assertion_name='assert_can_remove_all_flags_offensive',
+    filter_name='can_remove_all_flags_offensive')
 
 can_post_comment = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_post_comment',
-                        filter_name = 'can_post_comment'
-                    )
+    assertion_name='assert_can_post_comment',
+    filter_name='can_post_comment')
 
 can_edit_comment = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_edit_comment',
-                        filter_name = 'can_edit_comment'
-                    )
+    assertion_name='assert_can_edit_comment',
+    filter_name='can_edit_comment')
 
 can_close_question = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_close_question',
-                        filter_name = 'can_close_question'
-                    )
+    assertion_name='assert_can_close_question',
+    filter_name='can_close_question')
 
 can_delete_comment = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_delete_comment',
-                        filter_name = 'can_delete_comment'
-                    )
+    assertion_name='assert_can_delete_comment',
+    filter_name='can_delete_comment')
 
-#this works for questions, answers and comments
+# this works for questions, answers and comments
 can_delete_post = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_delete_post',
-                        filter_name = 'can_delete_post'
-                    )
+    assertion_name='assert_can_delete_post',
+    filter_name='can_delete_post')
 
 can_reopen_question = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_reopen_question',
-                        filter_name = 'can_reopen_question'
-                    )
+    assertion_name='assert_can_reopen_question',
+    filter_name='can_reopen_question')
 
 can_edit_post = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_edit_post',
-                        filter_name = 'can_edit_post'
-                    )
+    assertion_name='assert_can_edit_post',
+    filter_name='can_edit_post')
 
 can_retag_question = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_retag_question',
-                        filter_name = 'can_retag_question'
-                    )
+    assertion_name='assert_can_retag_question',
+    filter_name='can_retag_question')
 
 can_accept_best_answer = make_template_filter_from_permission_assertion(
-                        assertion_name = 'assert_can_accept_best_answer',
-                        filter_name = 'can_accept_best_answer'
-                    )
+    assertion_name='assert_can_accept_best_answer',
+    filter_name='can_accept_best_answer')
+
 
 def can_see_offensive_flags(user, post):
     """Determines if a User can view offensive flag counts.
@@ -343,9 +334,11 @@ def can_see_offensive_flags(user, post):
             return False
     else:
         return False
+
 # Manual Jinja filter registration this leaves can_see_offensive_flags() untouched (unwrapped by decorator),
 # which is needed by some tests
 library.filter('can_see_offensive_flags', can_see_offensive_flags)
+
 
 @library.filter
 def humanize_counter(number):
@@ -361,19 +354,23 @@ def humanize_counter(number):
     else:
         return str(number)
 
+
 @library.filter
 def py_pluralize(source, count):
     plural_forms = source.strip().split('\n')
     return _py_pluralize(plural_forms, count)
 
+
 @library.filter
 def absolute_value(number):
     return abs(number)
+
 
 @library.filter
 def get_empty_search_state(unused):
     from askbot.search.state_manager import SearchState
     return SearchState.get_empty()
+
 
 @library.filter
 def sub_vars(text, user=None):
@@ -394,6 +391,7 @@ def sub_vars(text, user=None):
     text = sitename_re.sub(site_name, text)
     text = sitelink_re.sub(site_link('index', site_name), text)
     return text
+
 
 @library.filter
 def convert_markdown(text):

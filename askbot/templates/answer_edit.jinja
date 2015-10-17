@@ -17,7 +17,7 @@
         <input type="hidden" id="select_revision" name="select_revision" value="false"/>
         {{ macros.edit_post(form, post_html=revision.text) }}
         <div class="answer-options">
-            {% if settings.WIKI_ON and answer.wiki == False %}
+            {% if settings.WIKI_ON and not answer.wiki %}
                 {{ macros.checkbox_in_div(form.wiki) }}
             {% endif %}
             {% if settings.ENABLE_EMAIL_ALERTS %}

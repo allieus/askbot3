@@ -8,12 +8,12 @@ from django.utils.translation import ugettext as _
 from askbot.models.post import Post
 from askbot.models.base import BaseQuerySetManager
 from askbot.conf import settings as askbot_settings
-from askbot import mail
+
 
 def emailed_content_needs_moderation(email):
     """True, if we moderate content and if email address
     is marked for moderation
-    todo: maybe this belongs to a separate "moderation" module
+    TODO: maybe this belongs to a separate "moderation" module
     """
     if askbot_settings.CONTENT_MODERATION_MODE == 'premoderation':
         group_name = email.split('@')[0]
@@ -63,9 +63,9 @@ class ReplyAddress(models.Model):
     address = models.CharField(max_length = 25, unique = True)
     post = models.ForeignKey(
                             Post,
-                            null = True,#reply not necessarily to posts
+                            null = True,# reply not necessarily to posts
                             related_name = 'reply_addresses'
-                        )#the emailed post
+                        )# the emailed post
     reply_action = models.CharField(
                         max_length = 32,
                         choices = REPLY_ACTION_CHOICES,
@@ -82,7 +82,6 @@ class ReplyAddress(models.Model):
 
     objects = ReplyAddressManager()
 
-
     class Meta:
         app_label = 'askbot'
         db_table = 'askbot_replyaddress'
@@ -90,22 +89,15 @@ class ReplyAddress(models.Model):
     @property
     def was_used(self):
         """True if was used"""
-        return self.used_at != None
+        return self.used_at is not None
 
-    def as_email_address(self, prefix = 'reply-'):
+    def as_email_address(self, prefix='reply-'):
         """returns email address, prefix is added
         in front of the code"""
-        return '%s%s@%s' % (
-                        prefix,
-                        self.address,
-                        askbot_settings.REPLY_BY_EMAIL_HOSTNAME
-                    )
+        return '%s%s@%s' % (prefix, self.address, askbot_settings.REPLY_BY_EMAIL_HOSTNAME)
 
-    def edit_post(
-        self, body_text, title = None, edit_response = False
-    ):
-        """edits the created post upon repeated response
-        to the same address"""
+    def edit_post(self, body_text, title=None, edit_response=False):
+        """edits the created post upon repeated response to the same address"""
         if self.was_used or edit_response:
             reply_action = 'append_content'
         else:
@@ -126,19 +118,17 @@ class ReplyAddress(models.Model):
         if post.post_type == 'question':
             assert(post is self.post)
             self.user.edit_question(
-                question = post,
-                body_text = body_text,
-                title = title,
-                revision_comment = revision_comment,
-                by_email = True
-            )
+                question=post,
+                body_text=body_text,
+                title=title,
+                revision_comment=revision_comment,
+                by_email=True)
         else:
             self.user.edit_post(
-                post = post,
-                body_text = body_text,
-                revision_comment = revision_comment,
-                by_email = True
-            )
+                post=post,
+                body_text=body_text,
+                revision_comment=revision_comment,
+                by_email=True)
         self.post.thread.reset_cached_data()
 
     def create_reply(self, body_text):
@@ -148,13 +138,12 @@ class ReplyAddress(models.Model):
         result = None
         if self.post.post_type == 'answer':
             result = self.user.post_comment(
-                                        self.post,
-                                        body_text,
-                                        by_email = True
-                                    )
+                self.post,
+                body_text,
+                by_email=True)
         elif self.post.post_type == 'question':
             if self.reply_action == 'auto_answer_or_comment':
-                wordcount = len(body_text)/6#todo: this is a simplistic hack
+                wordcount = len(body_text)/6# TODO: this is a simplistic hack
                 if wordcount > askbot_settings.MIN_WORDS_FOR_ANSWER_BY_EMAIL:
                     reply_action = 'post_answer'
                 else:
@@ -164,27 +153,22 @@ class ReplyAddress(models.Model):
 
             if reply_action == 'post_answer':
                 result = self.user.post_answer(
-                                            self.post,
-                                            body_text,
-                                            by_email = True
-                                        )
+                    self.post,
+                    body_text,
+                    by_email=True)
             elif reply_action == 'post_comment':
                 result = self.user.post_comment(
-                                            self.post,
-                                            body_text,
-                                            by_email = True
-                                        )
+                    self.post,
+                    body_text,
+                    by_email=True)
             else:
-                logging.critical(
-                    'Unexpected reply action: "%s", post by email failed' % reply_action
-                )
-                return None#todo: there may be a better action to take here...
+                logging.critical('Unexpected reply action: "%s", post by email failed' % reply_action)
+                return None# TODO: there may be a better action to take here...
         elif self.post.post_type == 'comment':
             result = self.user.post_comment(
-                                    self.post.parent,
-                                    body_text,
-                                    by_email = True
-                                )
+                self.post.parent,
+                body_text,
+                by_email=True)
         result.thread.reset_cached_data()
         self.response_post = result
         self.used_at = datetime.now()

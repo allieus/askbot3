@@ -206,7 +206,7 @@ body{
     {% if editor_type == 'markdown' %}
         {% include "meta/markdown_javascript.jinja" %}
     {% else %}
-        {% include "meta/tinymce_css.jinja" %}{# todo - maybe move to form media? #}
+        {% include "meta/tinymce_css.jinja" %}{# TODO - maybe move to form media? #}
     {% endif %}
     {% compress js %}
     <script type="text/javascript" src="{{ '/js/live_search_new_thread.js'|media }}"></script>

@@ -44,7 +44,7 @@ settings.register(
 EMAIL_VALIDATION_CASE_CHOICES = (
     ('nothing', _('nothing - not required')),
     ('see-content', _('account registration')),
-    #'post-content', _('posting content'),
+    # 'post-content', _('posting content'),
 )
 
 settings.register(
@@ -57,8 +57,8 @@ settings.register(
     )
 )
 
-#todo: move REQUIRE_VALID_EMAIL_FOR to boolean setting
-#settings.register(
+# TODO: move REQUIRE_VALID_EMAIL_FOR to boolean setting
+# settings.register(
 #    livesettings.BooleanValue(
 #        ACCESS_CONTROL,
 #        'EMAIL_VALIDATION_REQUIRED',

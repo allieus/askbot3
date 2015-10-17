@@ -38,8 +38,8 @@ http://foo.com/blah_blah/
 http://foo.com/blah_blah_(wikipedia)
 http://foo.com/more_(than)_one_(parens)
 (Something like http://foo.com/blah_blah_(wikipedia))
-http://foo.com/blah_(wikipedia)#cite-1
-http://foo.com/blah_(wikipedia)_blah#cite-1
+http://foo.com/blah_(wikipedia)# cite-1
+http://foo.com/blah_(wikipedia)_blah# cite-1
 http://foo.com/unicode_(✪)_in_parens
 http://foo.com/(something)?after=parens
 http://foo.com/blah_blah.
@@ -82,7 +82,7 @@ Known to fail against:
 
 class MarkdownTestCase(TestCase):
     """tests markdown,
-    todo: add more test cases from above"""
+    TODO: add more test cases from above"""
     def setUp(self):
         self.conv = markdown_input_converter
     def test_anchor_stays_untouched(self):
@@ -92,9 +92,9 @@ class MarkdownTestCase(TestCase):
     def test_full_link_converts_to_anchor(self):
         text = """text http://example.com/ text"""
         expected ="""<p>text <a href="http://example.com/">http://example.com/</a> text</p>\n"""
-        #todo: note there is a weird artefact produced by markdown2 inself
-        #trailing slash after the closing </a> tag
-        #the artifact is produced by _do_auto_links() function
+        # TODO: note there is a weird artefact produced by markdown2 inself
+        # trailing slash after the closing </a> tag
+        # the artifact is produced by _do_auto_links() function
         self.assertHTMLEqual(self.conv(text), expected)
 
     def test_protocol_less_link_converts_to_anchor(self):

@@ -8,7 +8,6 @@ from django.core.urlresolvers import reverse
 from django.core import management
 from django.core.cache.backends.dummy import DummyCache
 from django.core import cache
-from django.utils import six
 from django.utils.translation import activate as activate_language
 
 import coffin
@@ -76,8 +75,8 @@ class PageLoadTestCase(AskbotTestCase):
 
     def setUp(self):
         self.old_cache = cache.cache
-        #Disable caching (to not interfere with production cache,
-        #not sure if that's possible but let's not risk it)
+        # Disable caching (to not interfere with production cache,
+        # not sure if that's possible but let's not risk it)
         cache.cache = DummyCache('', {})
         if 'postgresql' in askbot.get_database_engine_name():
             management.call_command(
@@ -135,21 +134,20 @@ class PageLoadTestCase(AskbotTestCase):
                 raise NotImplementedError()
 
             if isinstance(templates, list):
-                #asuming that there is more than one template
+                # asuming that there is more than one template
                 template_names = [t.name for t in templates]
                 print('templates are %s' % ','.join(template_names))
                 self.assertIn(template, template_names)
             else:
                 raise Exception('unexpected error while runnig test')
 
-
     def test_index(self):
-        #todo: merge this with all reader url tests
+        # TODO: merge this with all reader url tests
         response = self.client.get(reverse('index'), follow=True)
         self.assertEqual(response.status_code, 200)
         self.failUnless(len(response.redirect_chain) == 1)
         redirect_url = response.redirect_chain[0][0]
-        self.failUnless(six.text_type(redirect_url).endswith('/questions/'))
+        self.failUnless(redirect_url.endswith('/questions/'))
         if hasattr(response, 'template'):
             templates = response.template
         elif hasattr(response, 'templates'):
@@ -188,13 +186,13 @@ class PageLoadTestCase(AskbotTestCase):
         user.join_group(group)
         question = self.post_question(user=user, title='alibaba', group_id=group.id)
 
-        #ask for data anonymously - should get nothing
+        # ask for data anonymously - should get nothing
         query_data = {'query_text': 'alibaba'}
         response = self.client.get(reverse('api_get_questions'), query_data)
         response_data = json.loads(response.content)
         self.assertEqual(len(response_data), 0)
 
-        #log in - should get the question
+        # log in - should get the question
         self.client.login(method='force', user_id=user.id)
         response = self.client.get(reverse('api_get_questions'), query_data)
         response_data = json.loads(response.content)
@@ -212,7 +210,7 @@ class PageLoadTestCase(AskbotTestCase):
             'get_groups_list',
             status_code=status_code
         )
-        #self.try_url(
+        # self.try_url(
         #        'individual_question_feed',
         #        kwargs={'pk':'one-tag'},
         #        status_code=status_code)
@@ -232,7 +230,7 @@ class PageLoadTestCase(AskbotTestCase):
                 status_code=status_code,
                 template='static_page.html')
         self.try_url('logout', template='authopenid/logout.html')
-        #todo: test different tabs
+        # TODO: test different tabs
         self.try_url(
                 'tags',
                 status_code=status_code,
@@ -255,7 +253,7 @@ class PageLoadTestCase(AskbotTestCase):
                 template='revisions.html',
                 kwargs={'id': models.Post.objects.get_answers().order_by('id')[0].id}
             )
-        #todo: test different sort methods and scopes
+        # TODO: test different sort methods and scopes
         self.try_url(
             'questions',
             status_code=status_code,
@@ -363,13 +361,13 @@ class PageLoadTestCase(AskbotTestCase):
                 status_code=status_code,
                 template='users.html'
             )
-        #self.try_url(
+        # self.try_url(
         #        'widget_questions',
         #        status_code = status_code,
         #        data={'tags': 'tag-1-0'},
         #        template='question_widget.html',
         #    )
-        #todo: really odd naming conventions for sort methods
+        # TODO: really odd naming conventions for sort methods
         self.try_url(
                 'users',
                 status_code=status_code,
@@ -465,10 +463,10 @@ class PageLoadTestCase(AskbotTestCase):
     def test_non_user_urls_in_closed_forum_mode(self):
         self.proto_test_non_user_urls(status_code=302)
 
-    #def test_non_user_urls_logged_in(self):
-        #user = User.objects.get(id=1)
-        #somehow login this user
-        #self.proto_test_non_user_urls()
+    # def test_non_user_urls_logged_in(self):
+        # user = User.objects.get(id=1)
+        # somehow login this user
+        # self.proto_test_non_user_urls()
 
 
     def proto_test_user_urls(self, status_code):
@@ -540,7 +538,7 @@ class PageLoadTestCase(AskbotTestCase):
     def test_user_urls_logged_in(self):
         user = models.User.objects.get(id=2)   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
         name_slug = slugify(user.username)
-        #works only with builtin django_authopenid
+        # works only with builtin django_authopenid
         self.client.login(method = 'force', user_id = 2)   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
         self.try_url(
             'user_subscriptions',
@@ -658,7 +656,7 @@ class QuestionPageRedirectTests(AskbotTestCase):
         self.assertEqual(self.q, resp.context['question'])
         self.assertEqual(self.a, resp.context['show_post'])
 
-        #test redirect from old question
+        # test redirect from old question
         url = reverse('question', kwargs={'id': 101}) + self.q.slug + '/'
         resp = self.client.get(url, data={'answer': 201})
         self.assertRedirects(resp, expected_url=self.a.get_absolute_url())
@@ -681,7 +679,7 @@ class QuestionPageRedirectTests(AskbotTestCase):
         self.assertEqual(self.c, resp.context['show_comment'])
 
         url = self.q.get_absolute_url()
-        #point to a non-existing comment
+        # point to a non-existing comment
         resp = self.client.get(url, data={'comment': 100301})
         self.assertRedirects(resp, expected_url = self.q.get_absolute_url())
 
@@ -722,7 +720,7 @@ class CommandViewTests(AskbotTestCase):
             'model_name': 'Group',
             'text': 'some description'
         }
-        self.client.post(#ajax post
+        self.client.post(# ajax post
             reverse('save_object_description'),
             data=post_data,
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
@@ -730,9 +728,9 @@ class CommandViewTests(AskbotTestCase):
         group = self.reload_object(group)
         self.assertEqual(group.description.text, 'some description')
 
-        #test edit
+        # test edit
         post_data['text'] = 'edited description'
-        self.client.post(#second post to edit
+        self.client.post(# second post to edit
             reverse('save_object_description'),
             data=post_data,
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
@@ -781,7 +779,7 @@ class UserProfilePageTests(AskbotTestCase):
 
     @with_settings(EDITABLE_EMAIL=False, EDITABLE_SCREEN_NAME=True)
     def test_user_cannot_change_email(self):
-        #log in
+        # log in
         self.client.login(user_id=self.user.id, method='force')
         email_before = self.user.email
         response = self.client.post(

@@ -35,7 +35,7 @@ class ReplaceLinksWithTextTests(TestCase):
 
     def test_external_link_without_text_replaced(self):
         text = '<a href="https://example.com/"></a>'
-        #in this case we delete the link
+        # in this case we delete the link
         self.assertEqual(replace_links_with_text(text), '')
 
     def test_external_link_with_text_replaced(self):
@@ -75,14 +75,14 @@ class HTMLUtilsTests(TestCase):
     @with_settings(APP_URL='http://example.com')
     def test_absolutize_urls(self):
         text = """<img class="junk" src="/some.gif"> <img class="junk" src="/cat.gif"> <IMG SRC='/some.png'>"""
-        #jinja register.filter decorator works in a weird way
+        # jinja register.filter decorator works in a weird way
         self.assertEqual(
             absolutize_urls(text),
             '<img class="junk" src="http://example.com/some.gif"> <img class="junk" src="http://example.com/cat.gif"> <IMG SRC="http://example.com/some.png">'
         )
 
         text = """<a class="junk" href="/something">link</a> <A HREF='/something'>link</A>"""
-        #jinja register.filter decorator works in a weird way
+        # jinja register.filter decorator works in a weird way
         self.assertEqual(
             absolutize_urls(text),
             '<a class="junk" href="http://example.com/something">link</a> <A HREF="http://example.com/something">link</A>'

@@ -33,10 +33,10 @@ def email_alert_test(test_func):
         func_name = test_func.__name__
         if func_name.startswith('test_'):
             test_name = func_name.replace('test_', '', 1)
-            #run the main codo of the test function
+            # run the main codo of the test function
             test_func(test_object)
-            #if visit_timestamp is set,
-            #target user will visit the question at that time
+            # if visit_timestamp is set,
+            # target user will visit the question at that time
             test_object.maybe_visit_question()
             test_object.send_alerts()
             test_object.check_results(test_name)
@@ -47,30 +47,30 @@ def email_alert_test(test_func):
 def setup_email_alert_tests(setup_func):
     @functools.wraps(setup_func)
     def wrapped_setup(test_object, *args, **kwargs):
-        #empty email subscription schedule
-        #no email is sent
+        # empty email subscription schedule
+        # no email is sent
         test_object.notification_schedule = \
                     copy.deepcopy(models.EmailFeedSetting.NO_EMAIL_SCHEDULE)
-        #timestamp to use for the setup
-        #functions
+        # timestamp to use for the setup
+        # functions
         test_object.setup_timestamp = datetime.datetime.now()
 
-        #timestamp to use for the question visit
-        #by the target user
-        #if this timestamp is None then there will be no visit
-        #otherwise question will be visited by the target user
-        #at that time
+        # timestamp to use for the question visit
+        # by the target user
+        # if this timestamp is None then there will be no visit
+        # otherwise question will be visited by the target user
+        # at that time
         test_object.visit_timestamp = None
 
-        #dictionary to hols expected results for each test
-        #actual data@is initialized in the code just before the function
-        #or in the body of the subclass
+        # dictionary to hols expected results for each test
+        # actual data@is initialized in the code just before the function
+        # or in the body of the subclass
         test_object.expected_results = dict()
 
-        #do not follow by default (do not use q_sel type subscription)
+        # do not follow by default (do not use q_sel type subscription)
         test_object.follow_question = False
 
-        #fill out expected result for each test
+        # fill out expected result for each test
         test_object.expected_results['q_ask'] = {'message_count': 0, }
         test_object.expected_results['q_ask_delete_answer'] = {'message_count': 0, }
         test_object.expected_results['question_comment'] = {'message_count': 0, }
@@ -85,11 +85,11 @@ def setup_email_alert_tests(setup_func):
         test_object.expected_results['q_ans'] = {'message_count': 0, }
         test_object.expected_results['q_ans_new_answer'] = {'message_count': 0, }
 
-        #this function is expected to contain a difference between this
-        #one and the desired setup within the concrete test
+        # this function is expected to contain a difference between this
+        # one and the desired setup within the concrete test
         setup_func(test_object)
-        #must call this after setting up the notification schedule
-        #because it is needed in setUpUsers() function
+        # must call this after setting up the notification schedule
+        # because it is needed in setUpUsers() function
         test_object.setUpUsers()
     return wrapped_setup
 
@@ -138,8 +138,8 @@ class EmailAlertTests(TestCase):
         """runs the send_email_alerts management command
         and makes a shortcut access to the outbox
         """
-        #make sure tha we are not sending email for real
-        #this setting must be present in settings.py
+        # make sure tha we are not sending email for real
+        # this setting must be present in settings.py
         assert(
             django_settings.EMAIL_BACKEND == 'django.core.mail.backends.locmem.EmailBackend'
         )
@@ -201,7 +201,7 @@ class EmailAlertTests(TestCase):
                 timestamp = None,
                 body_text = 'edited body text',
             ):
-        """todo: this method may also edit other stuff
+        """TODO: this method may also edit other stuff
         like post title and tags - in the case when post is
         of type question
         """
@@ -260,7 +260,7 @@ class EmailAlertTests(TestCase):
                 author = None,
                 body_text = 'test answer body',
                 timestamp = None,
-                follow = None,#None - do nothing, True/False - follow/unfollow
+                follow = None,# None - do nothing, True/False - follow/unfollow
             ):
         """post answer with dummy content and return it
         """
@@ -293,14 +293,14 @@ class EmailAlertTests(TestCase):
                                                     self.__class__.__name__,
                                                     test_key,
                                                 )
-        #compares number of emails in the outbox and
-        #the expected message count for the current test
+        # compares number of emails in the outbox and
+        # the expected message count for the current test
         self.assertEqual(len(outbox), expected['message_count'], error_message)
         if expected['message_count'] > 0:
             if len(outbox) > 0:
                 error_message = 'expected recipient %s found %s' % \
                     (self.target_user.email, outbox[0].recipients()[0])
-                #verify that target user receives the email
+                # verify that target user receives the email
                 self.assertEqual(
                             outbox[0].recipients()[0],
                             self.target_user.email,
@@ -487,7 +487,7 @@ class WeeklyQAskEmailAlertTests(EmailAlertTests):
         self.expected_results['question_edit'] = {'message_count': 1, }
         self.expected_results['answer_edit'] = {'message_count': 1, }
 
-        #local tests
+        # local tests
         self.expected_results['question_edit_reedited_recently'] = \
                                                     {'message_count': 1}
         self.expected_results['answer_edit_reedited_recently'] = \
@@ -660,7 +660,7 @@ class LiveInstantSelectedQuestionsEmailAlertTests(EmailAlertTests):
     @setup_email_alert_tests
     def setUp(self):
         self.notification_schedule['q_sel'] = 'i'
-        #first posts yesterday
+        # first posts yesterday
         self.setup_timestamp = datetime.datetime.now() - datetime.timedelta(1)
         self.follow_question = True
 
@@ -690,7 +690,7 @@ class InstantMentionsAndCommentsEmailAlertTests(EmailAlertTests):
         self.expected_results['mention_in_question'] = {'message_count': 1, }
         self.expected_results['mention_in_answer'] = {'message_count': 1, }
 
-        #specialized local test case
+        # specialized local test case
         self.expected_results['question_edited_mention_stays'] = {'message_count': 1}
 
     @email_alert_test
@@ -748,8 +748,8 @@ class FeedbackTests(utils.AskbotTestCase):
     def assert_feedback_works(self):
         outbox = django.core.mail.outbox
         self.assertEqual(len(outbox), 1)
-        #todo: change groups to django groups
-        #then replace to 4 back to 3 in the line below
+        # TODO: change groups to django groups
+        # then replace to 4 back to 3 in the line below
         self.assertEqual(len(outbox[0].recipients()), 3)
 
     def test_feedback_post_form(self):
@@ -867,11 +867,11 @@ class TagFollowedInstantWholeForumEmailAlertTests(utils.AskbotTestCase):
         )
 
 class EmailReminderTestCase(utils.AskbotTestCase):
-    #subclass must define these (example below)
-    #enable_setting_name = 'ENABLE_UNANSWERED_REMINDERS'
-    #frequency_setting_name = 'UNANSWERED_REMINDER_FREQUENCY'
-    #days_before_setting_name = 'DAYS_BEFORE_SENDING_UNANSWERED_REMINDER'
-    #max_reminder_setting_name = 'MAX_UNANSWERED_REMINDERS'
+    # subclass must define these (example below)
+    # enable_setting_name = 'ENABLE_UNANSWERED_REMINDERS'
+    # frequency_setting_name = 'UNANSWERED_REMINDER_FREQUENCY'
+    # days_before_setting_name = 'DAYS_BEFORE_SENDING_UNANSWERED_REMINDER'
+    # max_reminder_setting_name = 'MAX_UNANSWERED_REMINDERS'
 
     def setUp(self):
         self.u1 = self.create_user(username = 'user1')
@@ -966,8 +966,8 @@ class UnansweredReminderTests(EmailReminderTestCase):
         days_ago = self.wait_days + (self.max_emails - 1)*self.recurrence_days - 1
         timestamp = datetime.datetime.now() - datetime.timedelta(days_ago, 3600)
         self.do_post(timestamp)
-        #todo: change groups to django groups
-        #then replace to 2 back to 1 in the line below
+        # TODO: change groups to django groups
+        # then replace to 2 back to 1 in the line below
         self.assert_have_emails(1)
 
 
@@ -1011,8 +1011,8 @@ class EmailFeedSettingTests(utils.AskbotTestCase):
         new_user = models.User.objects.create_user('new', 'new@example.com')
         feeds_before = self.get_user_feeds()
 
-        #verify that feed settigs are created automatically
-        #when user is just created
+        # verify that feed settigs are created automatically
+        # when user is just created
         self.assertTrue(feeds_before.count() != 0)
 
         data_before = TO_JSON(feeds_before)
@@ -1074,11 +1074,11 @@ class PostApprovalTests(utils.AskbotTestCase):
         )
 
     def test_emailed_question_answerable_approval_notification(self):
-        self.u1 = self.create_user('user1', status='a')#watched user
+        self.u1 = self.create_user('user1', status='a')# watched user
         question = self.post_question(user=self.u1, by_email=True)
         outbox = django.core.mail.outbox
-        #here we should get just the notification of the post
-        #being placed on the moderation queue
+        # here we should get just the notification of the post
+        # being placed on the moderation queue
         self.assertEquals(len(outbox), 1)
         self.assertEquals(outbox[0].recipients(), [self.u1.email])
 
@@ -1095,9 +1095,9 @@ class PostApprovalTests(utils.AskbotTestCase):
 
         outbox = django.core.mail.outbox
         self.assertEquals(len(outbox), 2)
-        #moderation notification
+        # moderation notification
         self.assertEquals(outbox[0].recipients(), [u1.email,])
-        #self.assertEquals(outbox[1].recipients(), [u1.email,])#approval
+        # self.assertEquals(outbox[1].recipients(), [u1.email,])# approval
 
 
 class AbsolutizeUrlsInEmailsTests(utils.AskbotTestCase):

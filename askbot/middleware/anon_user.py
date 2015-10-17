@@ -44,22 +44,21 @@ class ConnectToSessionMessagesMiddleware(object):
         the same way as authenticated users, and sets
         the anonymous user greeting, if it should be shown"""
         if not request.path.startswith('/' + django_settings.ASKBOT_URL):
-            #todo: a hack, for real we need to remove this middleware
-            #and switch to the new-style session messages
+            # TODO: a hack, for real we need to remove this middleware
+            # and switch to the new-style session messages
             return
         if request.user.is_anonymous():
-            #1) Attach the ability to receive messages
-            #plug on deepcopy which may be called by django db "driver"
+            # 1) Attach the ability to receive messages
+            # plug on deepcopy which may be called by django db "driver"
             request.user.__deepcopy__ = dummy_deepcopy
-            #here request is linked to anon user
+            # here request is linked to anon user
             request.user.message_set = AnonymousMessageManager(request)
-            request.user.get_and_delete_messages = \
-                            request.user.message_set.get_and_delete
+            request.user.get_and_delete_messages = request.user.message_set.get_and_delete
 
-            #2) set the first greeting one time per session only
+            # 2) set the first greeting one time per session only
             if 'greeting_set' not in request.session and \
                     'askbot_visitor' not in request.COOKIES and \
-			        askbot_settings.ENABLE_GREETING_FOR_ANON_USER:
+                    askbot_settings.ENABLE_GREETING_FOR_ANON_USER:
                 request.session['greeting_set'] = True
                 msg = askbot_settings.GREETING_FOR_ANONYMOUS_USER
                 request.user.message_set.create(message=msg)
@@ -69,15 +68,15 @@ class ConnectToSessionMessagesMiddleware(object):
         authenticates so that the anonymous user message won't
         be shown after the user logs out"""
         if not request.path.startswith('/' + django_settings.ASKBOT_URL):
-            #todo: a hack, for real we need to remove this middleware
-            #and switch to the new-style session messages
+            # TODO: a hack, for real we need to remove this middleware
+            # and switch to the new-style session messages
             return response
         if hasattr(request, 'user') and \
                 request.user.is_authenticated() and \
                 'askbot_visitor' not in request.COOKIES :
-            #import datetime
-            #max_age = 365*24*60*60
-            #expires = datetime.datetime.strftime\
+            # import datetime
+            # max_age = 365*24*60*60
+            # expires = datetime.datetime.strftime\
             #        (datetime.datetime.utcnow() +
             #                datetime.timedelta(seconds=max_age),\
             #                        "%a, %d-%b-%Y %H:%M:%S GMT")

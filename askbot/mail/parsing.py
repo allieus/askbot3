@@ -7,33 +7,33 @@ import sys
 from django.utils import six
 from askbot.conf import settings as askbot_settings
 
-#Regexes for quote separators
-#add more via variables ending with _QUOTE_RE
-#These regexes do not contain any trailing:
+# Regexes for quote separators
+# add more via variables ending with _QUOTE_RE
+# These regexes do not contain any trailing:
 #* newline chars,
 #* lines starting with | or >
 #* lines consisting entirely of empty space
-#expressions are stripped of month and day names
-#to keep them simpler and make the additions of language variants
-#easier.
+# expressions are stripped of month and day names
+# to keep them simpler and make the additions of language variants
+# easier.
 QUOTE_REGEXES = (
-    #GMAIL_QUOTE_RE =
+    # GMAIL_QUOTE_RE =
     r'\nOn [^\n]* wrote:\Z',
-    #GMAIL_SECOND_QUOTE_RE =
+    # GMAIL_SECOND_QUOTE_RE =
     r'\n\d{4}/\d{1,2}/\d{1,2} [^\n]*\Z',
-    #BLACKBERRY
+    # BLACKBERRY
     r'_+\nFrom:.*?\nSent:.*?\nTo:.*?\nSubject:.*?\Z',
-    #OUTLOOK1
+    # OUTLOOK1
     r'\n-+[\w -]+\nFrom:.*?\nSent:.*?\nTo:.*?\nSubject:.*?\Z',
-    #unknown
+    # unknown
     r'\n-+[\w -]+\nFrom:.*?\nDate:.*?\nTo:.*?\nSubject:.*?\Z',
-    #YAHOO_QUOTE_RE =
+    # YAHOO_QUOTE_RE =
     r'\n_+\n\s*From: [^\n]+\nTo: [^\n]+\nSent: [^\n]+\nSubject: [^\n]+\Z',
-    #KMAIL_QUOTE_RE =
+    # KMAIL_QUOTE_RE =
     r'\AOn [^\n]+ you wrote:\s*\n\n',
-    #OUTLOOK_RTF_QUOTE_RE =
+    # OUTLOOK_RTF_QUOTE_RE =
     r'\nSubject: [^\n]+\nFrom: [^\n]+\nTo: [^\n]+\nDate: [^\n]+\Z',
-    #OUTLOOK_TEXT_QUOTE_RE =
+    # OUTLOOK_TEXT_QUOTE_RE =
     r'\n_+\Z',
     r'From:.*?\nSent:.*?\nTo:.*?\nSubject:.*?\Z',
 )
@@ -118,7 +118,7 @@ def compile_quote_regexes():
 CLIENT_SPECIFIC_QUOTE_REGEXES = compile_quote_regexes()
 
 def strip_trailing_empties_and_quotes(text):
-    #strip empty lines and quote lines starting with | and >
+    # strip empty lines and quote lines starting with | and >
     return re.sub(r'(([\n\s\xa0])|(\n[\|>][^\n]*))*\Z', '', text)
 
 def strip_leading_empties(text):
@@ -140,11 +140,11 @@ def strip_email_client_quote_separator(text):
     for regex in CLIENT_SPECIFIC_QUOTE_REGEXES:
         if regex.search(text):
             return regex.sub('', text)
-    #did not find a quote separator!!! log it
+    # did not find a quote separator!!! log it
     log_message = '\nno matching quote separator: %s\n' % text
     sys.stderr.write(log_message.encode('utf-8'))
     text_lines = text.splitlines(False)
-    return ''.join(text_lines[:-3])#strip 3 lines as a guess
+    return ''.join(text_lines[:-3])# strip 3 lines as a guess
 
 def extract_reply_contents(text, reply_separator=None):
     """If reply_separator is given,

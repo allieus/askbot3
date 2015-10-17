@@ -33,11 +33,12 @@ from askbot.deps.livesettings import SortedDotDict, config_register
 from askbot.deps.livesettings.functions import config_get
 from askbot.deps.livesettings import signals
 
+
 def assert_setting_info_correct(info):
-    assert isinstance(info, tuple), 'must be tuple, %s found' % six.text_type(info)
+    assert isinstance(info, tuple), 'must be tuple, {} found'.format(info)
     assert len(info) in (3, 4), 'setting tuple must have three or four elements'
-    assert isinstance(info[0], (six.text_type, six.binary_type))
-    assert isinstance(info[1], (six.text_type, six.binary_type))
+    assert isinstance(info[0], six.string_types)
+    assert isinstance(info[1], six.string_types)
     assert isinstance(info[2], bool)
 
 
@@ -52,7 +53,7 @@ class ConfigSettings(object):
 
     def __init__(self):
         """assigns SortedDotDict to self.__instance if not set"""
-        if ConfigSettings.__instance == None:
+        if ConfigSettings.__instance is None:
             ConfigSettings.__instance = SortedDotDict()
         self.__dict__['_ConfigSettings__instance'] = ConfigSettings.__instance
         self.__ordering_index = {}
@@ -75,7 +76,7 @@ class ConfigSettings(object):
 
     def get_description(self, key):
         """returns descriptive title of the setting"""
-        return six.text_type(getattr(self.__instance, key).description)
+        return getattr(self.__instance, key).description
 
     def reset(self, key):
         """returns setting to the default value"""
@@ -93,7 +94,7 @@ class ConfigSettings(object):
         except:
             from askbot.deps.livesettings.models import Setting
             lang_postfix = '_' + get_language().upper()
-            #first try localized setting
+            # first try localized setting
             try:
                 setting = Setting.objects.get(key=key + lang_postfix)
             except Setting.DoesNotExist:
@@ -101,7 +102,7 @@ class ConfigSettings(object):
 
             setting.value = value
             setting.save()
-        #self.prime_cache()
+        # self.prime_cache()
 
     def register(self, value):
         """registers the setting
@@ -124,20 +125,19 @@ class ConfigSettings(object):
             self.__group_map[key] = group_key
 
     def get_setting_url(self, data):
-        from askbot.utils.html import internal_link #not site_link
+        from askbot.utils.html import internal_link  # not site_link
         group_name = data[0]
         setting_name = data[1]
 
         link = internal_link(
             'group_settings',
-            setting_name, #todo: better use description
+            setting_name,  # TODO: better use description
             kwargs={'group': group_name},
             anchor='id_%s__%s__%s' % (group_name, setting_name, get_language())
         )
         if len(data) == 4:
             return force_text(string_concat(link, ' (', data[3], ')'))
         return link
-
 
     def get_related_settings_info(self, *requirements):
         """returns a translated string explaining which
@@ -146,12 +146,12 @@ class ConfigSettings(object):
             (<group name>, <setting name>, <required or noot boolean>)
         """
         def _func():
-            #error checking
+            # error checking
             map(assert_setting_info_correct, requirements)
             required = list()
             optional = list()
             for req in requirements:
-                if req[2] == True:
+                if req[2] is True:
                     required.append(req)
                 else:
                     optional.append(req)
@@ -194,7 +194,7 @@ class ConfigSettings(object):
         """
         out = dict()
         for key in cls.__instance.keys():
-            #todo: this is odd that I could not use self.__instance.items() mapping here
+            # TODO: this is odd that I could not use self.__instance.items() mapping here
             hardcoded_setting = getattr(django_settings, 'ASKBOT_' + key, None)
             if hardcoded_setting is None:
                 out[key] = cls.__instance[key].value
@@ -224,5 +224,7 @@ signals.configuration_value_changed.connect(
     cached_value_update_handler,
     dispatch_uid='update_cached_value_upon_config_change'
 )
-#settings instance to be used elsewhere in the project
+
+# settings instance to be used elsewhere in the project
 settings = ConfigSettings()
+

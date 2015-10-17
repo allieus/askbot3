@@ -1,29 +1,27 @@
 from datetime import datetime
-
-from django.template import RequestContext
-from django.template.loader import get_template
 from django.shortcuts import render
-from django.http import HttpResponse, Http404
-from django.views.decorators import csrf
+from django.http import Http404
+from django.views.decorators.csrf import csrf_protect
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, get_object_or_404
-
 from django.contrib.auth.decorators import login_required
-
 from askbot.conf import settings as askbot_settings
-from askbot.utils import decorators
+from askbot.utils.decorators import moderators_only
 from askbot import models
+from askbot.models.widgets import AskWidget, QuestionWidget
 from askbot import forms
 
+
 WIDGETS_MODELS = {
-                  'ask': models.AskWidget,
-                  'question': models.QuestionWidget
-                 }
+    'ask': AskWidget,
+    'question': QuestionWidget,
+}
 
 WIDGETS_FORMS = {
-                'ask': forms.CreateAskWidgetForm,
-                'question': forms.CreateQuestionWidgetForm,
-               }
+    'ask': forms.CreateAskWidgetForm,
+    'question': forms.CreateQuestionWidgetForm,
+}
+
 
 def _get_model(key):
     '''like get_object_or_404 but for our models'''
@@ -32,6 +30,7 @@ def _get_model(key):
     except KeyError:
         raise Http404
 
+
 def _get_form(key):
     '''like get_object_or_404 but for our forms'''
     try:
@@ -39,16 +38,17 @@ def _get_form(key):
     except KeyError:
         raise Http404
 
-@decorators.moderators_only
-def widgets(request):
-    data = {
-        'ask_widgets': models.AskWidget.objects.all().count(),
-        'question_widgets': models.QuestionWidget.objects.all().count(),
-        'page_class': 'widgets'
-    }
-    return render(request, 'embed/widgets.jinja', data)
 
-@csrf.csrf_protect
+@moderators_only
+def widgets(request):
+    return render(request, 'embed/widgets.jinja', {
+        'ask_widgets': AskWidget.objects.all().count(),
+        'question_widgets': QuestionWidget.objects.all().count(),
+        'page_class': 'widgets'
+    })
+
+
+@csrf_protect
 def ask_widget(request, widget_id):
 
     def post_question(data, request):
@@ -57,7 +57,7 @@ def ask_widget(request, widget_id):
         request.session['widget_question_url'] = question.get_absolute_url()
         return question
 
-    widget = get_object_or_404(models.AskWidget, id=widget_id)
+    widget = get_object_or_404(AskWidget, id=widget_id)
 
     if request.method == "POST":
 
@@ -65,10 +65,10 @@ def ask_widget(request, widget_id):
             return redirect('ask_by_widget')
 
         form = forms.AskWidgetForm(
-                    include_text=widget.include_text_field,
-                    data=request.POST,
-                    user=request.user
-                )
+            include_text=widget.include_text_field,
+            data=request.POST,
+            user=request.user)
+
         if form.is_valid():
             ask_anonymously = form.cleaned_data['ask_anonymously']
             title = form.cleaned_data['title']
@@ -76,7 +76,6 @@ def ask_widget(request, widget_id):
                 text = form.cleaned_data['text']
             else:
                 text = ' '
-
 
             if widget.group:
                 group_id = widget.group.id
@@ -99,14 +98,13 @@ def ask_widget(request, widget_id):
             }
             if request.user.is_authenticated():
                 data_dict['author'] = request.user
-                #question = post_question(data_dict, request)
+                # question = post_question(data_dict, request)
                 return redirect('ask_by_widget_complete')
             else:
                 request.session['widget_question'] = data_dict
                 next_url = '%s?next=%s' % (
-                        reverse('widget_signin'),
-                        reverse('ask_by_widget', args=(widget.id,))
-                )
+                    reverse('widget_signin'),
+                    reverse('ask_by_widget', args=(widget.id,)))
                 return redirect(next_url)
     else:
         if 'widget_question' in request.session and \
@@ -118,22 +116,21 @@ def ask_widget(request, widget_id):
                 del request.session['widget_question']
                 return redirect('ask_by_widget_complete')
             else:
-                #FIXME: this redirect is temporal need to create the correct view
+                # FIXME: this redirect is temporal need to create the correct view
                 next_url = '%s?next=%s' % (reverse('widget_signin'),
                                            reverse('ask_by_widget', args=(widget_id,)))
                 return redirect(next_url)
 
         form = forms.AskWidgetForm(
             include_text=widget.include_text_field,
-            user=request.user
-        )
+            user=request.user)
 
-    data = {
-            'form': form,
-            'widget': widget,
-            'editor_type': askbot_settings.EDITOR_TYPE
-           }
-    return render(request, 'embed/ask_by_widget.jinja', data)
+    return render(request, 'embed/ask_by_widget.jinja', {
+        'form': form,
+        'widget': widget,
+        'editor_type': askbot_settings.EDITOR_TYPE
+    })
+
 
 @login_required
 def ask_widget_complete(request):
@@ -147,22 +144,24 @@ def ask_widget_complete(request):
     if custom_css:
         del request.session['widget_css']
 
-    data = {'question_url': question_url, 'custom_css': custom_css}
-    return render(request, 'embed/ask_widget_complete.jinja', data)
+    return render(request, 'embed/ask_widget_complete.jinja', {
+        'question_url': question_url,
+        'custom_css': custom_css,
+    })
 
 
-@decorators.moderators_only
+@moderators_only
 def list_widgets(request, model):
     model_class = _get_model(model)
     widgets = model_class.objects.all()
-    data = {
-            'widgets': widgets,
-            'widget_name': model
-           }
-    return render(request, 'embed/list_widgets.jinja', data)
+    return render(request, 'embed/list_widgets.jinja', {
+        'widgets': widgets,
+        'widget_name': model
+    })
 
-@decorators.moderators_only
-@csrf.csrf_protect
+
+@moderators_only
+@csrf_protect
 def create_widget(request, model):
     form_class = _get_form(model)
     model_class = _get_model(model)
@@ -175,13 +174,15 @@ def create_widget(request, model):
     else:
         form = form_class()
 
-    data = {'form': form,
-            'action': 'edit',
-            'widget_name': model}
-    return render(request, 'embed/widget_form.jinja', data)
+    return render(request, 'embed/widget_form.jinja', {
+        'form': form,
+        'action': 'edit',
+        'widget_name': model,
+    })
 
-@decorators.moderators_only
-@csrf.csrf_protect
+
+@moderators_only
+@csrf_protect
 def edit_widget(request, model, widget_id):
     model_class = _get_model(model)
     form_class = _get_form(model)
@@ -198,7 +199,6 @@ def edit_widget(request, model, widget_id):
                     del form_dict[form_key]
                 else:
                     continue
-
             widget.__dict__.update(form_dict)
             widget.save()
             return redirect('list_widgets', model=model)
@@ -220,51 +220,47 @@ def edit_widget(request, model, widget_id):
             'widget_name': model}
     return render(request, 'embed/widget_form.jinja', data)
 
-@decorators.moderators_only
-@csrf.csrf_protect
+
+@moderators_only
+@csrf_protect
 def delete_widget(request, model, widget_id):
     model_class = _get_model(model)
     widget = get_object_or_404(model_class, pk=widget_id)
     if request.method == "POST":
         widget.delete()
         return redirect('list_widgets', model=model)
-    else:
-        return render(
-            request,
-            'embed/delete_widget.jinja',
-            {'widget': widget, 'widget_name': model}
-        )
+    return render(request, 'embed/delete_widget.jinja', {
+        'widget': widget,
+        'widget_name': model,
+    })
+
 
 def render_ask_widget_js(request, widget_id):
-    widget = get_object_or_404(models.AskWidget, pk=widget_id)
+    widget = get_object_or_404(AskWidget, pk=widget_id)
     variable_name = "AskbotAskWidget%d" % widget.id
-    content_tpl = get_template('embed/askbot_widget.js')
-    context_dict = {
+    return render(request, 'embed/askbot_widget.js', {
         'widget': widget,
         'host': request.get_host(),
         'variable_name': variable_name
-    }
-    content =  content_tpl.render(RequestContext(request, context_dict))
-    return HttpResponse(content, content_type='text/javascript')
+    }, 'text/javascript')
+
 
 def render_ask_widget_css(request, widget_id):
-    widget = get_object_or_404(models.AskWidget, pk=widget_id)
+    widget = get_object_or_404(AskWidget, pk=widget_id)
     variable_name = "AskbotAskWidget%d" % widget.id
-    content_tpl = get_template('embed/askbot_widget.css')
-    context_dict = {
+    return render(request, 'embed/askbot_widget.css', {
         'widget': widget,
         'host': request.get_host(),
         'editor_type': askbot_settings.EDITOR_TYPE,
         'variable_name': variable_name
-    }
-    content =  content_tpl.render(RequestContext(request, context_dict))
-    return HttpResponse(content, content_type='text/css')
+    }, 'text/css')
+
 
 def question_widget(request, widget_id):
     """Returns the first x questions based on certain tags.
     @returns template with those questions listed."""
     # make sure this is a GET request with the correct parameters.
-    widget = get_object_or_404(models.QuestionWidget, pk=widget_id)
+    widget = get_object_or_404(QuestionWidget, pk=widget_id)
 
     if request.method != 'GET':
         raise Http404
@@ -277,7 +273,7 @@ def question_widget(request, widget_id):
     if widget.group:
         filter_params['groups'] = widget.group
 
-    #simple title search for now
+    # simple title search for now
     if widget.search_query:
         filter_params['title__icontains'] = widget.search_query
 
@@ -286,9 +282,8 @@ def question_widget(request, widget_id):
     else:
         threads = models.Thread.objects.all().order_by(widget.order_by)[:widget.question_number]
 
-    data = {
-             'threads': threads,
-             'widget': widget
-           }
+    return render(request, 'embed/question_widget.jinja', {
+        'threads': threads,
+        'widget': widget,
+    })
 
-    return render(request, 'embed/question_widget.jinja', data)

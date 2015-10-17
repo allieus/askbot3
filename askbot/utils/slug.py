@@ -34,7 +34,7 @@ def unicode_slugify(s, ok=SLUG_OK, lower=True, spaces=False):
     All rights reserved.
 
     L and N signify letter/number.
-    http://www.unicode.org/reports/tr44/tr44-4.html#GC_Values_Table
+    http://www.unicode.org/reports/tr44/tr44-4.html# GC_Values_Table
     """
     rv = []
     for c in unicodedata.normalize('NFKC', smart_text(s)):
@@ -70,8 +70,8 @@ def slugify(input_text, max_length=150):
         if len(temp) > 0:
             slug = temp
         else:
-            #we have nothing left, do not apply the last crop,
-            #apply the cut-off directly
+            # we have nothing left, do not apply the last crop,
+            # apply the cut-off directly
             slug = slug[:max_length]
             break
     return slug or '_'

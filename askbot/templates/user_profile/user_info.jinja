@@ -135,7 +135,7 @@
             {% endif %}
             {% if view_user.date_of_birth %}
             <tr>
-            <!--todo  - redo this with whole sentence translation -->
+            <!--TODO  - redo this with whole sentence translation -->
                 <td>{% trans %}age{% endtrans %}</td>
                 <td>{% trans age=view_user.date_of_birth|get_age%}{{ age }} years old{% endtrans %}</td>
             </tr>

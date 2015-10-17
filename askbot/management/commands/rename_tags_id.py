@@ -108,7 +108,7 @@ rename_tags, but using tag id's
         from_tags = get_tags_by_ids(from_tag_ids)
         to_tags = get_tags_by_ids(to_tag_ids)
 
-        #all tags must belong to the same language
+        # all tags must belong to the same language
         lang_codes = set(tag.language_code for tag in (from_tags + to_tags))
         if len(lang_codes) != 1:
             langs = ', '.join(lang_codes)
@@ -121,7 +121,7 @@ rename_tags, but using tag id's
         for from_tag in from_tags:
             questions = questions.filter(tags=from_tag)
 
-        #print some feedback here and give a chance to bail out
+        # print some feedback here and give a chance to bail out
         question_count = questions.count()
         if question_count == 0:
             print("""Did not find any matching questions,
@@ -153,7 +153,7 @@ or repost a bug, if that does not help""")
         from_tag_names = get_tag_names(from_tags)
         to_tag_names = get_tag_names(to_tags)
 
-        #if user provided tag1 as to_tag, and tagsynonym tag1->tag2 exists.
+        # if user provided tag1 as to_tag, and tagsynonym tag1->tag2 exists.
         for to_tag_name in to_tag_names:
             try:
                tag_synonym =  models.TagSynonym.objects.get(
@@ -165,8 +165,8 @@ or repost a bug, if that does not help""")
                 pass
 
 
-        #actual processing stage, only after this point we start to
-        #modify stuff in the database, one question per transaction
+        # actual processing stage, only after this point we start to
+        # modify stuff in the database, one question per transaction
         i = 0
         for question in questions:
             tag_names = set(question.get_tag_names())
@@ -176,7 +176,7 @@ or repost a bug, if that does not help""")
             admin.retag_question(
                 question = question._question_post(),
                 tags = ' '.join(tag_names),
-                #silent = True #do we want to timestamp activity on question
+                # silent = True # do we want to timestamp activity on question
             )
             question.invalidate_cached_summary_html()
             i += 1
@@ -185,14 +185,14 @@ or repost a bug, if that does not help""")
             sys.stdout.flush()
 
         sys.stdout.write('\n')
-        #transaction.commit()
+        # transaction.commit()
 
-        #may need to run assertions on that there are
-        #print('Searching for similar tags...', end=' ')
-        #leftover_questions = models.Thread.objects.filter(
+        # may need to run assertions on that there are
+        # print('Searching for similar tags...', end=' ')
+        # leftover_questions = models.Thread.objects.filter(
         #                        icontains=from_tag.name
         #                    )
-        #if leftover_questions.count() > 0:
+        # if leftover_questions.count() > 0:
         #    tag_strings = leftover_questions.values_list('tagnames', flat=True)
         #    similar_tags = get_similar_tags_from_strings(
         #                                        tag_strings,
@@ -200,10 +200,10 @@ or repost a bug, if that does not help""")
         #                                    )
         #    print('%d found:' % len(similar_tags), end=' ')
         #    print('\n*'.join(sorted(list(similar_tags))))
-        #else:
+        # else:
         #    print("None found.")
-        #print("Done.")
-        #transaction.commit()
+        # print("Done.")
+        # transaction.commit()
 
         # A user wants to rename tag2->tag3 and tagsynonym tag1->tag2 exists.
         # we want to update tagsynonym (tag1->tag2) to (tag1->tag3)

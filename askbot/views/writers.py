@@ -1,65 +1,60 @@
-# encoding:utf-8
+# -*- coding: utf-8 -*-
 """
 :synopsis: views diplaying and processing main content post forms
 
 This module contains views that allow adding, editing, and deleting main textual content.
 """
+
 import datetime
-import json
 import logging
 import os
 import os.path
-import random
 import sys
 import tempfile
-import time
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render
+from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
 from django.http import HttpResponse
+from django.http import JsonResponse
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
-from django.http import HttpResponseRedirect
 from django.http import Http404
 from django.utils.encoding import force_text
-from django.utils.html import strip_tags, escape
+from django.utils.html import escape
 from django.utils.translation import get_language
 from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext_lazy
 from django.core.urlresolvers import reverse
 from django.core import exceptions
 from django.conf import settings
-from django.views.decorators import csrf
-from django.contrib.auth.models import User
-
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.http import require_POST
 from askbot import exceptions as askbot_exceptions
 from askbot import forms
 from askbot import models
 from askbot import signals
 from askbot.conf import settings as askbot_settings
-from askbot.utils import decorators
+from askbot.utils.decorators import ajax_only, check_authorization_to_post, check_spam
 from askbot.utils.forms import format_errors
-from askbot.utils.functions import diff_date
 from askbot.utils import url_utils
 from askbot.utils.file_utils import store_file
 from askbot.utils.loading import load_module
 from askbot.views import context
 from askbot.templatetags import extra_filters_jinja as template_filters
-from askbot.importers.stackexchange import management as stackexchange#todo: may change
-from askbot.utils.slug import slugify
+from askbot.importers.stackexchange import management as stackexchange  # TODO: may change
 
-#todo: make this work with csrf
-@csrf.csrf_exempt
-def upload(request):#ajax upload file to a question or answer
-    """view that handles file upload via Ajax
-    """
+
+# TODO: make this work with csrf
+@csrf_exempt
+def upload(request):  # ajax upload file to a question or answer
+    """view that handles file upload via Ajax"""
     # check upload permission
     result = ''
     error = ''
     new_file_name = ''
     try:
-        #may raise exceptions.PermissionDenied
+        # may raise exceptions.PermissionDenied
         result, error, file_url, orig_file_name = None, '', None, None
         if request.user.is_anonymous():
             msg = _('Sorry, anonymous users cannot upload files')
@@ -67,21 +62,20 @@ def upload(request):#ajax upload file to a question or answer
 
         request.user.assert_can_upload_file()
 
-        #todo: build proper form validation
+        # TODO: build proper form validation
         file_name_prefix = request.POST.get('file_name_prefix', '')
         if file_name_prefix not in ('', 'group_logo_'):
             raise exceptions.PermissionDenied('invalid upload file name prefix')
 
-        #todo: check file type
-        uploaded_file = request.FILES['file-upload']#take first file
+        # TODO: check file type
+        uploaded_file = request.FILES['file-upload']# take first file
         orig_file_name = uploaded_file.name
-        #todo: extension checking should be replaced with mimetype checking
-        #and this must be part of the form validation
+        # TODO: extension checking should be replaced with mimetype checking
+        # and this must be part of the form validation
         file_extension = os.path.splitext(orig_file_name)[1].lower()
-        if not file_extension in settings.ASKBOT_ALLOWED_UPLOAD_FILE_TYPES:
+        if file_extension not in settings.ASKBOT_ALLOWED_UPLOAD_FILE_TYPES:
             file_types = "', '".join(settings.ASKBOT_ALLOWED_UPLOAD_FILE_TYPES)
-            msg = _("allowed file types are '%(file_types)s'") % \
-                    {'file_types': file_types}
+            msg = _("allowed file types are '%(file_types)s'") % {'file_types': file_types}
             raise exceptions.PermissionDenied(msg)
 
         # generate new file name and storage object
@@ -109,16 +103,16 @@ def upload(request):#ajax upload file to a question or answer
         result = ''
         file_url = ''
 
-    #data = json.dumps({
+    # return JsonResponse({
     #    'result': result,
     #    'error': error,
     #    'file_url': file_url
-    #})
-    #return HttpResponse(data, mimetype = 'application/json')
+    # })
     xml_template = "<result><msg><![CDATA[%s]]></msg><error><![CDATA[%s]]></error><file_url>%s</file_url><orig_file_name><![CDATA[%s]]></orig_file_name></result>"
     xml = xml_template % (result, error, file_url, orig_file_name)
 
     return HttpResponse(xml, content_type="application/xml")
+
 
 def __import_se_data(dump_file):
     """non-view function that imports the SE data
@@ -128,7 +122,7 @@ def __import_se_data(dump_file):
     redirected, so that the underlying importer management
     command could stream the output to the browser
 
-    todo: maybe need to add try/except clauses to restore
+    TODO: maybe need to add try/except clauses to restore
     the redirects in the exceptional situations
     """
 
@@ -139,8 +133,8 @@ def __import_se_data(dump_file):
     importer = stackexchange.ImporterThread(dump_file = dump_file.name)
     importer.start()
 
-    #run a loop where we'll be reading output of the
-    #importer tread and yielding it to the caller
+    # run a loop where we'll be reading output of the
+    # importer tread and yielding it to the caller
     read_stdout = open(fake_stdout.name, 'r')
     file_pos = 0
     fd = read_stdout.fileno()
@@ -158,19 +152,20 @@ def __import_se_data(dump_file):
     sys.stdout = real_stdout
     yield '<p>Done. Please, <a href="%s">Visit Your Forum</a></p></body></html>' % reverse('index')
 
-@csrf.csrf_protect
+
+@csrf_protect
 def import_data(request):
     """a view allowing the site administrator
     upload stackexchange data
     """
-    #allow to use this view to site admins
-    #or when the forum in completely empty
+    # allow to use this view to site admins
+    # or when the forum in completely empty
     if request.user.is_anonymous() or (not request.user.is_administrator()):
         if models.Post.objects.get_questions().exists():
             raise Http404
 
     if request.method == 'POST':
-        #if not request.is_ajax():
+        # if not request.is_ajax():
         #    raise Http404
 
         form = forms.DumpUploadForm(request.POST, request.FILES)
@@ -178,14 +173,14 @@ def import_data(request):
             dump_file = form.cleaned_data['dump_file']
             dump_storage = tempfile.NamedTemporaryFile()
 
-            #save the temp file
+            # save the temp file
             for chunk in dump_file.chunks():
                 dump_storage.write(chunk)
             dump_storage.flush()
 
             return HttpResponse(__import_se_data(dump_storage))
-            #yield HttpResponse(_('StackExchange import complete.'), content_type='text/plain')
-            #dump_storage.close()
+            # yield HttpResponse(_('StackExchange import complete.'), content_type='text/plain')
+            # dump_storage.close()
     else:
         form = forms.DumpUploadForm()
 
@@ -195,10 +190,11 @@ def import_data(request):
     }
     return render(request, 'import_data.jinja', data)
 
-@csrf.csrf_protect
-@decorators.check_authorization_to_post(ugettext_lazy('Please log in to make posts'))
-@decorators.check_spam('text')
-def ask(request):#view used to ask a new question
+
+@csrf_protect
+@check_authorization_to_post(ugettext_lazy('Please log in to make posts'))
+@check_spam('text')
+def ask(request):  # view used to ask a new question
     """a view to ask a new question
     gives space for q title, body, tags and checkbox for to post as wiki
 
@@ -209,10 +205,10 @@ def ask(request):#view used to ask a new question
         if request.user.is_read_only():
             referer = request.META.get("HTTP_REFERER", reverse('questions'))
             request.user.message_set.create(message=_('Sorry, but you have only read access'))
-            return HttpResponseRedirect(referer)
+            return redirect(referer)
 
     if askbot_settings.READ_ONLY_MODE_ENABLED:
-        return HttpResponseRedirect(reverse('index'))
+        return redirect('index')
 
     if request.method == 'POST':
         form = forms.AskForm(request.POST, user=request.user)
@@ -256,10 +252,10 @@ def ask(request):#view used to ask a new question
                         user=user,
                         form_data=form.cleaned_data
                     )
-                    return HttpResponseRedirect(question.get_absolute_url())
+                    return redirect(question)
                 except exceptions.PermissionDenied as e:
                     request.user.message_set.create(message = force_text(e))
-                    return HttpResponseRedirect(reverse('index'))
+                    return redirect('index')
 
             else:
                 request.session.flush()
@@ -274,7 +270,7 @@ def ask(request):#view used to ask a new question
                     added_at=timestamp,
                     ip_addr=request.META.get('REMOTE_ADDR'),
                 )
-                return HttpResponseRedirect(url_utils.get_login_url())
+                return redirect(url_utils.get_login_url())
 
     if request.method == 'GET':
         form = forms.AskForm(user=request.user)
@@ -316,15 +312,16 @@ def ask(request):#view used to ask a new question
         'form' : form,
         'editor_is_folded': editor_is_folded,
         'mandatory_tags': models.tag.get_mandatory_tags(),
-        'email_validation_faq_url':reverse('faq') + '#validate',
+        'email_validation_faq_url':reverse('faq') + '# validate',
         'category_tree_data': askbot_settings.CATEGORY_TREE,
-        'tag_names': list()#need to keep context in sync with edit_question for tag editor
+        'tag_names': list()# need to keep context in sync with edit_question for tag editor
     }
     data.update(context.get_for_tag_editor())
     return render(request, 'ask.jinja', data)
 
+
 @login_required
-@csrf.csrf_protect
+@csrf_protect
 def retag_question(request, id):
     """retag question view
     """
@@ -345,21 +342,18 @@ def retag_question(request, id):
                     }
 
                     if request.user.message_set.count() > 0:
-                        #todo: here we will possibly junk messages
+                        # TODO: here we will possibly junk messages
                         message = request.user.get_and_delete_messages()[-1]
                         response_data['message'] = message
 
-                    data = json.dumps(response_data)
-                    return HttpResponse(data, content_type="application/json")
+                    return JsonResponse(response_data)
                 else:
-                    return HttpResponseRedirect(question.get_absolute_url())
+                    return redirect(question)
             elif request.is_ajax():
-                response_data = {
+                return JsonResponse({
                     'message': format_errors(form.errors['tags']),
                     'success': False
-                }
-                data = json.dumps(response_data)
-                return HttpResponse(data, content_type="application/json")
+                })
         else:
             form = forms.RetagQuestionForm(question)
 
@@ -371,26 +365,25 @@ def retag_question(request, id):
         return render(request, 'question_retag.jinja', data)
     except exceptions.PermissionDenied as e:
         if request.is_ajax():
-            response_data = {
+            return JsonResponse({
                 'message': force_text(e),
-                'success': False
-            }
-            data = json.dumps(response_data)
-            return HttpResponse(data, content_type="application/json")
+                'success': False,
+            })
         else:
-            request.user.message_set.create(message = force_text(e))
-            return HttpResponseRedirect(question.get_absolute_url())
+            request.user.message_set.create(message=force_text(e))
+            return redirect(question)
+
 
 @login_required
-@csrf.csrf_protect
-@decorators.check_spam('text')
+@csrf_protect
+@check_spam('text')
 def edit_question(request, id):
     """edit question view
     """
     question = get_object_or_404(models.Post, id=id)
 
     if askbot_settings.READ_ONLY_MODE_ENABLED:
-        return HttpResponseRedirect(question.get_absolute_url())
+        return redirect(question)
 
     try:
         revision = question.revisions.get(revision=0)
@@ -403,7 +396,7 @@ def edit_question(request, id):
         request.user.assert_can_edit_question(question)
         if request.method == 'POST':
             if request.POST['select_revision'] == 'true':
-                #revert-type edit - user selected previous revision
+                # revert-type edit - user selected previous revision
                 revision_form = forms.RevisionForm(
                                                 question,
                                                 revision,
@@ -425,7 +418,7 @@ def edit_question(request, id):
                                             user=question.user,
                                             revision=revision
                                         )
-            else:#new content edit
+            else:# new content edit
                 # Always check modifications against the latest revision
                 form = forms.EditQuestionForm(
                                         request.POST,
@@ -463,9 +456,9 @@ def edit_question(request, id):
                         if 'language' in form.cleaned_data:
                             question.thread.set_language_code(form.cleaned_data['language'])
 
-                    return HttpResponseRedirect(question.get_absolute_url())
+                    return redirect(question)
         else:
-            #request type was "GET"
+            # request type was "GET"
             revision_form = forms.RevisionForm(question, revision)
             initial = {
                 'language': question.thread.language_code,
@@ -495,16 +488,17 @@ def edit_question(request, id):
 
     except exceptions.PermissionDenied as e:
         request.user.message_set.create(message = force_text(e))
-        return HttpResponseRedirect(question.get_absolute_url())
+        return redirect(question)
+
 
 @login_required
-@csrf.csrf_protect
-@decorators.check_spam('text')
+@csrf_protect
+@check_spam('text')
 def edit_answer(request, id):
     answer = get_object_or_404(models.Post, id=id)
 
     if askbot_settings.READ_ONLY_MODE_ENABLED:
-        return HttpResponseRedirect(answer.get_absolute_url())
+        return redirect(answer)
 
     try:
         revision = answer.revisions.get(revision=0)
@@ -568,7 +562,7 @@ def edit_answer(request, id):
                             form_data=form.cleaned_data
                         )
 
-                    return HttpResponseRedirect(answer.get_absolute_url())
+                    return redirect(answer)
         else:
             revision_form = forms.RevisionForm(answer, revision)
             form = edit_answer_form_class(answer, revision, user=request.user)
@@ -594,12 +588,13 @@ def edit_answer(request, id):
 
     except exceptions.PermissionDenied as e:
         request.user.message_set.create(message = force_text(e))
-        return HttpResponseRedirect(answer.get_absolute_url())
+        return redirect(answer)
 
-#todo: rename this function to post_new_answer
-@decorators.check_authorization_to_post(ugettext_lazy('Please log in to make posts'))
-@decorators.check_spam('text')
-def answer(request, id, form_class=forms.AnswerForm):#process a new answer
+
+# TODO: rename this function to post_new_answer
+@check_authorization_to_post(ugettext_lazy('Please log in to make posts'))
+@check_spam('text')
+def answer(request, id, form_class=forms.AnswerForm):# process a new answer
     """view that posts new answer
 
     anonymous users post into anonymous storage
@@ -610,11 +605,11 @@ def answer(request, id, form_class=forms.AnswerForm):#process a new answer
     question = get_object_or_404(models.Post, post_type='question', id=id)
 
     if askbot_settings.READ_ONLY_MODE_ENABLED:
-        return HttpResponseRedirect(question.get_absolute_url())
+        return redirect(question)
 
     if request.method == "POST":
 
-        #this check prevents backward compatilibility
+        # this check prevents backward compatilibility
         if form_class == forms.AnswerForm:
             custom_class_path = getattr(settings, 'ASKBOT_NEW_ANSWER_FORM', None)
             if custom_class_path:
@@ -645,11 +640,11 @@ def answer(request, id, form_class=forms.AnswerForm):#process a new answer
                         form_data=form.cleaned_data
                     )
 
-                    return HttpResponseRedirect(answer.get_absolute_url())
+                    return redirect(answer)
                 except askbot_exceptions.AnswerAlreadyGiven as e:
                     request.user.message_set.create(message = force_text(e))
                     answer = question.thread.get_answers_by_user(user)[0]
-                    return HttpResponseRedirect(answer.get_absolute_url())
+                    return redirect(answer)
                 except exceptions.PermissionDenied as e:
                     request.user.message_set.create(message = force_text(e))
             else:
@@ -661,9 +656,10 @@ def answer(request, id, form_class=forms.AnswerForm):#process a new answer
                     session_key=request.session.session_key,
                     ip_addr=request.META.get('REMOTE_ADDR'),
                 )
-                return HttpResponseRedirect(url_utils.get_login_url())
+                return redirect(url_utils.get_login_url())
 
-    return HttpResponseRedirect(question.get_absolute_url())
+    return redirect(question)
+
 
 def __generate_comments_json(obj, user, avatar_size):
     """non-view generates json data for the post comments
@@ -671,15 +667,16 @@ def __generate_comments_json(obj, user, avatar_size):
     models.Post.objects.precache_comments(for_posts=[obj], visitor=user)
     comments = obj._cached_comments
 
-    # {"Id":6,"PostId":38589,"CreationDate":"an hour ago","Text":"hello there!","UserDisplayName":"Jarrod Dixon","UserUrl":"/users/3/jarrod-dixon","DeleteUrl":null}
+    # {"Id":6,"PostId":38589,"CreationDate":"an hour ago","Text":"hello there!",
+    # "UserDisplayName":"Jarrod Dixon","UserUrl":"/users/3/jarrod-dixon","DeleteUrl":null}
     json_comments = []
     for comment in comments:
 
         if user and user.is_authenticated():
             try:
                 user.assert_can_delete_comment(comment)
-                #/posts/392845/comments/219852/delete
-                #todo translate this url
+                # /posts/392845/comments/219852/delete
+                # TODO translate this url
                 is_deletable = True
             except exceptions.PermissionDenied:
                 is_deletable = False
@@ -688,10 +685,10 @@ def __generate_comments_json(obj, user, avatar_size):
             is_deletable = False
             is_editable = False
 
-
         comment_owner = comment.author
         tz = ' ' + template_filters.TIMEZONE_STR
-        comment_data = {'id' : comment.id,
+        comment_data = {
+            'id': comment.id,
             'object_id': obj.id,
             'comment_added_at': str(comment.added_at.replace(microsecond = 0)) + tz,
             'html': comment.html,
@@ -704,18 +701,18 @@ def __generate_comments_json(obj, user, avatar_size):
             'is_deletable': is_deletable,
             'is_editable': is_editable,
             'points': comment.points,
-            'score': comment.points, #to support js
-            'upvoted_by_user': getattr(comment, 'upvoted_by_user', False)
+            'score': comment.points,  # to support js
+            'upvoted_by_user': getattr(comment, 'upvoted_by_user', False),
         }
         json_comments.append(comment_data)
 
-    data = json.dumps(json_comments)
-    return HttpResponse(data, content_type="application/json")
+    return JsonResponse(json_comments)
 
-@csrf.csrf_protect
-@decorators.check_spam('comment')
-def post_comments(request):#generic ajax handler to load comments to an object
-    """todo: fixme: post_comments is ambigous:
+
+@csrf_protect
+@check_spam('comment')
+def post_comments(request):# generic ajax handler to load comments to an object
+    """TODO: fixme: post_comments is ambigous:
     means either get comments for post or
     add a new comment to post
     """
@@ -724,11 +721,9 @@ def post_comments(request):#generic ajax handler to load comments to an object
     if not request.is_ajax() or post_type not in ('question', 'answer'):
         raise Http404  # TODO: Shouldn't be 404! More like 400, 403 or sth more specific
 
-    if post_type == 'question' \
-        and askbot_settings.QUESTION_COMMENTS_ENABLED == False:
+    if post_type == 'question' and not askbot_settings.QUESTION_COMMENTS_ENABLED:
         raise Http404
-    elif post_type == 'answer' \
-        and askbot_settings.ANSWER_COMMENTS_ENABLED == False:
+    elif post_type == 'answer' and not askbot_settings.ANSWER_COMMENTS_ENABLED:
         raise Http404
 
     user = request.user
@@ -738,7 +733,7 @@ def post_comments(request):#generic ajax handler to load comments to an object
     elif request.method == 'GET':
         form = forms.GetCommentDataForPostForm(request.GET)
 
-    if form.is_valid() == False:
+    if not form.is_valid():
         return HttpResponseBadRequest(
             _('This content is forbidden'),
             mimetype='application/json'
@@ -783,9 +778,10 @@ def post_comments(request):#generic ajax handler to load comments to an object
 
     return response
 
-@csrf.csrf_protect
-@decorators.ajax_only
-#@decorators.check_spam('comment')
+
+@csrf_protect
+@ajax_only
+# @check_spam('comment')
 def edit_comment(request):
     if request.user.is_anonymous():
         raise exceptions.PermissionDenied(_('Sorry, anonymous users cannot edit comments'))
@@ -794,13 +790,10 @@ def edit_comment(request):
         raise exceptions.PermissionDenied(askbot_settings.READ_ONLY_MESSAGE)
 
     form = forms.EditCommentForm(request.POST)
-    if form.is_valid() == False:
+    if not form.is_valid():
         raise exceptions.PermissionDenied('This content is forbidden')
 
-    comment_post = models.Post.objects.get(
-                    post_type='comment',
-                    id=form.cleaned_data['comment_id']
-                )
+    comment_post = models.Post.objects.get(post_type='comment', id=form.cleaned_data['comment_id'])
 
     revision = request.user.edit_comment(
         comment_post=comment_post,
@@ -809,24 +802,22 @@ def edit_comment(request):
         ip_addr=request.META.get('REMOTE_ADDR'),
     )
 
-    is_deletable = template_filters.can_delete_comment(
-                            comment_post.author, comment_post)
+    is_deletable = template_filters.can_delete_comment(comment_post.author, comment_post)
 
-    is_editable = template_filters.can_edit_comment(
-                            comment_post.author, comment_post)
+    is_editable = template_filters.can_edit_comment(comment_post.author, comment_post)
 
     tz = ' ' + template_filters.TIMEZONE_STR
 
     tz = template_filters.TIMEZONE_STR
     timestamp = str(comment_post.added_at.replace(microsecond=0)) + tz
 
-    #need this because the post.text is due to the latest approved
-    #revision, but we may need the suggested revision
+    # need this because the post.text is due to the latest approved
+    # revision, but we may need the suggested revision
     comment_post.text = revision.text
     comment_post.html = comment_post.parse_post_text()['html']
 
     return {
-        'id' : comment_post.id,
+        'id': comment_post.id,
         'object_id': comment_post.parent.id,
         'comment_added_at': timestamp,
         'html': comment_post.html,
@@ -835,27 +826,29 @@ def edit_comment(request):
         'user_id': comment_post.author.id,
         'is_deletable': is_deletable,
         'is_editable': is_editable,
-        'score': comment_post.points, #to support unchanged js
+        'score': comment_post.points,  # to support unchanged js
         'points': comment_post.points,
         'voted': comment_post.is_upvoted_by(request.user),
     }
 
-@csrf.csrf_protect
+
+@csrf_protect
 def delete_comment(request):
     """ajax handler to delete comment
     """
     try:
         if request.user.is_anonymous():
-            msg = _('Sorry, you appear to be logged out and '
-                    'cannot delete comments. Please '
-                    '<a href="%(sign_in_url)s">sign in</a>.') % \
-                    {'sign_in_url': url_utils.get_login_url()}
+            msg = _(
+                'Sorry, you appear to be logged out and '
+                'cannot delete comments. Please '
+                '<a href="%(sign_in_url)s">sign in</a>.') % \
+                {'sign_in_url': url_utils.get_login_url()}
             raise exceptions.PermissionDenied(msg)
         if request.is_ajax():
 
             form = forms.ProcessCommentForm(request.POST)
 
-            if form.is_valid() == False:
+            if not form.is_valid():
                 return HttpResponseBadRequest()
 
             comment_id = form.cleaned_data['comment_id']
@@ -867,7 +860,7 @@ def delete_comment(request):
 
             parent = comment.parent
             comment.delete()
-            #attn: recalc denormalized field
+            # attn: recalc denormalized field
             parent.comment_count = parent.comments.count()
             parent.save()
             parent.thread.reset_cached_data()
@@ -875,18 +868,14 @@ def delete_comment(request):
             avatar_size = form.cleaned_data['avatar_size']
             return __generate_comments_json(parent, request.user, avatar_size)
 
-        raise exceptions.PermissionDenied(
-                    _('sorry, we seem to have some technical difficulties')
-                )
+        raise exceptions.PermissionDenied(_('sorry, we seem to have some technical difficulties'))
     except exceptions.PermissionDenied as e:
-        return HttpResponseForbidden(
-                    force_text(e),
-                    mimetype = 'application/json'
-                )
+        return HttpResponseForbidden(force_text(e), mimetype='application/json')
+
 
 @login_required
-@decorators.post_only
-@csrf.csrf_protect
+@require_POST
+@csrf_protect
 def comment_to_answer(request):
     if request.user.is_anonymous():
         msg = _('Sorry, only logged in users can convert comments to answers. '
@@ -895,30 +884,22 @@ def comment_to_answer(request):
         raise exceptions.PermissionDenied(msg)
 
     form = forms.ConvertCommentForm(request.POST)
-    if form.is_valid() == False:
+    if not form.is_valid():
         raise Http404
 
-    comment = get_object_or_404(
-                    models.Post,
-                    post_type='comment',
-                    id=form.cleaned_data['comment_id']
-                )
+    comment = get_object_or_404(models.Post, post_type='comment', id=form.cleaned_data['comment_id'])
 
-    if askbot_settings.READ_ONLY_MODE_ENABLED is False:
+    if not askbot_settings.READ_ONLY_MODE_ENABLED:
         request.user.repost_comment_as_answer(comment)
 
-    return HttpResponseRedirect(comment.get_absolute_url())
+    return redirect(comment)
 
-@decorators.post_only
-@csrf.csrf_protect
-#todo: change the urls config for this
+
+@require_POST
+@csrf_protect
+# TODO: change the urls config for this
 def repost_answer_as_comment(request, destination=None):
-    assert(
-        destination in (
-                'comment_under_question',
-                'comment_under_previous_answer'
-            )
-    )
+    assert(destination in ('comment_under_question', 'comment_under_previous_answer'))
     if request.user.is_anonymous():
         msg = _('Sorry, only logged in users can convert answers to comments. '
                 'Please <a href="%(sign_in_url)s">sign in</a>.') % \
@@ -930,24 +911,23 @@ def repost_answer_as_comment(request, destination=None):
             answer_id = int(answer_id)
         except (ValueError, TypeError):
             raise Http404
-        answer = get_object_or_404(models.Post,
-                post_type = 'answer', id=answer_id)
+        answer = get_object_or_404(models.Post, post_type='answer', id=answer_id)
 
         if askbot_settings.READ_ONLY_MODE_ENABLED:
-            return HttpResponseRedirect(answer.get_absolute_url())
+            return redirect(answer)
         request.user.assert_can_convert_post(post=answer)
 
         if destination == 'comment_under_question':
             destination_post = answer.thread._question_post()
         else:
-            #comment_under_previous_answer
+            # comment_under_previous_answer
             destination_post = answer.get_previous_answer(user=request.user)
-        #todo: implement for comment under other answer
+        # TODO: implement for comment under other answer
 
         if destination_post is None:
             message = _('Error - could not find the destination post')
             request.user.message_set.create(message=message)
-            return HttpResponseRedirect(answer.get_absolute_url())
+            return redirect(answer)
 
         if len(answer.text) <= askbot_settings.MAX_COMMENT_LENGTH:
             answer.post_type = 'comment'
@@ -959,7 +939,7 @@ def repost_answer_as_comment(request, destination=None):
             answer_comments = models.Post.objects.get_comments().filter(parent=answer)
             answer_comments.update(parent=destination_post)
 
-            #why this and not just "save"?
+            # why this and not just "save"?
             answer.parse_and_save(author=answer.author)
             answer.thread.update_answer_count()
 
@@ -974,6 +954,6 @@ def repost_answer_as_comment(request, destination=None):
             ) % {'max_chars': askbot_settings.MAX_COMMENT_LENGTH}
             request.user.message_set.create(message=message)
 
-        return HttpResponseRedirect(answer.get_absolute_url())
+        return redirect(answer)
     else:
         raise Http404

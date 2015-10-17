@@ -1,11 +1,12 @@
 '''Copied from Django 1.3.1 source code, it will use this model to'''
+
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils import six
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class Message(models.Model):
     """
     The message system is a lightweight way to queue messages for given
@@ -19,8 +20,7 @@ class Message(models.Model):
     message = models.TextField(ugettext_lazy('message'))
 
     class Meta:
-        '''Added for backwards compatibility with databases
-           migrated from django 1.3'''
+        'Added for backwards compatibility with databases migrated from django 1.3'
         app_label = 'auth'
         db_table = 'auth_message'
 

@@ -1,4 +1,4 @@
-"""todo: move here all functions related to languages
+"""TODO: move here all functions related to languages
 in other utils modules
 """
 from askbot.conf import settings as askbot_settings

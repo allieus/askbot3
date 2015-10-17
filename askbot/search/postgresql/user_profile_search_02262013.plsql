@@ -93,7 +93,7 @@ AFTER INSERT OR DELETE
 ON auth_user_groups
 FOR EACH ROW EXECUTE PROCEDURE group_membership_tsv_update_handler();
 
-/* todo: whenever group name changes - also 
+/* TODO: whenever group name changes - also 
  * reindex users belonging to the group */
 
 DROP INDEX IF EXISTS auth_user_search_idx;

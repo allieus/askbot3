@@ -7,11 +7,11 @@ and can still be used as a variable in python files.
 '''
 _ = lambda v:v
 
-#NOTE: all strings must be explicitly put into this dictionary,
-#because you don't want to import _ from here with import *
+# NOTE: all strings must be explicitly put into this dictionary,
+# because you don't want to import _ from here with import *
 __all__ = []
 
-#messages loaded in the templates via direct _ calls
+# messages loaded in the templates via direct _ calls
 _('most relevant questions')
 _('click to see most relevant questions')
 _('by relevance')
@@ -32,7 +32,7 @@ _('ignored')
 _('subscribed')
 TAGS_ARE_REQUIRED_MESSAGE = _('tags are required')
 TAG_WRONG_CHARS_MESSAGE = _(
-    'please use letters, numbers and characters "-+.#"'
+    'please use letters, numbers and characters "-+.# "'
 )
 TAG_WRONG_FIRST_CHAR_MESSAGE = _(
     '# is not a valid character at the beginning of tags, use only letters and numbers'

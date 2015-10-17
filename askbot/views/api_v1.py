@@ -1,15 +1,13 @@
-import json
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse, Http404
+from django.http import JsonResponse, Http404
 from django.contrib.auth.models import User
-from django.db.models import Q
-from django.core.urlresolvers import reverse
 from askbot import models
 from askbot.conf import settings as askbot_settings
 from askbot.search.state_manager import SearchState
 from askbot.utils.html import site_url
 from askbot.utils.functions import get_epoch_str
+
 
 def get_user_data(user):
     """get common data about the user"""
@@ -72,8 +70,8 @@ def info(request):
     else:
         data['groups'] = 0
 
-    json_string = json.dumps(data)
-    return HttpResponse(json_string, content_type='application/json')
+    return JsonResponse(data)
+
 
 def user(request, user_id):
     '''
@@ -85,8 +83,7 @@ def user(request, user_id):
     data['answers'] = posts.filter(post_type='answer').count()
     data['questions'] = posts.filter(post_type='question').count()
     data['comments'] = posts.filter(post_type='comment').count()
-    json_string = json.dumps(data)
-    return HttpResponse(json_string, content_type='application/json')
+    return JsonResponse(data)
 
 
 def users(request):
@@ -124,7 +121,7 @@ def users(request):
             user_objects = paginator.page(paginator.num_pages)
 
         user_list = []
-        #serializing to json
+        # serializing to json
         for user in user_objects:
             user_dict = get_user_data(user)
             user_list.append(dict.copy(user_dict))
@@ -134,24 +131,22 @@ def users(request):
                     'count': paginator.count,
                     'users': user_list
                 }
-        json_string = json.dumps(response_dict)
 
-        return HttpResponse(json_string, content_type='application/json')
+        return JsonResponse(response_dict)
 
 
 def question(request, question_id):
     '''
     Gets a single question
     '''
-    #we retrieve question by post id, b/c that's what is in the url,
-    #not thread id (currently)
+    # we retrieve question by post id, b/c that's what is in the url,
+    # not thread id (currently)
     post = get_object_or_404(
         models.Post, id=question_id,
         post_type='question', deleted=False
     )
     datum = get_question_data(post.thread)
-    json_string = json.dumps(datum)
-    return HttpResponse(json_string, content_type='application/json')
+    return JsonResponse(datum)
 
 
 def questions(request):
@@ -185,9 +180,9 @@ def questions(request):
     if meta_data['non_existing_tags']:
         search_state = search_state.remove_tags(meta_data['non_existing_tags'])
 
-    #exludes the question from groups
-    #global_group = models.Group.objects.get_global_group()
-    #qs = qs.exclude(~Q(groups__id=global_group.id))
+    # exludes the question from groups
+    # global_group = models.Group.objects.get_global_group()
+    # qs = qs.exclude(~Q(groups__id=global_group.id))
 
     page_size = askbot_settings.DEFAULT_QUESTIONS_PAGE_SIZE
     paginator = Paginator(qs, page_size)
@@ -202,8 +197,8 @@ def questions(request):
 
     ajax_data = {
         'count': paginator.count,
-        'pages' : paginator.num_pages,
+        'pages': paginator.num_pages,
         'questions': question_list
     }
-    response_data = json.dumps(ajax_data)
-    return HttpResponse(response_data, content_type='application/json')
+    return JsonResponse(ajax_data)
+

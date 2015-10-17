@@ -1,4 +1,4 @@
-#import these to compile code and install values
+# import these to compile code and install values
 from askbot import const
 import askbot
 import askbot.conf.minimum_reputation
@@ -32,7 +32,7 @@ import askbot.conf.access_control
 import askbot.conf.site_modes
 import askbot.conf.words
 
-#import main settings object
+# import main settings object
 from askbot.conf.settings_wrapper import settings
 
 from django.conf import settings as django_settings

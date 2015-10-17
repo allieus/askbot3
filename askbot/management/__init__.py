@@ -15,8 +15,8 @@ class NoArgsJob(NoArgsCommand):
 
     The subclass must implement __init__() method
     where self.batches data structure must be defined as follows
-    (#the whole thing is a tuple
-       {#batch is described by a dictionary
+    (# the whole thing is a tuple
+       {# batch is described by a dictionary
         'title': <string>,
         'query_set': <query set for the items>,
         'function': <function or callable that performs
@@ -28,7 +28,7 @@ class NoArgsJob(NoArgsCommand):
         'items_changed_message': <string with one %d placeholder>,
         'nothing_changed_message': <string>
        },
-       #more batch descriptions
+       # more batch descriptions
     )
     """
     batches = ()

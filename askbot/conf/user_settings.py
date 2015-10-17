@@ -104,7 +104,7 @@ def avatar_type_callback(old, new):
     if settings.ENABLE_GRAVATAR:
         return new
     elif new == 'g':
-        #can't use gravatar because it is disabled
+        # can't use gravatar because it is disabled
         return 'n'
     return new
 
@@ -157,7 +157,7 @@ settings.register(
         default = True,
         description = _('Use automatic avatars from gravatar service'),
         help_text=_(
-            'Check this option if you want to allow the use of gravatar.com for avatars. Please, note that this feature might take about 10 minutes to become fully effective. You will have to enable uploaded avatars as well. For more information, please visit <a href="http://askbot.org/doc/optional-modules.html#uploaded-avatars">this page</a>.'
+            'Check this option if you want to allow the use of gravatar.com for avatars. Please, note that this feature might take about 10 minutes to become fully effective. You will have to enable uploaded avatars as well. For more information, please visit <a href="http://askbot.org/doc/optional-modules.html# uploaded-avatars">this page</a>.'
         )
     )
 )

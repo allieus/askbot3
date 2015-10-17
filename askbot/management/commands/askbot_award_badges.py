@@ -20,10 +20,10 @@ class Command(NoArgsCommand):
         message = 'Awarding badges for each user'
         for user in ProgressBar(users.iterator(), count, message):
             try:
-                #get last vote
+                # get last vote
                 vote = Vote.objects.filter(user=user).order_by('-id')[0]
             except IndexError:
-                #user did not vote
+                # user did not vote
                 continue
             else:
                 cd = badges.CivicDuty()

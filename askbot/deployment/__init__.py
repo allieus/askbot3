@@ -14,6 +14,7 @@ from askbot.utils.functions import generate_random_key
 
 DATABASE_ENGINE_CHOICES = ('1', '2', '3', '4')
 
+
 def askbot_setup():
     """basic deployment procedure
     asks user several questions, then either creates
@@ -21,81 +22,72 @@ def askbot_setup():
     or gives hints on how to add askbot to an existing
     Django project
     """
-    parser = OptionParser(usage = "%prog [options]")
+    parser = OptionParser(usage="%prog [options]")
 
     parser.add_option(
-                "-v", "--verbose",
-                dest = "verbosity",
-                type = "int",
-                default = 1,
-                help = "verbosity level available values 0, 1, 2."
-            )
+        "-v", "--verbose",
+        dest="verbosity",
+        type="int",
+        default=1,
+        help="verbosity level available values 0, 1, 2.")
 
     parser.add_option(
-                "-n", "--dir-name",
-                dest = "dir_name",
-                default = None,
-                help = "Directory where you want to install."
-            )
+        "-n", "--dir-name",
+        dest="dir_name",
+        default=None,
+        help="Directory where you want to install.")
 
     parser.add_option(
-                '-e', '--db-engine',
-                dest='database_engine',
-                action='store',
-                type='choice',
-                choices=DATABASE_ENGINE_CHOICES,
-                default=None,
-                help='Database engine, type 1 for postgresql, 2 for sqlite, 3 for mysql'
-            )
+        '-e', '--db-engine',
+        dest='database_engine',
+        action='store',
+        type='choice',
+        choices=DATABASE_ENGINE_CHOICES,
+        default=None,
+        help='Database engine, type 1 for postgresql, 2 for sqlite, 3 for mysql')
 
     parser.add_option(
-                "-d", "--db-name",
-                dest = "database_name",
-                default = None,
-                help = "The database name"
-            )
+        "-d", "--db-name",
+        dest="database_name",
+        default=None,
+        help="The database name")
 
     parser.add_option(
-                "-u", "--db-user",
-                dest = "database_user",
-                default = None,
-                help = "The database user"
-            )
+        "-u", "--db-user",
+        dest="database_user",
+        default=None,
+        help="The database user")
 
     parser.add_option(
-                "-p", "--db-password",
-                dest = "database_password",
-                default = None,
-                help = "the database password"
-            )
+        "-p", "--db-password",
+        dest="database_password",
+        default=None,
+        help="the database password")
 
     parser.add_option(
-                "--domain",
-                dest = "domain_name",
-                default = None,
-                help = "the domain name of the instance"
-            )
+        "--domain",
+        dest="domain_name",
+        default=None,
+        help="the domain name of the instance")
 
     parser.add_option(
-                "--append-settings",
-                dest = "local_settings",
-                default = '',
-                help = "Extra settings file to append custom settings"
-            )
+        "--append-settings",
+        dest="local_settings",
+        default='',
+        help="Extra settings file to append custom settings")
 
     parser.add_option(
-                "--force",
-                dest="force",
-                action='store_true',
-                default=False,
-                help = "Force overwrite settings.py file"
-            )
+        "--force",
+        dest="force",
+        action='store_true',
+        default=False,
+        help="Force overwrite settings.py file")
 
     try:
         options = parser.parse_args()[0]
 
-        #ask users to give missing parameters
-        #todo: make this more explicit here
+        # ask users to give missing parameters
+        # TODO: make this more explicit here
         if options.verbosity >= 1:
             print(messages.DEPLOY_PREAMBLE)
 
@@ -112,7 +104,7 @@ def askbot_setup():
             )
 
         options_dict = vars(options)
-        if options.force is False:
+        if not options.force:
             options_dict = collect_missing_options(options_dict)
 
         database_engine_codes = {
@@ -128,13 +120,13 @@ def askbot_setup():
 
         if database_engine == 'postgresql_psycopg2':
             try:
-                import psycopg2
+                import psycopg2  # noqa
             except ImportError:
                 print('\nNEXT STEPS: install python binding for postgresql')
                 print('pip install psycopg2\n')
         elif database_engine == 'mysql':
             try:
-                import _mysql
+                import _mysql  # noqa
             except ImportError:
                 print('\nNEXT STEP: install python binding for mysql')
                 print('pip install mysql-python\n')
@@ -144,7 +136,7 @@ def askbot_setup():
         sys.exit(1)
 
 
-#separated all the directory creation process to make it more useful
+# separated all the directory creation process to make it more useful
 def deploy_askbot(options):
     """function that creates django project files,
     all the neccessary directories for askbot,
@@ -167,12 +159,12 @@ def deploy_askbot(options):
         )
 
     if django.VERSION[1] < 3:
-        #force people install the django-staticfiles app
+        # force people install the django-staticfiles app
         options['staticfiles_app'] = ''
     else:
         options['staticfiles_app'] = "'django.contrib.staticfiles',"
 
-    if django.VERSION[1] <=3:
+    if django.VERSION[1] <= 3:
         auth_context_processor = 'django.core.context_processors.auth'
     else:
         auth_context_processor = 'django.contrib.auth.context_processors.auth'
@@ -200,15 +192,14 @@ def deploy_askbot(options):
             verbosity
         )
 
+
 def collect_missing_options(options_dict):
     options_dict['secret_key'] = generate_random_key()
-    if options_dict['database_engine'] == '2':#sqlite
+    if options_dict['database_engine'] == '2':  # sqlite
         if options_dict['database_name']:
             return options_dict
         while True:
-            value = console.simple_dialog(
-                            'Please enter database file name'
-                        )
+            value = console.simple_dialog('Please enter database file name')
             database_file_name = None
             if os.path.isfile(value):
                 message = 'file %s exists, use it anyway?' % value
@@ -227,13 +218,11 @@ def collect_missing_options(options_dict):
                 options_dict['database_name'] = database_file_name
                 return options_dict
 
-    else:#others
+    else:  # others
         for key in ('database_name', 'database_user', 'database_password'):
             if options_dict[key] is None:
                 key_name = key.replace('_', ' ')
-                value = console.simple_dialog(
-                    '\nPlease enter %s' % key_name,
-                    required=True
-                )
+                value = console.simple_dialog('\nPlease enter %s' % key_name, required=True)
                 options_dict[key] = value
         return options_dict
+

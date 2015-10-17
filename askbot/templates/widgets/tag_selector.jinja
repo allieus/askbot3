@@ -1,4 +1,4 @@
-{# todo - maybe disable navigation from ignored tags here when "hide" is on - with js? #}
+{# TODO - maybe disable navigation from ignored tags here when "hide" is on - with js? #}
 {% import "macros.jinja" as macros %}
 <div id="tagSelector" class="box">
     <h2>{% trans %}Interesting tags{% endtrans %}</h2>
@@ -10,7 +10,7 @@
             search_state = search_state
         )
     }}
-    {# todo - add this via js
+    {# TODO - add this via js
         "remove '%(tag_name)s' from the list of interesting tags"|
         format(tag_name = tag_name)
     #}
@@ -28,7 +28,7 @@
             search_state = search_state
         )
     }}
-    {# todo: add this via javascript 
+    {# TODO: add this via javascript 
         "remove '%(tag_name)s' from the list of ignored tags"|
         format(tag_name = tag_name)
     #}
@@ -46,7 +46,7 @@
                 search_state = search_state
             )
         }}
-        {# todo: add this via javascript 
+        {# TODO: add this via javascript 
             "remove '%(tag_name)s' from the list of ignored tags"|
             format(tag_name = tag_name)
         #}

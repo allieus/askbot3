@@ -13,7 +13,7 @@ from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.cache import cache
 from django.utils import six
-from django.utils.encoding import force_text
+from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext_lazy
@@ -30,16 +30,19 @@ import logging
 from . import signals
 import os
 
-__all__ = ['BASE_GROUP', 'BASE_SUPER_GROUP', 'ConfigurationGroup', 'Value', 'BooleanValue',
-      'DecimalValue', 'DurationValue',
-      'FloatValue', 'IntegerValue', 'ModuleValue', 'PercentValue', 'PositiveIntegerValue', 'SortedDotDict',
-      'StringValue', 'SuperGroup', 'ImageValue', 'LongStringValue', 'MultipleStringValue', 'URLValue']
+__all__ = [
+    'BASE_GROUP', 'BASE_SUPER_GROUP', 'ConfigurationGroup', 'Value', 'BooleanValue',
+    'DecimalValue', 'DurationValue',
+    'FloatValue', 'IntegerValue', 'ModuleValue', 'PercentValue', 'PositiveIntegerValue', 'SortedDotDict',
+    'StringValue', 'SuperGroup', 'ImageValue', 'LongStringValue', 'MultipleStringValue', 'URLValue',
+]
 
 _WARN = {}
 
 log = logging.getLogger('configuration')
 
 NOTSET = object()
+
 
 class SortedDotDict(OrderedDict):
 
@@ -60,10 +63,11 @@ class SortedDotDict(OrderedDict):
         vals.sort()
         return vals
 
+
 class SuperGroup(object):
     """Aggregates ConfigurationGroup's into super-groups
     that are used only for the presentation in the UI"""
-    def __init__(self, name, ordering = 0):
+    def __init__(self, name, ordering=0):
         self.name = name
         self.ordering = ordering
         self.groups = list()
@@ -142,7 +146,7 @@ BASE_GROUP = ConfigurationGroup(
                         )
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class Value(object):
 
     creation_counter = 0
@@ -234,8 +238,7 @@ class Value(object):
 
     def _choice_values(self):
         choices = self.choices
-        vals = self.value
-        return [x for x in choices if x[0] in vals]
+        return [x for x in choices if x[0] in self.value]
 
     choice_values = property(fget=_choice_values)
 
@@ -252,7 +255,7 @@ class Value(object):
             for x in self.choices:
                 if x[0] in self.default:
                     work.append(force_text(x[1]))
-            note = _('Default value: ') + six.text_type(", ".join(work))
+            note = _('Default value: ') + ", ".join(work)
         else:
             note = _("Default value: %s") % force_text(self.default)
 
@@ -305,7 +308,7 @@ class Value(object):
             kwargs['language_code'] = lang
             fields.append(self.make_field(**kwargs))
 
-        #set initial values
+        # set initial values
         for field in fields:
             lang = field.language_code
             field.initial = self.get_editor_value(lang)
@@ -330,7 +333,7 @@ class Value(object):
             key += '_' + format_setting_name(get_language())
         return find_setting(self.group.key, key)
 
-    #here we have duplicationg with get_setting function
+    # here we have duplicationg with get_setting function
     setting = property(fget = _setting)
 
     def get_setting(self, language_code=None):
@@ -562,7 +565,7 @@ class DecimalValue(Value):
         else:
             return six.text_type(value)
 
-# DurationValue has a lot of duplication and ugliness because of issue #2443
+# DurationValue has a lot of duplication and ugliness because of issue # 2443
 # Until DurationField is sorted out, this has to do some extra work
 class DurationValue(Value):
 
@@ -746,7 +749,7 @@ class ImageValue(StringValue):
             if not file_data and initial:
                 return initial
             (base_name, ext) = os.path.splitext(file_data.name)
-            #first character in ext is .
+            # first character in ext is .
             if ext[1:].lower() not in self.allowed_file_extensions:
                 error_message = _('Allowed image file types are %(types)s') \
                         % {'types': ', '.join(self.allowed_file_extensions)}
@@ -761,7 +764,7 @@ class ImageValue(StringValue):
         """uploaded_file is an instance of
         django UploadedFile object
         """
-        #0) initialize file storage
+        # 0) initialize file storage
         file_storage_class = storage.get_storage_class()
 
         storage_settings = {}
@@ -774,8 +777,8 @@ class ImageValue(StringValue):
 
         file_storage = file_storage_class(**storage_settings)
 
-        #1) come up with a file name
-        #todo: need better function here to calc name
+        # 1) come up with a file name
+        # TODO: need better function here to calc name
         file_name = file_storage.get_available_name(uploaded_file.name)
         file_storage.save(file_name, uploaded_file)
         url = file_storage.url(file_name)
@@ -786,8 +789,8 @@ class ImageValue(StringValue):
         if os.path.isfile(old_file_path):
             os.unlink(old_file_path)
 
-        #saved file path is relative to the upload_directory
-        #so that things could be easily relocated
+        # saved file path is relative to the upload_directory
+        # so that things could be easily relocated
         super(ImageValue, self).update(url, language_code=language_code)
 
 class MultipleStringValue(Value):

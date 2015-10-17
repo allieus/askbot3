@@ -3,26 +3,28 @@ from xml.etree import ElementTree as et
 import sys
 import re
 import os
-if __name__ != '__main__':#hack do not import models if run as script
+
+if __name__ != '__main__':  # hack do not import models if run as script
     from django.db import models
+
 from datetime import datetime
 
-table_prefix = ''#StackExchange or something, if needed
-date_time_format = '%Y-%m-%dT%H:%M:%S' #note that fractional part of second is lost
+table_prefix = ''  # StackExchange or something, if needed
+date_time_format = '%Y-%m-%dT%H:%M:%S'  # note that fractional part of second is lost
 time_re = re.compile(r'(\.[\d]+)?$')
 loader_app_name = os.path.dirname(__file__)
 
 types = {
-   'unsignedByte':'models.IntegerField',
-   'FK':'models.ForeignKey',
-   'PK':'models.IntegerField',
-   'string':'models.CharField',
-   'text':'models.TextField',
-   'int':'models.IntegerField',
-   'boolean':'models.NullBooleanField',
-   'dateTime':'models.DateTimeField',
-   'base64Binary':'models.TextField',
-   'double':'models.IntegerField',
+    'unsignedByte': 'models.IntegerField',
+    'FK': 'models.ForeignKey',
+    'PK': 'models.IntegerField',
+    'string': 'models.CharField',
+    'text': 'models.TextField',
+    'int': 'models.IntegerField',
+    'boolean': 'models.NullBooleanField',
+    'dateTime': 'models.DateTimeField',
+    'base64Binary': 'models.TextField',
+    'double': 'models.IntegerField',
 }
 
 def camel_to_python(camel):
@@ -67,7 +69,7 @@ class DjangoField(object):
     def __init__(self, name, type, restriction = None):
         self.name = camel_to_python(name)
         if self.name == 'class':
-            self.name = 'class_type'#work around python keyword
+            self.name = 'class_type'# work around python keyword
         self.type = type
         self.table = None
         self.restriction = restriction
@@ -78,7 +80,7 @@ class DjangoField(object):
         if self.type == 'FK':
             out += "'%s'" % self.relation
             out += ", related_name='%s_by_%s_set'" % (self.table.name, self.name)
-            out += ', null=True'#nullable to make life easier
+            out += ', null=True'# nullable to make life easier
         elif self.type == 'PK':
             out += 'primary_key=True'
         elif self.restriction != -1:
@@ -118,7 +120,7 @@ class DjangoFK(DjangoField):
         elif name.endswith('Post'):
             self.relation += 'Post'
         elif name in ('AcceptedAnswer','Parent'):
-            self.relation = 'self' #self-referential Post model
+            self.relation = 'self' # self-referential Post model
         else:
             self.relation += name
     def get_relation(self):
@@ -127,7 +129,7 @@ class DjangoFK(DjangoField):
 def get_col_type(col):
     type = col.get('type')
     restriction = -1
-    if type == None:
+    if type is None:
         type_e = col.find('.//simpleType/restriction')
         type = type_e.get('base')
         try:
@@ -145,7 +147,7 @@ def make_field_from_xml_tree(xml_element):
     because this defines the database schema
     """
     name = xml_element.get('name')
-    if name == 'LinkedVoteId':#not used
+    if name == 'LinkedVoteId':# not used
         return None
     if name == 'Id':
         field = DjangoPK()
@@ -170,11 +172,11 @@ def parse_field_name(input):
     if input == 'Id':
         return DjangoPK().name
     elif input in ('OpenId', 'PasswordId'):
-        return DjangoField(input, 'string', 7).name#happy fake field
+        return DjangoField(input, 'string', 7).name# happy fake field
     elif input.endswith('Id'):
-        return DjangoFK(input).name#real FK field
+        return DjangoFK(input).name# real FK field
     else:
-        return DjangoField(input, 'string', 7).name#happy fake field
+        return DjangoField(input, 'string', 7).name# happy fake field
 
 def parse_value(input, field_object):
     if isinstance(field_object, models.ForeignKey):
@@ -187,7 +189,7 @@ def parse_value(input, field_object):
             return related_model.objects.get(id=id)
         except related_model.DoesNotExist:
             obj = related_model(id=id)
-            obj.save()#save fake empty object
+            obj.save()# save fake empty object
             return obj
     elif isinstance(field_object, models.IntegerField):
         try:

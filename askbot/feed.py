@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 #-------------------------------------------------------------------------------
 # Name:        Syndication feed class for subscription
@@ -10,23 +13,20 @@
 # Licence:     GPL V2
 #-------------------------------------------------------------------------------
 """
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+
 from __future__ import unicode_literals
 from django.contrib.syndication.views import Feed
 
 import itertools
 
-from django.conf import settings as django_settings
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.utils.translation import ugettext as _
-from django.utils.translation import get_language
 
 from askbot.conf import settings as askbot_settings
 from askbot.models import Post
 from askbot.utils.html import site_url
+
 
 class RssIndividualQuestionFeed(Feed):
     """rss feed class for particular questions
@@ -43,11 +43,11 @@ class RssIndividualQuestionFeed(Feed):
         return askbot_settings.APP_DESCRIPTION
 
     def get_object(self, request, pk):
-        if askbot_settings.RSS_ENABLED is False:
+        if not askbot_settings.RSS_ENABLED:
             raise Http404
-        #hack to get the request object into the Feed class
+        # hack to get the request object into the Feed class
         self.request = request
-        return Post.objects.get_questions().get(id__exact = pk)
+        return Post.objects.get_questions().get(id__exact=pk)
 
     def item_link(self, item):
         """get full url to the item
@@ -69,18 +69,14 @@ class RssIndividualQuestionFeed(Feed):
         answer comments
         """
         chain_elements = list()
-        chain_elements.append([item,])
-        chain_elements.append(
-            Post.objects.get_comments().filter(parent=item)
-        )
+        chain_elements.append([item])
+        chain_elements.append(Post.objects.get_comments().filter(parent=item))
 
-        answers = Post.objects.get_answers().filter(thread = item.thread)
+        answers = Post.objects.get_answers().filter(thread=item.thread)
 
         for answer in answers:
-            chain_elements.append([answer,])
-            chain_elements.append(
-                Post.objects.get_comments().filter(parent=answer)
-            )
+            chain_elements.append([answer])
+            chain_elements.append(Post.objects.get_comments().filter(parent=answer))
 
         return itertools.chain(*chain_elements)
 
@@ -142,7 +138,7 @@ class RssLastestQuestionsFeed(Feed):
         """returns url without the slug
         because the slug can change
         """
-        return site_url(item.get_absolute_url(no_slug = True))
+        return site_url(item.get_absolute_url(no_slug=True))
 
     def item_title(self, item):
         return item.thread.title
@@ -155,32 +151,30 @@ class RssLastestQuestionsFeed(Feed):
     def items(self, item):
         """get questions for the feed
         """
-        if askbot_settings.RSS_ENABLED is False:
+        if not askbot_settings.RSS_ENABLED:
             raise Http404
 
-        #initial filtering
+        # initial filtering
         filters = {'deleted': False}
 
         qs = Post.objects.get_questions().filter(**filters)
 
-        #get search string and tags from GET
+        # get search string and tags from GET
         query = self.request.GET.get("q", None)
         tags = self.request.GET.getlist("tags")
 
         if query:
-            #if there's a search string, use the
-            #question search method
+            # if there's a search string, use the question search method
             qs = qs.get_by_text_query(query)
 
         if tags:
-            #if there are tags in GET, filter the
-            #questions additionally
+            # if there are tags in GET, filter the questions additionally
             for tag in tags:
-                qs = qs.filter(thread__tags__name = tag)
+                qs = qs.filter(thread__tags__name=tag)
 
         return qs.order_by('-thread__last_activity_at')[:30]
 
-    #hack to get the request object into the Feed class
+    # hack to get the request object into the Feed class
     def get_feed(self, obj, request):
         self.request = request
         return super(RssLastestQuestionsFeed, self).get_feed(obj, request)

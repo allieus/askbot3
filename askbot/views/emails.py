@@ -11,6 +11,7 @@ import logging
 
 LOG = logging.getLogger(__name__)
 
+
 REGISTRY = dict()
 def autodiscover():
     if REGISTRY:
@@ -24,11 +25,12 @@ def autodiscover():
 
 autodiscover()
 
+
 @moderators_only
 def list_emails(request):
-    #list only enabled emails
+    # list only enabled emails
     enabled = dict((k, v) for k, v in REGISTRY.items() if v().is_enabled())
-    data = {'emails': enabled}#REGISTRY}
+    data = {'emails': enabled}  # REGISTRY}
     return render(request, 'email/list_emails.jinja', Context(data))
 
 
@@ -36,6 +38,7 @@ DEFAULT_PREVIEW_ERROR_MESSAGE = _(
     'Preview failed possibly because of insufficient data '
     'or an error during the rendering'
 )
+
 
 @moderators_only
 def preview_email(request, slug):
@@ -49,7 +52,7 @@ def preview_email(request, slug):
     }
 
     email = REGISTRY[slug]()
-    #if email.is_enabled() == False:
+    # if not email.is_enabled():
     #    raise Http404
 
     try:

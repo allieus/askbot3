@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from django.conf import settings as django_settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-#from askbot.utils.transaction import dummy_transaction as transaction
+# from askbot.utils.transaction import dummy_transaction as transaction
 from django.forms import EmailField, ValidationError
 from django.utils import translation
 from datetime import datetime
@@ -20,9 +20,9 @@ import re
 import os
 import shutil
 
-#todo: make a pass through all attachments
-#and make sure that mimetypes dictionary is up to date
-#raise an error if it's not
+# TODO: make a pass through all attachments
+# and make sure that mimetypes dictionary is up to date
+# raise an error if it's not
 FILE_TYPES = {
     "application/java-archive": 'jar',
     "application/msword": 'doc',
@@ -151,7 +151,7 @@ class Command(BaseCommand):
 
     def __init__(self, *args, **kwargs):
         super(Command, self).__init__(*args, **kwargs)
-        #relax certain settings
+        # relax certain settings
         askbot_settings.update('LIMIT_ONE_ANSWER_PER_USER', False)
         askbot_settings.update('MAX_COMMENT_LENGTH', 1000000)
         askbot_settings.update('MIN_REP_TO_INSERT_LINK', 1)
@@ -205,7 +205,7 @@ For your reference, the original is [available here|%s]{quote}"""
 
     @commit_manually
     def make_redirects(self):
-        """todo: implement this when needed"""
+        """TODO: implement this when needed"""
         pass
 
 
@@ -246,7 +246,7 @@ For your reference, the original is [available here|%s]{quote}"""
         for thread in ProgressBar(threads.iterator(), count, message):
             answer = thread_get_answer_from_company(thread, domain)
 
-            if answer == None:
+            if answer is None:
                 comment = thread_find_first_comment_from_company(thread, domain)
                 if comment:
                     admin.repost_comment_as_answer(comment)
@@ -327,11 +327,11 @@ For your reference, the original is [available here|%s]{quote}"""
                                         self.parse_post(question_soup)
 
         if models.Post.objects.filter(old_question_id=thread['id']).count() == 1:
-            #this allows restarting the process of importing forums
-            #any time
+            # this allows restarting the process of importing forums
+            # any time
             return
 
-        #post question
+        # post question
         question = user.post_question(
             title=title,
             body_text=body,
@@ -345,7 +345,7 @@ For your reference, the original is [available here|%s]{quote}"""
         question.old_answer_id = post_id
         question.summary = question.get_snippet()
         question.save()
-        #post answers
+        # post answers
         message_list = question_soup.find_all('MessageList', recursive=False)
         if len(message_list) == 0:
             return

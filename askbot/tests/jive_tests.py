@@ -2,7 +2,7 @@ import unittest
 from askbot.utils.jive import JiveConverter
 from askbot.utils.jive import internal_link_re as link_re
 
-#class MockPost(object):
+# class MockPost(object):
 #    def __init__(self):
 #        self.text = ''
 #    def get_absolute_url(self):
@@ -133,15 +133,15 @@ two plus two equals four
         self.assertEqual(self.convert(text), expected)
 
     def test_code0(self):
-        text = """something {code}#comment _haha_ http://example.com {code}"""
+        text = """something {code}# comment _haha_ http://example.com {code}"""
         expected = """<p>something</p>
-<pre><code>#comment _haha_ http://example.com </code></pre>"""
+<pre><code># comment _haha_ http://example.com </code></pre>"""
         self.assertEqual(self.convert(text), expected)
 
     def test_code1(self):
-        text = """something {code:html}#comment _haha_ http://example.com {code}"""
+        text = """something {code:html}# comment _haha_ http://example.com {code}"""
         expected = """<p>something</p>
-<pre><code>#comment _haha_ http://example.com </code></pre>"""
+<pre><code># comment _haha_ http://example.com </code></pre>"""
         self.assertEqual(self.convert(text), expected)
 
     def test_links1(self):
@@ -254,8 +254,8 @@ Nothing happened.
 
     def test_internal_link_re(self):
         self.assertTrue(link_re.search('soasao /message.jspa?messageID=8477 a'))
-        self.assertTrue(link_re.search('/thread.jspa?messageID=10175&amp;#10175'))
-        self.assertTrue(link_re.search('/thread.jspa?messageID=10662#10662'))
+        self.assertTrue(link_re.search('/thread.jspa?messageID=10175&amp;# 10175'))
+        self.assertTrue(link_re.search('/thread.jspa?messageID=10662# 10662'))
         self.assertTrue(link_re.search('/thread.jspa?messageID=11058'))
         self.assertTrue(link_re.search('/thread.jspa?threadID=1888&amp;tstart=210'))
         self.assertTrue(link_re.search('/thread.jspa?threadID=3087&amp;tstart=-258'))
@@ -264,12 +264,12 @@ Nothing happened.
 #        from askbot.management.commands.askbot_import_jive import fix_internal_links_in_post
 #        post = MockPost()
 #        post.text = """/message.jspa?messageID=8477 sometext
-#sometext /thread.jspa?messageID=10175&amp;#10175 sometext
-#[sometext|/thread.jspa?messageID=10662#10662] [/thread.jspa?messageID=11058]
+# sometext /thread.jspa?messageID=10175&amp;# 10175 sometext
+#[sometext|/thread.jspa?messageID=10662# 10662] [/thread.jspa?messageID=11058]
 #[sometext|/thread.jspa?threadID=1888&amp;tstart=210|title]
 #/thread.jspa?threadID=3087&amp;tstart=-258"""
 #        expected = """<a href="/url">/url</a> sometext<br/>
-#sometext <a href="/url">/url</a> sometext<br/>
+# sometext <a href="/url">/url</a> sometext<br/>
 #<a href="/url">sometext</a> <a href="/url">/url</a><br/>
 #<a href="/url" title="title">sometext</a><br/>
 #<a href="/url">/url</a>"""

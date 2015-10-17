@@ -6,11 +6,7 @@ e.g. ``some_user.do_something(...)``
 from __future__ import unicode_literals
 from bs4 import BeautifulSoup
 from django.core import exceptions
-from django.core.urlresolvers import reverse
-from django.test.client import Client
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
-from django import forms
 from askbot import exceptions as askbot_exceptions
 from askbot.tests.utils import AskbotTestCase
 from askbot.tests.utils import with_settings
@@ -43,14 +39,14 @@ class DBApiTests(AskbotTestCase):
         return self.answer
 
     def assert_post_is_deleted(self, post):
-        self.assertTrue(post.deleted == True)
+        self.assertTrue(post.deleted is True)
         self.assertTrue(isinstance(post.deleted_by, models.User))
         self.assertTrue(post.deleted_at is not None)
 
     def assert_post_is_not_deleted(self, post):
-        self.assertTrue(post.deleted == False)
-        self.assertTrue(post.deleted_by == None)
-        self.assertTrue(post.deleted_at == None)
+        self.assertTrue(post.deleted is False)
+        self.assertTrue(post.deleted_by is None)
+        self.assertTrue(post.deleted_at is None)
 
     def test_blank_tags_impossible(self):
         self.post_question(tags='')
@@ -414,7 +410,7 @@ class CommentTests(AskbotTestCase):
     """unfortunately, not very useful tests,
     as assertions of type "user can" are not inside
     the User.upvote() function
-    todo: refactor vote processing code
+    TODO: refactor vote processing code
     """
     def setUp(self):
         self.create_user()
@@ -506,11 +502,11 @@ class GroupTests(AskbotTestCase):
         self.assertEqual(a.groups.count(), 2)
         self.assertEqual(a.groups.filter(name='private').exists(), True)
 
-        qc = self.post_comment(parent_post=q, user=self.u1)#w/o private arg
+        qc = self.post_comment(parent_post=q, user=self.u1)# w/o private arg
         self.assertEqual(qc.groups.count(), 2)
         self.assertEqual(qc.groups.filter(name='private').exists(), True)
 
-        qa = self.post_comment(parent_post=a, user=self.u1)#w/o private arg
+        qa = self.post_comment(parent_post=a, user=self.u1)# w/o private arg
         self.assertEqual(qa.groups.count(), 2)
         self.assertEqual(qa.groups.filter(name='private').exists(), True)
 
@@ -538,7 +534,7 @@ class GroupTests(AskbotTestCase):
         self.edit_question(question=question, user=self.u1, is_private=True)
         self.assertEqual(question.groups.count(), 2)
         self.assertEqual(question.groups.filter(id=group.id).count(), 1)
-        #comment inherits sharing scope
+        # comment inherits sharing scope
         self.assertEqual(comment.groups.count(), 2)
         self.assertEqual(comment.groups.filter(id=group.id).count(), 1)
 
@@ -549,17 +545,17 @@ class GroupTests(AskbotTestCase):
         group = self.create_group(group_name='private')
         self.u1.join_group(group)
 
-        #membership in `group` should not affect things,
-        #because answer groups always inherit thread groups
+        # membership in `group` should not affect things,
+        # because answer groups always inherit thread groups
         self.edit_answer(user=self.u1, answer=answer, is_private=True)
         self.assertEqual(answer.groups.count(), 1)
 
-        #here we have a simple case - the comment to answer was posted
-        #by the answer author!!!
-        #won't work when comment was by someone else
+        # here we have a simple case - the comment to answer was posted
+        # by the answer author!!!
+        # won't work when comment was by someone else
         u1_group = self.u1.get_personal_group()
         self.assertEqual(answer.groups.filter(id=u1_group.id).count(), 1)
-        #comment inherits the sharing scope
+        # comment inherits the sharing scope
         self.assertEqual(comment.groups.count(), 1)
         self.assertEqual(comment.groups.filter(id=u1_group.id).count(), 1)
 
@@ -573,13 +569,13 @@ class GroupTests(AskbotTestCase):
         answer = self.post_answer(question=question, user=u2, is_private=True)
 
         threads = models.Thread.objects
-        #u2 will see question and answer
+        # u2 will see question and answer
         self.assertEqual(answer.thread.get_answer_count(user=u2), 1)
         self.assertEqual(threads.get_visible(u2).count(), 1)
-        #u1 will see only question
+        # u1 will see only question
         self.assertEqual(answer.thread.get_answer_count(user=self.u1), 0)
         self.assertEqual(threads.get_visible(self.u1).count(), 1)
-        #anonymous will see question
+        # anonymous will see question
         self.assertEqual(answer.thread.get_answer_count(), 0)
         anon = AnonymousUser()
         self.assertEqual(threads.get_visible(anon).count(), 1)
@@ -639,47 +635,47 @@ class GroupTests(AskbotTestCase):
         self.assertEqual(visible_threads.count(), 0)
 
     def test_join_group(self):
-        #create group
+        # create group
         group = models.Group(name='somegroup')
         group.openness = models.Group.OPEN
         group.save()
-        #join
+        # join
         self.u1 = self.create_user('user1')
         self.u1.join_group(group)
-        #assert membership of askbot group object
+        # assert membership of askbot group object
         found_count = self.u1.get_groups().filter(name='somegroup').count()
         self.assertEqual(found_count, 1)
 
-        #closed group
+        # closed group
         closed_group = models.Group(name="secretgroup")
         closed_group.openness = models.Group.CLOSED
         closed_group.save()
 
-        #join (should raise exception)
+        # join (should raise exception)
         self.assertRaises(exceptions.PermissionDenied,
                           self.u1.join_group, closed_group)
-        #testing force parameter
+        # testing force parameter
         self.u1.join_group(closed_group, force=True)
 
-        #assert membership of askbot group object
+        # assert membership of askbot group object
         found_count = self.u1.get_groups().filter(name='secretgroup').count()
         self.assertEqual(found_count, 1)
 
     def test_group_moderation(self):
-        #create group
+        # create group
         group = models.Group(name='somegroup')
-        #make it moderated
+        # make it moderated
         group.openness = models.Group.MODERATED
         group.save()
 
-        #add moderator to the group
+        # add moderator to the group
         mod = self.create_user('mod', status='d')
         mod.join_group(group)
 
-        #create a regular user
+        # create a regular user
         reg = self.create_user('reg')
         reg.join_group(group)
-        #assert that moderator has a notification
+        # assert that moderator has a notification
         acts = models.Activity.objects.filter(
                         user=reg,
                         activity_type=const.TYPE_ACTIVITY_ASK_TO_JOIN_GROUP,
@@ -709,11 +705,11 @@ class LinkPostingTests(AskbotTestCase):
         MIN_REP_TO_INSERT_LINK=30
     )
     def test_admin_can_help_low_rep_user_insert_link(self):
-        #create a low rep user
+        # create a low rep user
         low = self.create_user('low', reputation=10)
-        #create an admin
+        # create an admin
         admin = self.create_user('admin', status='d')
-        #low re user posts a question with a link
+        # low re user posts a question with a link
         text = 'hello, please read http://wikipedia.org'
         question = self.post_question(user=low, body_text=text)
         self.assert_no_link(question.html)

@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 #-------------------------------------------------------------------------------
 # Name:        Award badges command
@@ -11,8 +14,6 @@
 # Licence:     GPL V2
 #-------------------------------------------------------------------------------
 """
-#!/usr/bin/env python
-#encoding:utf-8
 
 from django.core.management.base import NoArgsCommand
 
@@ -20,6 +21,7 @@ class BaseCommand(NoArgsCommand):
     def update_activities_auditted(self, cursor, activity_ids):
         # update processed rows to auditted
         if len(activity_ids):
-            query = "UPDATE activity SET is_auditted = True WHERE id in (%s)"\
-                    % ','.join('%s' % item for item in activity_ids)
+            params = ','.join('%s' % item for item in activity_ids)
+            query = "UPDATE activity SET is_auditted = True WHERE id in (%s)" % params
             cursor.execute(query)
+

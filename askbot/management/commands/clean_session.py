@@ -15,25 +15,24 @@ class Command(NoArgsCommand):
     """Django management command class"""
 
     option_list = NoArgsCommand.option_list + (
-            make_option('--quiet',
-                action='store_true',
-                dest='quiet',
-                default=False,
-                help="Do not print anything when called."
-                ),
-            )
+        make_option(
+            '--quiet',
+            action='store_true',
+            dest='quiet',
+            default=False,
+            help="Do not print anything when called."
+        ),
+    )
 
     @commit_manually
     def handle_noargs(self, **options):
         """deletes old sessions"""
         quiet = options.get('quiet', False)
 
-        expired_sessions = Session.objects.filter(
-                                expire_date__lt=datetime.now()
-                            )
+        expired_sessions = Session.objects.filter(expire_date__lt=datetime.now())
         count = expired_sessions.count()
         expired_sessions = expired_sessions.iterator()
-        if quiet is False:
+        if not quiet:
             message = 'There are %d expired sessions' % count
             expired_sessions = ProgressBar(expired_sessions, count, message)
 

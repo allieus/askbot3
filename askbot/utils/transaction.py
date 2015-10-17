@@ -20,7 +20,7 @@ class DummyTransaction(object):
             func(*args, **kwargs)
         return decorated
 
-#a utility instance to use instead of the normal transaction object
+# a utility instance to use instead of the normal transaction object
 dummy_transaction = DummyTransaction()
 
 

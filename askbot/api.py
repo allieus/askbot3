@@ -55,7 +55,7 @@ def get_admin(seed_user_id = None):
     """
 
     if seed_user_id:
-        user = models.User.objects.get(id = seed_user_id)#let it raise error here
+        user = models.User.objects.get(id = seed_user_id)# let it raise error here
         if user.is_administrator() or user.is_moderator():
             return user
     try:

@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from django.utils import six
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext as _
 from askbot.deps.livesettings import values
 from askbot.deps.livesettings.models import SettingNotSet
@@ -11,7 +11,8 @@ log = logging.getLogger('configuration')
 
 _NOTSET = object()
 
-@six.python_2_unicode_compatible
+
+@python_2_unicode_compatible
 class ConfigurationSettings(object):
     """A singleton manager for ConfigurationSettings"""
 
@@ -130,7 +131,7 @@ class ConfigurationSettings(object):
     def __init__(self):
         if ConfigurationSettings.__instance is None:
             ConfigurationSettings.__instance = ConfigurationSettings.__impl()
-            #ConfigurationSettings.__instance.load_app_configurations()
+            # ConfigurationSettings.__instance.load_app_configurations()
 
         self.__dict__['_ConfigurationSettings__instance'] = ConfigurationSettings.__instance
 
@@ -149,12 +150,14 @@ class ConfigurationSettings(object):
         return setattr(self.__instance, attr, value)
 
     def __str__(self):
-        return "ConfigurationSettings: " + six.text_type(self.groups())
+        return "ConfigurationSettings: {}".format(self.groups())
+
 
 def config_exists(group, key):
     """Test to see if a setting has been registered"""
 
     return ConfigurationSettings().has_config(group, key)
+
 
 def config_get(group, key):
     """Get a configuration setting"""
@@ -164,8 +167,10 @@ def config_get(group, key):
         log.debug('SettingNotSet: %s.%s', group, key)
         raise
 
+
 def config_get_group(group):
     return ConfigurationSettings()[group]
+
 
 def config_collect_values(group, groupkey, key, unique=True, skip_missing=True):
     """Look up (group, groupkey) from config, then take the values returned and
@@ -186,18 +191,19 @@ def config_collect_values(group, groupkey, key, unique=True, skip_missing=True):
     for g in groups:
         try:
             ret.append(config_value(g, key))
-        except KeyError as ke:
+        except KeyError:
             if not skip_missing:
                 raise SettingNotSet('No config %s.%s' % (g, key))
 
     if unique:
         out = []
         for x in ret:
-            if not x in out:
+            if x not in out:
                 out.append(x)
         ret = out
 
     return ret
+
 
 def config_register(value):
     """Register a value or values.
@@ -207,12 +213,15 @@ def config_register(value):
     """
     return ConfigurationSettings().register(value)
 
+
 def config_register_super_group(super_group):
     return ConfigurationSettings().register_super_group(super_group)
+
 
 def config_register_list(*args):
     for value in args:
         config_register(value)
+
 
 def config_value(group, key, default=_NOTSET):
     """Get a value from the configuration system"""
@@ -223,6 +232,7 @@ def config_value(group, key, default=_NOTSET):
             return default
         raise
 
+
 def config_value_safe(group, key, default_value):
     """Get a config value with a default fallback, safe for use during SyncDB."""
     raw = default_value
@@ -231,7 +241,7 @@ def config_value_safe(group, key, default_value):
         raw = config_value(group, key)
     except SettingNotSet:
         pass
-    except ImportError as e:
+    except ImportError:
         log.warn("Error getting %s.%s, OK if you are in SyncDB.", group, key)
 
     return raw
@@ -261,3 +271,4 @@ def config_add_choice(group, key, choice):
         cfg.add_choice(choice)
     else:
         ConfigurationSettings().preregister_choice(group, key, choice)
+

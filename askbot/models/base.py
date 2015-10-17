@@ -16,20 +16,20 @@ class BaseQuerySetManager(models.Manager):
     >>>
     >>>class SomeQuerySet(django.db.models.QuerySet):
     >>>    def some_custom_filter(self, *args, **kwargs):
-    >>>        return self #or any custom code
-    >>>    #add more custom filters here
+    >>>        return self # or any custom code
+    >>>    # add more custom filters here
     >>>
     >>>class SomeManager(askbot.models.base.BaseQuerySetManager)
     >>>    def get_query_set(self):
     >>>        return SomeQuerySet(self.model)
     >>>
     >>>class SomeModel(django.db.models.Model)
-    >>>    #add fields here
+    >>>    # add fields here
     >>>    objects = SomeManager()
     """
     def __getattr__(self, attr, *args):
         ## The following two lines fix the problem from this ticket:
-        ## https://code.djangoproject.com/ticket/15062#comment:6
+        ## https://code.djangoproject.com/ticket/15062# comment:6
         ## https://code.djangoproject.com/changeset/15220
         ## Queryset.only() seems to suffer from that on some occasions
         if attr.startswith('_'):
@@ -43,10 +43,10 @@ class BaseQuerySetManager(models.Manager):
 
 class DraftContent(models.Model):
     """Base class for AnonymousQuestion and AnonymousAnswer"""
-    session_key = models.CharField(max_length=40)  #session id for anonymous questions
+    session_key = models.CharField(max_length=40)  # session id for anonymous questions
     wiki = models.BooleanField(default=False)
     added_at = models.DateTimeField(default=datetime.datetime.now)
-    ip_addr = models.GenericIPAddressField(max_length=45) #allow high port numbers
+    ip_addr = models.GenericIPAddressField(max_length=45) # allow high port numbers
     author = models.ForeignKey(User,null=True)
     text = models.TextField()
 

@@ -64,7 +64,7 @@ def get_available_skins(selected=None):
             'or in the corresponding directory'
         )
 
-    #insert default as a last item
+    # insert default as a last item
     skins['default'] = askbot.get_install_directory()
     return skins
 
@@ -87,7 +87,7 @@ def get_skin_choices():
     return zip(skin_names, skin_names)
 
 def resolve_skin_for_media(media=None, preferred_skin = None):
-    #see if file exists, if not, try skin 'default'
+    # see if file exists, if not, try skin 'default'
     available_skins = list(get_available_skins(selected=preferred_skin).items())
     for skin_name, skin_dir in available_skins:
         if os.path.isfile(os.path.join(skin_dir, 'media', media)):
@@ -102,20 +102,20 @@ def get_media_url(url, ignore_missing = False):
     if file is not found - returns None
     and logs an error message
 
-    todo: move this to the skin environment class
+    TODO: move this to the skin environment class
     """
-    #import datetime
-    #before = datetime.datetime.now()
+    # import datetime
+    # before = datetime.datetime.now()
     url = unquote(force_text(url))
     while url[0] == '/': url = url[1:]
 
-    #a hack allowing urls media stored on external locations to
-    #just pass through unchanged
+    # a hack allowing urls media stored on external locations to
+    # just pass through unchanged
     if url.startswith('http://') or url.startswith('https://'):
         return url
-    #todo: handles case of multiple skin directories
+    # TODO: handles case of multiple skin directories
 
-    #if file is in upfiles directory, then give that
+    # if file is in upfiles directory, then give that
     url_copy = url
     if url_copy.startswith(django_settings.MEDIA_URL[1:]):
         file_path = url_copy.replace(
@@ -136,17 +136,17 @@ def get_media_url(url, ignore_missing = False):
                                     '///', '/'
                                 )
             return url_copy
-        elif ignore_missing == False:
+        elif not ignore_missing:
             logging.critical('missing media resource %s' % url)
 
-    #2) if it does not exist in uploaded files directory - look in skins
+    # 2) if it does not exist in uploaded files directory - look in skins
 
-    #purpose of this try statement is to determine
-    #which skin is currently used
+    # purpose of this try statement is to determine
+    # which skin is currently used
     try:
-        #this import statement must be hidden here
-        #because at startup time this branch will fail
-        #due to an import error
+        # this import statement must be hidden here
+        # because at startup time this branch will fail
+        # due to an import error
         from askbot.conf import settings as askbot_settings
         use_skin = askbot_settings.ASKBOT_DEFAULT_SKIN
         resource_revision = askbot_settings.MEDIA_RESOURCE_REVISION
@@ -154,13 +154,12 @@ def get_media_url(url, ignore_missing = False):
         use_skin = 'default'
         resource_revision = None
 
-    #determine from which skin take the media file
+    # determine from which skin take the media file
     try:
-        use_skin = resolve_skin_for_media(media=url, preferred_skin = use_skin)
+        use_skin = resolve_skin_for_media(media=url, preferred_skin=use_skin)
     except MediaNotFound:
-        if ignore_missing == False:
-            log_message = 'missing media resource %s in skin %s' \
-                            % (url, use_skin)
+        if not ignore_missing:
+            log_message = 'missing media resource %s in skin %s' % (url, use_skin)
             logging.critical(log_message)
         return None
 
@@ -168,11 +167,12 @@ def get_media_url(url, ignore_missing = False):
     url = os.path.normpath(url).replace('\\', '/')
 
     if resource_revision:
-        url +=  '?v=%d' % resource_revision
+        url += '?v=%d' % resource_revision
 
-    #after = datetime.datetime.now()
-    #print(after - before)
+    # after = datetime.datetime.now()
+    # print(after - before)
     return url
+
 
 def update_media_revision(skin=None):
     """update skin media revision number based on the contents
@@ -194,7 +194,7 @@ def update_media_revision(skin=None):
     ]
 
     if skin != 'default':
-        #we have default skin as parent of the custom skin
+        # we have default skin as parent of the custom skin
         default_skin_path = get_path_to_skin('default')
         media_dirs.append(os.path.join(default_skin_path, 'media'))
 

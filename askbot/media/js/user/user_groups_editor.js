@@ -16,5 +16,5 @@ UserGroupsEditor.prototype.decorate = function (element) {
     var groups_container = new GroupsContainer();
     groups_container.decorate(element.find('#groups-list'));
     adder.setGroupsContainer(groups_container);
-    //todo - add group deleters
+    //TODO - add group deleters
 };

@@ -79,7 +79,7 @@ settings.register(
 )
 
 """
-#this is disabled to possibly be completely removed later
+# this is disabled to possibly be completely removed later
 settings.register(
     livesettings.IntegerValue(
         MIN_REP,

@@ -1,7 +1,7 @@
 /**
  * attaches a modal menu with a text editor
  * to a link. The modal menu is from bootstrap.js
- * todo: this should probably be a subclass of ModalDialog,
+ * TODO: this should probably be a subclass of ModalDialog,
  * triggered by a link click, then a whole bunch of methods
  * would be simply inherited from the modal dialog:
  * clearMessages, etc.

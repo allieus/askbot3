@@ -11,8 +11,8 @@ VERSION = (0, 7, 53)
 
 default_app_config = 'askbot.apps.AppConfig'
 
-#keys are module names used by python imports,
-#values - the package qualifier to use for pip
+# keys are module names used by python imports,
+# values - the package qualifier to use for pip
 REQUIREMENTS = {
     'akismet': 'akismet',
     'avatar': 'django-avatar>=2.0',
@@ -48,13 +48,13 @@ REQUIREMENTS = {
     'threaded_multihost': 'django-threaded-multihost',
     'tinymce': 'django-tinymce>=1.5.1b2',
     'unidecode': 'unidecode',
-    #'stopforumspam': 'stopforumspam'
+    # 'stopforumspam': 'stopforumspam'
 }
 
 if platform.system() != 'Windows':
     REQUIREMENTS['lamson'] = 'Lamson'
 
-#necessary for interoperability of django and coffin
+# necessary for interoperability of django and coffin
 try:
     from askbot import patches
     from askbot.deployment.assertions import assert_package_compatibility

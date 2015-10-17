@@ -1,14 +1,14 @@
-# encoding:utf-8
+# -*- coding: utf-8 -*-
 """
 All constants could be used in other modules
 For reasons that models, views can't have unicode
 text in this project, all unicode text go here.
 """
 from __future__ import unicode_literals
-from django.utils.translation import ugettext_lazy as _
 import re
+from django.utils.translation import ugettext_lazy as _
 
-#todo: customize words
+# TODO: customize words
 CLOSE_REASONS = (
     (1, _('duplicate question')),
     (2, _('question is off-topic or not relevant')),
@@ -21,7 +21,7 @@ CLOSE_REASONS = (
     (9, _('too localized')),
 )
 
-LONG_TIME = 60*60*24*30 #30 days is a lot of time
+LONG_TIME = 60*60*24*30 # 30 days is a lot of time
 DATETIME_FORMAT = '%I:%M %p, %d %b %Y'
 
 SHARE_NOTHING = 0
@@ -47,11 +47,11 @@ TYPE_REPUTATION = (
     (-6, 'lose_by_flagged_lastrevision_3_times'),
     (-7, 'lose_by_flagged_lastrevision_5_times'),
     (-8, 'lose_by_upvote_canceled'),
-    #for reputation type 10 Repute.comment field is required
+    # for reputation type 10 Repute.comment field is required
     (10, 'assigned_by_moderator'),
 )
 
-#do not translate keys
+# do not translate keys
 POST_SORT_METHODS = (
     ('age-desc', _('newest')),
     ('age-asc', _('oldest')),
@@ -68,7 +68,7 @@ POST_TYPES = ('answer', 'comment', 'question', 'tag_wiki', 'reject_reason')
 
 SIMPLE_REPLY_SEPARATOR_TEMPLATE = '==== %s -=-=='
 
-#values for SELF_NOTIFY_WHEN... settings use bits
+# values for SELF_NOTIFY_WHEN... settings use bits
 NEVER = 'never'
 FOR_FIRST_REVISION = 'first'
 FOR_ANY_REVISION = 'any'
@@ -77,15 +77,15 @@ SELF_NOTIFY_EMAILED_POST_AUTHOR_WHEN_CHOICES = (
     (FOR_FIRST_REVISION, _('When new post is published')),
     (FOR_ANY_REVISION, _('When post is published or revised')),
 )
-#need more options for web posts b/c user is looking at the page
-#when posting. when posts are made by email - user is not looking
-#at the site and therefore won't get any feedback unless an email is sent back
-#todo: rename INITIAL -> FIRST and make values of type string
-#FOR_INITIAL_REVISION_WHEN_APPROVED = 1
-#FOR_ANY_REVISION_WHEN_APPROVED = 2
-#FOR_INITIAL_REVISION_ALWAYS = 3
-#FOR_ANY_REVISION_ALWAYS = 4
-#SELF_NOTIFY_WEB_POST_AUTHOR_WHEN_CHOICES = (
+# need more options for web posts b/c user is looking at the page
+# when posting. when posts are made by email - user is not looking
+# at the site and therefore won't get any feedback unless an email is sent back
+# TODO: rename INITIAL -> FIRST and make values of type string
+# FOR_INITIAL_REVISION_WHEN_APPROVED = 1
+# FOR_ANY_REVISION_WHEN_APPROVED = 2
+# FOR_INITIAL_REVISION_ALWAYS = 3
+# FOR_ANY_REVISION_ALWAYS = 4
+# SELF_NOTIFY_WEB_POST_AUTHOR_WHEN_CHOICES = (
 #    (NEVER, _('Never')),
 #    (
 #        FOR_INITIAL_REVISION_WHEN_APPROVED,
@@ -133,12 +133,12 @@ USER_SORT_METHODS = (
 )
 DEFAULT_USER_SORT_METHOD = 'reputation'
 
-#todo: add assertion here that all sort methods are unique
-#because they are keys to the hash used in implementations
-#of Q.run_advanced_search
+# TODO: add assertion here that all sort methods are unique
+# because they are keys to the hash used in implementations
+# of Q.run_advanced_search
 
 DEFAULT_POST_SORT_METHOD = 'activity-desc'
-#todo: customize words
+# TODO: customize words
 POST_SCOPE_LIST = (
     ('all', _('all')),
     ('unanswered', _('unanswered')),
@@ -161,17 +161,17 @@ UNANSWERED_QUESTION_MEANING_CHOICES = (
     ('NO_ANSWERS', _('Question has no answers')),
     ('NO_ACCEPTED_ANSWERS', _('Question has no accepted answers')),
 )
-#todo: implement this
+# TODO: implement this
 #    ('NO_UPVOTED_ANSWERS',),
 #)
 
-#todo:
-#this probably needs to be language-specific
-#and selectable/changeable from the admin interface
-#however it will be hard to expect that people will type
-#correct regexes - plus this must be an anchored regex
-#to do full string match
-#IMPRTANT: tag related regexes must be portable between js and python
+# TODO:
+# this probably needs to be language-specific
+# and selectable/changeable from the admin interface
+# however it will be hard to expect that people will type
+# correct regexes - plus this must be an anchored regex
+# to do full string match
+# IMPRTANT: tag related regexes must be portable between js and python
 TAG_CHARS = r'\w+.#-'
 TAG_FIRST_CHARS = r'\w'
 TAG_FORBIDDEN_FIRST_CHARS = r'#'
@@ -216,11 +216,11 @@ TYPE_ACTIVITY_VALIDATION_EMAIL_SENT = 28
 TYPE_ACTIVITY_POST_SHARED = 29
 TYPE_ACTIVITY_ASK_TO_JOIN_GROUP = 30
 TYPE_ACTIVITY_MODERATION_ALERT_SENT = 31
-TYPE_ACTIVITY_FORBIDDEN_PHRASE_FOUND = 50 #added gap
-#TYPE_ACTIVITY_EDIT_QUESTION = 17
-#TYPE_ACTIVITY_EDIT_ANSWER = 18
+TYPE_ACTIVITY_FORBIDDEN_PHRASE_FOUND = 50 # added gap
+# TYPE_ACTIVITY_EDIT_QUESTION = 17
+# TYPE_ACTIVITY_EDIT_ANSWER = 18
 
-#todo: rename this to TYPE_ACTIVITY_CHOICES
+# TODO: rename this to TYPE_ACTIVITY_CHOICES
 TYPE_ACTIVITY = (
     (TYPE_ACTIVITY_ASK_QUESTION, _('asked a question')),
     (TYPE_ACTIVITY_ANSWER, _('answered a question')),
@@ -273,11 +273,11 @@ TYPE_ACTIVITY = (
     ),
     (
         TYPE_ACTIVITY_VALIDATION_EMAIL_SENT,
-        'sent email address validation message'#don't translate, internal
+        'sent email address validation message'# don't translate, internal
     ),
     (
         TYPE_ACTIVITY_MODERATION_ALERT_SENT,
-        'sent moderation alert'#don't translate, internal
+        'sent moderation alert'# don't translate, internal
     )
 )
 
@@ -288,7 +288,7 @@ MODERATED_EDIT_ACTIVITY_TYPES = (
 MODERATED_ACTIVITY_TYPES = MODERATED_EDIT_ACTIVITY_TYPES + (TYPE_ACTIVITY_MARK_OFFENSIVE,)
 
 
-#MENTION activity is added implicitly, unfortunately
+# MENTION activity is added implicitly, unfortunately
 RESPONSE_ACTIVITY_TYPES_FOR_INSTANT_NOTIFICATIONS = (
     TYPE_ACTIVITY_COMMENT_QUESTION,
     TYPE_ACTIVITY_COMMENT_ANSWER,
@@ -300,8 +300,8 @@ RESPONSE_ACTIVITY_TYPES_FOR_INSTANT_NOTIFICATIONS = (
 )
 
 
-#the same as for instant notifications for now
-#MENTION activity is added implicitly, unfortunately
+# the same as for instant notifications for now
+# MENTION activity is added implicitly, unfortunately
 RESPONSE_ACTIVITY_TYPES_FOR_DISPLAY = (
     TYPE_ACTIVITY_ANSWER,
     TYPE_ACTIVITY_ASK_QUESTION,
@@ -360,7 +360,7 @@ VOTE_CANCEL_REPORT_ANSWER = '8.5'
 VOTE_CANCEL_REPORT_ANSWER_ALL = '8.6'
 
 VOTE_REMOVE_QUESTION, VOTE_REMOVE_ANSWER = '9', '10'
-#VOTE_SUBSCRIBE_QUESTION, VOTE_UNSUBSCRIBE_QUESTION = '11', '12'
+# VOTE_SUBSCRIBE_QUESTION, VOTE_UNSUBSCRIBE_QUESTION = '11', '12'
 
 # list of vote commands to manage posts voting
 VOTE_TYPES_VOTING = (
@@ -425,8 +425,8 @@ VOTE_TYPES = {
     VOTE_REMOVE_QUESTION: ('question', ),
     VOTE_REMOVE_ANSWER: ('answer', ),
 
-    #VOTE_SUBSCRIBE_QUESTION: ('question', ),
-    #VOTE_UNSUBSCRIBE_QUESTION: ('question', ),
+    # VOTE_SUBSCRIBE_QUESTION: ('question', ),
+    # VOTE_UNSUBSCRIBE_QUESTION: ('question', ),
 }
 
 
@@ -482,40 +482,40 @@ GRAVATAR_TYPE_CHOICES = (
 
 AVATAR_TYPE_CHOICES_FOR_NEW_USERS = (
     ('n', _('Default avatar')),
-    ('g', _('Gravatar')),#only if user has real uploaded gravatar
+    ('g', _('Gravatar')),# only if user has real uploaded gravatar
 )
 
 AVATAR_TYPE_CHOICES = AVATAR_TYPE_CHOICES_FOR_NEW_USERS + (
-                    #avatar uploaded locally - with django-avatar app
+                    # avatar uploaded locally - with django-avatar app
                     ('a', _('Uploaded Avatar')),
                 )
 
-#chars that can go before or after @mention
+# chars that can go before or after @mention
 TWITTER_STYLE_MENTION_TERMINATION_CHARS = '\n ;:,.!?<>"\''
 
 COMMENT_HARD_MAX_LENGTH = 2048
 
-#user status ch
+# user status ch
 USER_STATUS_CHOICES = (
-        ('d', _('administrator')), #admin = moderator + access to settings
-        ('m', _('moderator')), #user with moderation privilege
-        ('a', _('approved')), #regular user
-        ('w', _('watched')), #regular user placed on the moderation watch
-        ('s', _('suspended')), #suspended user who cannot post new stuff
-        ('b', _('blocked')), #blocked
+        ('d', _('administrator')), # admin = moderator + access to settings
+        ('m', _('moderator')), # user with moderation privilege
+        ('a', _('approved')), # regular user
+        ('w', _('watched')), # regular user placed on the moderation watch
+        ('s', _('suspended')), # suspended user who cannot post new stuff
+        ('b', _('blocked')), # blocked
 )
 DEFAULT_USER_STATUS = 'w'
 
-#number of items to show in user views
+# number of items to show in user views
 USER_VIEW_DATA_SIZE = 50
 
-#not really dependency, but external links, which it would
-#be nice to test for correctness from time to time
+# not really dependency, but external links, which it would
+# be nice to test for correctness from time to time
 DEPENDENCY_URLS = {
     'akismet': 'https://akismet.com/signup/',
     'cc-by-sa': 'http://creativecommons.org/licenses/by-sa/3.0/legalcode',
     'embedding-video': \
-        'http://askbot.org/doc/optional-modules.html#embedding-video',
+        'http://askbot.org/doc/optional-modules.html# embedding-video',
     'favicon': 'http://en.wikipedia.org/wiki/Favicon',
     'facebook-apps': 'http://www.facebook.com/developers/createapp.php',
     'google-webmaster-tools': 'https://www.google.com/webmasters/tools/home',
@@ -574,7 +574,7 @@ ul {
     margin: 5px;
 }
 li {
-    border-bottom: #CCC 1px solid;
+    border-bottom: # CCC 1px solid;
     padding-bottom: 5px;
     padding-top: 5px;
 }
@@ -583,11 +583,11 @@ li:last-child {
 }
 a {
     text-decoration: none;
-    color: #464646;
+    color: # 464646;
     font-family: 'Yanone Kaffeesatz', sans-serif;
     font-size: 15px;
 }
 """
 
-#an exception import * because that file has only strings
+# an exception import * because that file has only strings
 from askbot.const.message_keys import *

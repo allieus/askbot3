@@ -105,7 +105,7 @@ SelectBox.prototype.addItemObject = function (item) {
     );
 };
 
-/** @todo: rename to setItem?? have a problem when id's are all say 0 */
+/** @TODO: rename to setItem?? have a problem when id's are all say 0 */
 SelectBox.prototype.addItem = function (id, name, description) {
 
     if (this.hasElement() === false) {

@@ -68,14 +68,14 @@ class BadgeTests(AskbotTestCase):
         self.u3.upvote(answer)
         self.assert_have_badge(badge_key, recipient = self.u2, expected_count = 1)
 
-        #post another question and check that there are no new badges
+        # post another question and check that there are no new badges
         question2 = self.post_question(user = self.u1)
         answer2 = self.post_answer(user = self.u2, question = question2)
         answer2.score = min_points - 1
         answer2.save()
         self.u1.upvote(answer2)
 
-        if multiple == True:
+        if multiple:
             expected_count = 2
         else:
             expected_count = 1
@@ -105,13 +105,13 @@ class BadgeTests(AskbotTestCase):
         self.u3.upvote(question)
         self.assert_have_badge(badge_key, recipient = self.u1, expected_count = 1)
 
-        #post another question and check that there are no new badges
+        # post another question and check that there are no new badges
         question2 = self.post_question(user = self.u1)
         question2.points = min_points - 1
         question2.save()
         self.u2.upvote(question2)
 
-        if multiple == True:
+        if multiple:
             expected_count = 2
         else:
             expected_count = 1
@@ -170,7 +170,7 @@ class BadgeTests(AskbotTestCase):
         question.thread.view_count = min_views - 1
         question.thread.save()
 
-        #patch not_a_robot_request to return True
+        # patch not_a_robot_request to return True
         from askbot.utils import functions
         functions.not_a_robot_request = lambda v: True
 
@@ -233,7 +233,7 @@ class BadgeTests(AskbotTestCase):
         self.u2.upvote(answer)
         self.assert_have_badge('self-learner', recipient = self.u1)
 
-        #copy-paste of the first question, except expect second badge
+        # copy-paste of the first question, except expect second badge
         question = self.post_question(user = self.u1)
         answer = self.post_answer(user = self.u1, question = question)
         answer.points = min_votes - 1
@@ -246,7 +246,7 @@ class BadgeTests(AskbotTestCase):
         answer.points = min_votes - 1
         answer.save()
         self.u2.upvote(answer)
-        #no badge when asker != answerer
+        # no badge when asker != answerer
         self.assert_have_badge(
             'self-learner',
             recipient = self.u1,
@@ -368,7 +368,7 @@ class BadgeTests(AskbotTestCase):
             revision_comment = 'ihihih'
         )
         self.assert_have_badge('editor', self.u2, 1)
-        #double check that its not multiple
+        # double check that its not multiple
         question = self.post_question(user = self.u1)
         self.u2.edit_question(
             question = question,
@@ -384,7 +384,7 @@ class BadgeTests(AskbotTestCase):
         answer = self.post_answer(user = self.u1, question = question)
         self.u2.edit_answer(answer = answer, body_text = 'hahaha')
         self.assert_have_badge('editor', self.u2, 1)
-        #double check that its not multiple
+        # double check that its not multiple
         question = self.post_question(user = self.u1)
         answer = self.post_answer(user = self.u1, question = question)
         self.u2.edit_answer(answer = answer, body_text = 'hahaha')
@@ -465,13 +465,13 @@ class BadgeTests(AskbotTestCase):
         self.u2.toggle_favorite_question(question)
         self.assert_have_badge('stellar-question', self.u1, 0)
         self.u3.toggle_favorite_question(question)
-        #award now
+        # award now
         self.assert_have_badge('stellar-question', self.u1, 1)
         self.u3.toggle_favorite_question(question)
-        #dont take back
+        # dont take back
         self.assert_have_badge('stellar-question', self.u1, 1)
         self.u3.toggle_favorite_question(question)
-        #dont reaward
+        # dont reaward
         self.assert_have_badge('stellar-question', self.u1, 1)
 
     def test_commentator_badge(self):

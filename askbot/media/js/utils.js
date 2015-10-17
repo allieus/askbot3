@@ -83,7 +83,7 @@ var setHtmlTag = function (fromElement, toTagName) {
     newElement.attr('class', fromElement.attr('class'));
     //move contents
     fromElement.children().detach().appendTo(newElement);
-    //@todo: maybe copy event handlers
+    //@TODO: maybe copy event handlers
     //if element is in dom, insert new element and detach old element
     if ($(document).find(fromElement)) {
         fromElement.after(newElement);

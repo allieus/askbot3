@@ -1,12 +1,12 @@
 from __future__ import unicode_literals
 from django.db import models
-from django.utils import six
 from django.utils.translation import ugettext_lazy
+from django.utils.encoding import python_2_unicode_compatible
 from askbot.models import Tag, Group
 from askbot.const import DEFAULT_QUESTION_WIDGET_STYLE, SEARCH_ORDER_BY
 
 
-@six.python_2_unicode_compatible
+@python_2_unicode_compatible
 class AskWidget(models.Model):
     '''stores widgets styles and options'''
     title = models.CharField(max_length=100)
@@ -33,10 +33,8 @@ class QuestionWidget(models.Model):
     search_query = models.CharField(
         max_length=50, null=True, blank=True, default=''
     )
-    order_by = models.CharField(max_length=18,
-            choices=SEARCH_ORDER_BY, default='-added_at')
-    style = models.TextField(ugettext_lazy('css for the widget'),
-            default=DEFAULT_QUESTION_WIDGET_STYLE, blank=True)
+    order_by = models.CharField(max_length=18, choices=SEARCH_ORDER_BY, default='-added_at')
+    style = models.TextField(ugettext_lazy('css for the widget'), default=DEFAULT_QUESTION_WIDGET_STYLE, blank=True)
 
     class Meta:
         app_label = 'askbot'

@@ -11,13 +11,13 @@ from askbot.deps.livesettings import BooleanValue
 from django.utils.translation import ugettext_lazy as _
 
 LARGE_SITE_MODE_SETTINGS = {
-    #minimum reputation settins.
+    # minimum reputation settins.
     'MIN_REP_TO_VOTE_UP': 15,
     'MIN_REP_TO_VOTE_DOWN': 100,
     'MIN_REP_TO_ANSWER_OWN_QUESTION': 25,
     'MIN_REP_TO_ACCEPT_OWN_ANSWER': 50,
     'MIN_REP_TO_FLAG_OFFENSIVE': 15,
-    #'MIN_REP_TO_LEAVE_COMMENTS': 50,
+    # 'MIN_REP_TO_LEAVE_COMMENTS': 50,
     'MIN_REP_TO_DELETE_OTHERS_COMMENTS': 2000,
     'MIN_REP_TO_DELETE_OTHERS_POSTS': 5000,
     'MIN_REP_TO_UPLOAD_FILES': 60,
@@ -27,13 +27,13 @@ LARGE_SITE_MODE_SETTINGS = {
     'MIN_REP_TO_VIEW_OFFENSIVE_FLAGS': 2000,
     'MIN_REP_TO_CLOSE_OTHERS_QUESTIONS': 2000,
     'MIN_REP_TO_HAVE_STRONG_URL': 250,
-    #badge settings
+    # badge settings
     'NOTABLE_QUESTION_BADGE_MIN_VIEWS': 250,
     'POPULAR_QUESTION_BADGE_MIN_VIEWS': 150,
     'FAMOUS_QUESTION_BADGE_MIN_VIEWS': 500,
     'ENTHUSIAST_BADGE_MIN_DAYS': 30,
     'TAXONOMIST_BADGE_MIN_USE_COUNT': 10,
-    #moderation rule settings
+    # moderation rule settings
     'MIN_FLAGS_TO_HIDE_POST': 3,
     'MIN_FLAGS_TO_DELETE_POST': 5,
 }
@@ -42,11 +42,11 @@ def bootstrap_callback(current_value, new_value):
     '''Callback to update settings'''
 
     if current_value == new_value:
-        #do not overwrite settings in case that tha value
-        #is the same
+        # do not overwrite settings in case that tha value
+        # is the same
         return new_value
 
-    if new_value == True:
+    if new_value is True:
         for key, value in LARGE_SITE_MODE_SETTINGS.items():
             settings.update(key, value)
 

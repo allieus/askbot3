@@ -1,5 +1,4 @@
-"""Forms, custom form fields and related utility functions
-used in AskBot"""
+"""Forms, custom form fields and related utility functions used in AskBot"""
 from __future__ import unicode_literals
 import re
 import datetime
@@ -69,7 +68,7 @@ def clean_marked_tagnames(tagnames):
     wildcard tags are those that have an asterisk at the end
     the function does not verify that the tag names are valid
     """
-    if askbot_settings.USE_WILDCARD_TAGS is False:
+    if not askbot_settings.USE_WILDCARD_TAGS:
         return tagnames, list()
 
     pure_tags = list()
@@ -110,7 +109,7 @@ def filter_choices(remove_choices=None, from_choices=None):
             if choice == choice_to_test[0]:
                 remove = True
                 break
-        if remove is False:
+        if not remove:
             filtered_choices += (choice_to_test, )
 
     return filtered_choices
@@ -194,8 +193,8 @@ class CountedWordsField(forms.CharField):
         super(CountedWordsField, self).__init__(*args, **kwargs)
 
     def clean(self, value):
-        #todo: this field must be adapted to work with Chinese, etc.
-        #for that we'll have to count characters instead of words
+        # TODO: this field must be adapted to work with Chinese, etc.
+        # for that we'll have to count characters instead of words
         if value is None:
             value = ''
 
@@ -208,7 +207,7 @@ class CountedWordsField(forms.CharField):
                 'must be > %d words',
                 self.min_words - 1
             ) % (self.min_words - 1)
-            #todo - space is not used in Chinese
+            # TODO - space is not used in Chinese
             raise forms.ValidationError(
                 string_concat(self.field_name, ' ', msg)
             )
@@ -271,10 +270,10 @@ class SuppressEmailField(forms.BooleanField):
 
 class DomainNameField(forms.CharField):
     """Field for Internet Domain Names
-    todo: maybe there is a standard field for this?
+    TODO: maybe there is a standard field for this?
     """
     def clean(self, value):
-        #find a better regex, taking into account tlds
+        # find a better regex, taking into account tlds
         domain_re = re.compile(r'[a-zA-Z\d]+(\.[a-zA-Z\d]+)+')
         if domain_re.match(value):
             return value
@@ -365,12 +364,12 @@ class EditorField(forms.CharField):
                 '%(post)s content must be > %(count)d character',
                 '%(post)s content must be > %(count)d characters',
                 self.min_length
-            ) % {'post': six.text_type(self.post_term_name), 'count': self.min_length}
+            ) % {'post': self.post_term_name, 'count': self.min_length}
             raise forms.ValidationError(msg)
 
         if self.user.is_anonymous():
-            #we postpone this validation if user is posting
-            #before logging in, up until publishing the post
+            # we postpone this validation if user is posting
+            # before logging in, up until publishing the post
             return value
 
         try:
@@ -386,9 +385,7 @@ class QuestionEditorField(EditorField):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
-        super(QuestionEditorField, self).__init__(
-                                user=user, *args, **kwargs
-                            )
+        super(QuestionEditorField, self).__init__(user=user, *args, **kwargs)
         self.min_length = askbot_settings.MIN_QUESTION_BODY_LENGTH
         self.post_term_name = askbot_settings.WORDS_QUESTION_SINGULAR
 
@@ -406,17 +403,17 @@ def clean_tag(tag_name, look_in_db=True):
     """a function that cleans a single tag name"""
     tag_length = len(tag_name)
     if tag_length > askbot_settings.MAX_TAG_LENGTH:
-        #singular form is odd in english, but required for pluralization
-        #in other languages
+        # singular form is odd in english, but required for pluralization
+        # in other languages
         msg = ungettext_lazy(
-            #odd but added for completeness
+            # odd but added for completeness
             'each tag must be shorter than %(max_chars)d character',
             'each tag must be shorter than %(max_chars)d characters',
             tag_length
         ) % {'max_chars': tag_length}
         raise forms.ValidationError(msg)
 
-    #todo - this needs to come from settings
+    # TODO - this needs to come from settings
     tagname_re = re.compile(const.TAG_REGEX, re.UNICODE)
     if not tagname_re.search(tag_name):
         if tag_name[0] in const.TAG_FORBIDDEN_FIRST_CHARS:
@@ -429,9 +426,9 @@ def clean_tag(tag_name, look_in_db=True):
             )
 
     if askbot_settings.FORCE_LOWERCASE_TAGS:
-        #a simpler way to handle tags - just lowercase thew all
+        # a simpler way to handle tags - just lowercase thew all
         return tag_name.lower()
-    elif look_in_db == False:
+    elif not look_in_db:
         return tag_name
     else:
         from askbot import models
@@ -480,7 +477,7 @@ class TagNamesField(forms.CharField):
                     _(message_keys.TAGS_ARE_REQUIRED_MESSAGE)
                 )
             else:
-                #don't test for required characters when tags is ''
+                # don't test for required characters when tags is ''
                 return ''
         split_re = re.compile(const.TAG_SPLIT_REGEX)
         tag_strings = split_re.split(data)
@@ -509,7 +506,7 @@ class TagNamesField(forms.CharField):
 
         result = ' '.join(cleaned_entered_tags)
 
-        if len(result) > 125:#magic number!, the same as max_length in db
+        if len(result) > 125:# magic number!, the same as max_length in db
             raise forms.ValidationError(self.error_messages['max_length'])
 
         return ' '.join(cleaned_entered_tags)
@@ -612,8 +609,8 @@ class ShowQuestionForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(ShowQuestionForm, self).__init__(*args, **kwargs)
-        #uses livesettings for the default so the 'sort' field
-        #must be added in the __init__
+        # uses livesettings for the default so the 'sort' field
+        # must be added in the __init__
         self.fields['sort'] = SortField(
                 choices=const.ANSWER_SORT_METHODS,
                 default=askbot_settings.DEFAULT_ANSWER_SORT_METHOD
@@ -635,7 +632,7 @@ class ShowQuestionForm(forms.Form):
         should use defaults if the data is incomplete
         or invalid"""
         if self._errors:
-            #since the form is always valid, clear the errors
+            # since the form is always valid, clear the errors
             logging.error(six.text_type(self._errors))
             self._errors = {}
 
@@ -744,7 +741,7 @@ class ChangeUserStatusForm(forms.Form):
 
         super(ChangeUserStatusForm, self).__init__(*arg, **kwarg)
 
-        #select user_status_choices depending on status of the moderator
+        # select user_status_choices depending on status of the moderator
         if moderator.is_authenticated():
             if moderator.is_administrator():
                 user_status_choices = ADMINISTRATOR_STATUS_CHOICES
@@ -755,19 +752,19 @@ class ChangeUserStatusForm(forms.Form):
         else:
             raise ValueError('moderator or admin expected from "moderator"')
 
-        #remove current status of the "subject" user from choices
+        # remove current status of the "subject" user from choices
         user_status_choices = filter_choices(
                                         remove_choices=[subject.status, ],
                                         from_choices=user_status_choices
                                     )
 
-        #add prompt option
+        # add prompt option
         user_status_choices = (('select', _('which one?')), ) \
                                 + user_status_choices
 
         self.fields['user_status'].choices = user_status_choices
 
-        #set prompt option as default
+        # set prompt option as default
         self.fields['user_status'].default = 'select'
         self.moderator = moderator
         self.subject = subject
@@ -782,33 +779,33 @@ class ChangeUserStatusForm(forms.Form):
         return self.cleaned_data['delete_content']
 
     def clean(self):
-        #if moderator is looking at own profile - do not
-        #let change status
+        # if moderator is looking at own profile - do not
+        # let change status
         if 'user_status' in self.cleaned_data:
 
             user_status = self.cleaned_data['user_status']
 
-            #does not make sense to change own user status
-            #if necessary, this can be done from the Django admin interface
+            # does not make sense to change own user status
+            # if necessary, this can be done from the Django admin interface
             if self.moderator == self.subject:
                 del self.cleaned_data['user_status']
                 raise forms.ValidationError(_('Cannot change own status'))
 
-            #do not let moderators turn other users into moderators
+            # do not let moderators turn other users into moderators
             if self.moderator.is_moderator() and user_status == 'moderator':
                 del self.cleanded_data['user_status']
                 raise forms.ValidationError(
                                 _('Cannot turn other user to moderator')
                             )
 
-            #do not allow moderator to change status of other moderators
+            # do not allow moderator to change status of other moderators
             if self.moderator.is_moderator() and self.subject.is_moderator():
                 del self.cleaned_data['user_status']
                 raise forms.ValidationError(
                                 _('Cannot change status of another moderator')
                             )
 
-            #do not allow moderator to change to admin
+            # do not allow moderator to change to admin
             if self.moderator.is_moderator() and user_status == 'd':
                 raise forms.ValidationError(
                                 _("Cannot change status to admin")
@@ -822,8 +819,8 @@ class ChangeUserStatusForm(forms.Form):
                     ) % {'username': self.subject.username}
                 raise forms.ValidationError(msg)
 
-            if user_status not in ('s', 'b'):#not blocked or suspended
-                if self.cleaned_data['delete_content'] == True:
+            if user_status not in ('s', 'b'):# not blocked or suspended
+                if self.cleaned_data['delete_content'] is True:
                     self.cleaned_data['delete_content'] = False
 
         return self.cleaned_data
@@ -920,7 +917,7 @@ class PostPrivatelyForm(forms.Form, FormWithHideableFields):
         user = kwargs.pop('user', None)
         self._user = user
         super(PostPrivatelyForm, self).__init__(*args, **kwargs)
-        if self.allows_post_privately() == False:
+        if not self.allows_post_privately():
             self.hide_field('post_privately')
 
     def allows_post_privately(self):
@@ -932,7 +929,7 @@ class PostPrivatelyForm(forms.Form, FormWithHideableFields):
         )
 
     def clean_post_privately(self):
-        if self.allows_post_privately() == False:
+        if not self.allows_post_privately():
             self.cleaned_data['post_privately'] = False
         return self.cleaned_data['post_privately']
 
@@ -981,7 +978,7 @@ class PostAsSomeoneForm(forms.Form):
     def clean_post_author_username(self):
         """if value is the same as initial, it is reset to
         empty string
-        todo: maybe better to have field where initial value is invalid,
+        TODO: maybe better to have field where initial value is invalid,
         then we would not have to have two almost identical clean functions?
         """
         username = self.cleaned_data.get('post_author_username', '').strip()
@@ -1042,7 +1039,7 @@ class AskForm(PostAsSomeoneForm, PostPrivatelyForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super(AskForm, self).__init__(*args, **kwargs)
-        #it's important that this field is set up dynamically
+        # it's important that this field is set up dynamically
         self.fields['title'] = TitleField()
 
         if askbot_settings.MIN_QUESTION_BODY_LENGTH == 0:
@@ -1066,7 +1063,7 @@ class AskForm(PostAsSomeoneForm, PostPrivatelyForm):
     def clean_ask_anonymously(self):
         """returns false if anonymous asking is not allowed
         """
-        if askbot_settings.ALLOW_ASK_ANONYMOUSLY is False:
+        if not askbot_settings.ALLOW_ASK_ANONYMOUSLY:
             self.cleaned_data['ask_anonymously'] = False
         return self.cleaned_data['ask_anonymously']
 
@@ -1075,7 +1072,8 @@ ASK_BY_EMAIL_SUBJECT_HELP = _(
     '[tag1, tag2, tag3,...] question title'
 )
 
-#widgetforms
+
+# widgetforms
 class AskWidgetForm(forms.Form, FormWithHideableFields):
     '''Simple form with just the title to ask a question'''
 
@@ -1088,31 +1086,26 @@ class AskWidgetForm(forms.Form, FormWithHideableFields):
         user = kwargs.pop('user', None)
         super(AskWidgetForm, self).__init__(*args, **kwargs)
         self.fields['title'] = TitleField()
-        #hide ask_anonymously field
+        # hide ask_anonymously field
         if user.is_anonymous() or not askbot_settings.ALLOW_ASK_ANONYMOUSLY:
             self.hide_field('ask_anonymously')
         self.fields['text'] = QuestionEditorField(user=user)
         if not include_text:
             self.hide_field('text')
-            #hack to make it validate
+            # hack to make it validate
             self.fields['text'].required = False
             self.fields['text'].min_length = 0
 
         if should_use_recaptcha(user):
             self.fields['recaptcha'] = AskbotReCaptchaField()
 
+
 class CreateAskWidgetForm(forms.Form, FormWithHideableFields):
-    title =  forms.CharField(max_length=100)
+    title = forms.CharField(max_length=100)
     include_text_field = forms.BooleanField(required=False)
 
-    inner_style = forms.CharField(
-                        widget=forms.Textarea,
-                        required=False
-                    )
-    outer_style = forms.CharField(
-                        widget=forms.Textarea,
-                        required=False
-                    )
+    inner_style = forms.CharField(widget=forms.Textarea, required=False)
+    outer_style = forms.CharField(widget=forms.Textarea, required=False)
 
     def __init__(self, *args, **kwargs):
         from askbot.models import Group, Tag
@@ -1121,20 +1114,17 @@ class CreateAskWidgetForm(forms.Form, FormWithHideableFields):
             queryset=Group.objects.exclude_personal(),
             required=False
         )
-        self.fields['tag'] = forms.ModelChoiceField(queryset=Tag.objects.get_content_tags(),
-            required=False)
+        self.fields['tag'] = forms.ModelChoiceField(queryset=Tag.objects.get_content_tags(), required=False)
         if not askbot_settings.GROUPS_ENABLED:
             self.hide_field('group')
 
+
 class CreateQuestionWidgetForm(forms.Form, FormWithHideableFields):
-    title =  forms.CharField(max_length=100)
-    question_number =  forms.CharField(initial='7')
-    tagnames  =  forms.CharField(label=_('tags'), max_length=50)
-    search_query =  forms.CharField(max_length=50, required=False)
-    order_by = forms.ChoiceField(
-        choices=const.SEARCH_ORDER_BY,
-        initial='-added_at'
-    )
+    title = forms.CharField(max_length=100)
+    question_number = forms.CharField(initial='7')
+    tagnames = forms.CharField(label=_('tags'), max_length=50)
+    search_query = forms.CharField(max_length=50, required=False)
+    order_by = forms.ChoiceField(choices=const.SEARCH_ORDER_BY, initial='-added_at')
     style = forms.CharField(
         widget=forms.Textarea,
         initial=const.DEFAULT_QUESTION_WIDGET_STYLE,
@@ -1149,6 +1139,7 @@ class CreateQuestionWidgetForm(forms.Form, FormWithHideableFields):
             queryset=Group.objects.exclude(name__startswith='_internal'),
             required=False
         )
+
 
 class AskByEmailForm(forms.Form):
     """:class:`~askbot.forms.AskByEmailForm`
@@ -1209,25 +1200,25 @@ class AskByEmailForm(forms.Form):
             subject_re = re.compile(r'^(?:\[([^]]+)\])?(.*)$')
         match = subject_re.match(raw_subject)
         if match:
-            #make raw tags comma-separated
+            # make raw tags comma-separated
             if match.group(1) is None:  # no tags
                 self.cleaned_data['tagnames'] = ''
             else:
                 tagnames = match.group(1).replace(';', ',')
 
-                #pre-process tags
+                # pre-process tags
                 tag_list = [tag.strip() for tag in tagnames.split(',')]
                 tag_list = [re.sub(r'\s+', ' ', tag) for tag in tag_list]
 
                 if askbot_settings.REPLACE_SPACE_WITH_DASH_IN_EMAILED_TAGS:
                     tag_list = [tag.replace(' ', '-') for tag in tag_list]
-                #todo: use tag separator char here
+                # TODO: use tag separator char here
                 tagnames = ' '.join(tag_list)
 
-                #clean tags - may raise ValidationError
+                # clean tags - may raise ValidationError
                 self.cleaned_data['tagnames'] = TagNamesField().clean(tagnames)
 
-            #clean title - may raise ValidationError
+            # clean title - may raise ValidationError
             title = match.group(2).strip()
             self.cleaned_data['title'] = TitleField().clean(title)
         else:
@@ -1245,7 +1236,7 @@ class AnswerForm(PostAsSomeoneForm, PostPrivatelyForm):
     def __init__(self, *args, **kwargs):
         super(AnswerForm, self).__init__(*args, **kwargs)
         user = kwargs['user']
-        #empty label on purpose
+        # empty label on purpose
         self.fields['text'] = AnswerEditorField(label='', user=user)
 
         if should_use_recaptcha(user):
@@ -1263,20 +1254,20 @@ class AnswerForm(PostAsSomeoneForm, PostPrivatelyForm):
             stripped_text = initial_text.strip()
         return len(stripped_text) > 0
 
-    #People can override this function to save their additional fields to db
+    # People can override this function to save their additional fields to db
     def save(self, question, user, ip_addr=None):
         wiki = self.cleaned_data['wiki']
         text = self.cleaned_data['text']
         is_private = self.cleaned_data['post_privately']
 
         return user.post_answer(
-            question = question,
-            body_text = text,
-            wiki = wiki,
-            is_private = is_private,
-            timestamp = datetime.datetime.now(),
-            ip_addr=ip_addr
-        )
+            question=question,
+            body_text=text,
+            wiki=wiki,
+            is_private=is_private,
+            timestamp=datetime.datetime.now(),
+            ip_addr=ip_addr)
+
 
 class VoteForm(forms.Form):
     """form used in ajax vote view (only comment_upvote so far)
@@ -1293,9 +1284,7 @@ class VoteForm(forms.Form):
             result = False
         else:
             del self.cleaned_data['cancel_vote']
-            raise forms.ValidationError(
-                    'either "true" or "false" strings expected'
-                )
+            raise forms.ValidationError('either "true" or "false" strings expected')
         self.cleaned_data['cancel_vote'] = result
         return self.cleaned_data['cancel_vote']
 
@@ -1335,20 +1324,21 @@ class RevisionForm(forms.Form):
         self.fields['revision'].choices = rev_choices
         self.fields['revision'].initial = latest_revision.revision
 
+
 class EditQuestionForm(PostAsSomeoneForm, PostPrivatelyForm):
     tags = TagNamesField()
     summary = SummaryField()
     wiki = WikiField()
     suppress_email = SuppressEmailField()
 
-    #todo: this is odd that this form takes question as an argument
+    # TODO: this is odd that this form takes question as an argument
     def __init__(self, *args, **kwargs):
         """populate EditQuestionForm with initial data"""
         self.question = kwargs.pop('question')
-        self.user = kwargs.pop('user')#preserve for superclass
+        self.user = kwargs.pop('user')  # preserve for superclass
         revision = kwargs.pop('revision')
         super(EditQuestionForm, self).__init__(*args, **kwargs)
-        #it is important to add this field dynamically
+        # it is important to add this field dynamically
         self.fields['text'] = QuestionEditorField(user=self.user)
         self.fields['title'] = TitleField()
         self.fields['title'].initial = revision.title
@@ -1356,12 +1346,9 @@ class EditQuestionForm(PostAsSomeoneForm, PostPrivatelyForm):
         self.fields['text'].label = _('Details')
         self.fields['tags'].initial = revision.tagnames
         self.fields['wiki'].initial = self.question.wiki
-        #hide the reveal identity field
+        # hide the reveal identity field
         if self.can_edit_anonymously():
-            self.fields['reveal_identity'] = forms.BooleanField(
-                                                    label=_('remove anonymity'),
-                                                    required=False,
-                                                )
+            self.fields['reveal_identity'] = forms.BooleanField(label=_('remove anonymity'), required=False)
 
         if should_use_recaptcha(self.user):
             self.fields['recaptcha'] = AskbotReCaptchaField()
@@ -1385,10 +1372,10 @@ class EditQuestionForm(PostAsSomeoneForm, PostPrivatelyForm):
     def can_edit_anonymously(self):
         """determines if the user cat keep editing the question
         anonymously"""
-        return (askbot_settings.ALLOW_ASK_ANONYMOUSLY
+        return (
+            askbot_settings.ALLOW_ASK_ANONYMOUSLY
             and self.question.is_anonymous
-            and self.user.is_owner_of(self.question)
-        )
+            and self.user.is_owner_of(self.question))
 
 
 class EditAnswerForm(PostAsSomeoneForm, PostPrivatelyForm):
@@ -1400,8 +1387,8 @@ class EditAnswerForm(PostAsSomeoneForm, PostPrivatelyForm):
         self.answer = answer
         user = kwargs.pop('user', None)
         super(EditAnswerForm, self).__init__(*args, **kwargs)
-        #it is important to add this field dynamically
-        #label is empty on purpose
+        # it is important to add this field dynamically
+        # label is empty on purpose
         self.fields['text'] = AnswerEditorField(label='', user=user)
         self.fields['text'].initial = revision.text
         self.fields['wiki'].initial = answer.wiki
@@ -1410,7 +1397,7 @@ class EditAnswerForm(PostAsSomeoneForm, PostPrivatelyForm):
             self.fields['recaptcha'] = AskbotReCaptchaField()
 
     def has_changed(self):
-        #todo: this function is almost copy/paste of EditQuestionForm.has_changed()
+        # TODO: this function is almost copy/paste of EditQuestionForm.has_changed()
         if super(EditAnswerForm, self).has_changed():
             return True
         if askbot_settings.GROUPS_ENABLED:
@@ -1517,7 +1504,7 @@ class EditUserForm(forms.Form):
         moderated_email_validator(email)
 
         if email != self.user.email:
-            #todo dry it, there is a similar thing in openidauth
+            # TODO dry it, there is a similar thing in openidauth
             try:
                 User.objects.get(email=email)
             except User.DoesNotExist:
@@ -1615,7 +1602,7 @@ class EditUserEmailFeedsForm(forms.Form):
     def reset(self):
         """equivalent to set_frequency('n')
         but also returns self due to some legacy requirement
-        todo: clean up use of this function
+        TODO: clean up use of this function
         """
         if self.is_bound:
             self.cleaned_data = self.NO_EMAIL_INITIAL
@@ -1623,7 +1610,7 @@ class EditUserEmailFeedsForm(forms.Form):
         return self
 
     def get_db_model_subscription_type_names(self):
-        """todo: refactor this - too hacky
+        """TODO: refactor this - too hacky
         should probably use model form instead
 
         returns list of values acceptable in
@@ -1655,7 +1642,7 @@ class EditUserEmailFeedsForm(forms.Form):
                                                     feed_type=feed_type
                                                 )
             if save_unbound:
-                #just save initial values instead
+                # just save initial values instead
                 if form_field in self.initial:
                     new_value = self.initial[form_field]
                 else:
@@ -1697,8 +1684,8 @@ class SimpleEmailSubscribeForm(forms.Form):
 
     def save(self, user=None):
         EFF = EditUserEmailFeedsForm
-        #here we have kind of an anomaly - the value 'y' is redundant
-        #with the frequency variable - needs to be fixed
+        # here we have kind of an anomaly - the value 'y' is redundant
+        # with the frequency variable - needs to be fixed
         if self.is_bound and self.cleaned_data['subscribe'] == 'y':
             email_settings_form = EFF()
             email_settings_form.set_initial_values(user)

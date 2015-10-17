@@ -11,66 +11,42 @@ __version__ = '.'.join(map(lambda v: str(v), __version_info__))
 __author__ = "Evgeny Fadeev"
 
 import cgi
-import sys
-#from pprint import pprint
 import re
 import logging
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
-from random import randint
-import codecs
-
+import uuid
+from hashlib import md5
 from django.utils import six
 
-#---- Python version compat
-if sys.version_info[:2] < (2,4):
-    from sets import Set as set
-    def reversed(sequence):
-        for i in sequence[::-1]:
-            yield i
-    def _unicode_decode(s, encoding, errors='xmlcharrefreplace'):
-        return six.text_type(s, encoding, errors)
-else:
-    def _unicode_decode(s, encoding, errors='strict'):
-        return s.decode(encoding, errors)
-
-
-#---- globals
+def _unicode_decode(s, encoding, errors='strict'):
+    return s.decode(encoding, errors)
 
 DEBUG = False
 log = logging.getLogger("jiveMarkup")
 
 DEFAULT_TAB_WIDTH = 4
+SECRET_SALT = str(uuid.uuid4())
 
 """
 Samples from the source (jive_url prefix is stripped)
 /message.jspa?messageID=8477
-/thread.jspa?messageID=10175&amp;#10175
-/thread.jspa?messageID=10662#10662
+/thread.jspa?messageID=10175&amp;# 10175
+/thread.jspa?messageID=10662# 10662
 /thread.jspa?messageID=11058
 /thread.jspa?threadID=1888&amp;tstart=210
 /thread.jspa?threadID=3087&amp;tstart=-258
 """
-internal_link_pattern  = r"""(?:message|thread)   #junk
+internal_link_pattern = r"""(?:message|thread)   # junk
                    \.jspa\?
-                   (message|thread)   #link type
-                   ID=(\d+)           #either post or thread id
-                   (?:(?:&amp;)?\#\d+|&amp;tstart=-?\d+)?  #junk
+                   (message|thread)   # link type
+                   ID=(\d+)           # either post or thread id
+                   (?:(?:&amp;)?\#\d+|&amp;tstart=-?\d+)?  # junk
                 """
 internal_link_re = re.compile(internal_link_pattern, re.X)
 
-
-try:
-    import uuid
-except ImportError:
-    SECRET_SALT = str(randint(0, 1000000))
-else:
-    SECRET_SALT = str(uuid.uuid4())
 def _hash_ascii(s):
-    #return md5(s).hexdigest()   # Markdown.pl effectively does this.
+    # return md5(s).hexdigest()   # Markdown.pl effectively does this.
     return 'md5-' + md5(SECRET_SALT + s).hexdigest()
+
 def _hash_text(s):
     return 'md5-' + md5(SECRET_SALT + s.encode("utf-8")).hexdigest()
 
@@ -94,6 +70,7 @@ class JiveConverter(object):
         self.list_level = 0
 
     _ws_only_line_re = re.compile(r"^[ \t]+$", re.M)
+
     def convert(self, text):
         """main function that converts markup --> html.
         Strategy: go line by line then parse lines.
@@ -104,7 +81,7 @@ class JiveConverter(object):
         text = self._normalize(text)
         text = self._run_block_gamut(text)
         text = self._unhash_html_blocks(text)
-        return _regularize_eols(text)#maybe prettyfy
+        return _regularize_eols(text)  # maybe prettyfy
 
     def _hashed(self, html):
         """hashes html block and returns the hash surrounded by eols"""
@@ -114,12 +91,12 @@ class JiveConverter(object):
 
     def _normalize(self, text):
         if not isinstance(text, six.text_type):
-            #TODO: perhaps shouldn't presume UTF-8 for string input?
+            # TODO: perhaps shouldn't presume UTF-8 for string input?
             text = six.text_type(text, 'utf-8')
 
-        #escape any html special chars globally as in jive they can be anywhere
+        # escape any html special chars globally as in jive they can be anywhere
         text = cgi.escape(text)
-        #delete "Edited by" comments
+        # delete "Edited by" comments
         text = re.sub(r'\n\s*Edited by:[^\n]*(\n|$)', '\n', text)
         # Standardize line endings:
         text = re.sub("\r\n|\r", "\n", text)
@@ -136,6 +113,7 @@ class JiveConverter(object):
     # Cribbed from a post by Bart Lateur:
     # <http://www.nntp.perl.org/group/perl.macperl.anyperl/154>
     _detab_re = re.compile(r'(.*?)\t', re.M)
+
     def _detab_sub(self, match):
         g1 = match.group(1)
         return g1 + (' ' * (self.tab_width - len(g1) % self.tab_width))
@@ -194,21 +172,22 @@ class JiveConverter(object):
         return text
 
     _email_pattern = r'[-.\w]+\@[-\w]+(?:\.[-\w]+)*\.[a-z]+'
-    _url_pattern = "((http|https|ftp)\://([a-zA-Z0-9\.\-]+(\:[a-zA-Z0-9\.&amp;%\$\-]+)*@)*((25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])|localhost|([a-zA-Z0-9\-]+\.)*[a-zA-Z0-9\-]+\.(com|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|[a-zA-Z]{2}))(\:[0-9]+)*(/($|[a-zA-Z0-9\.\,\?\'\\\+&amp;%\$#\=~_\-]+))*)"
+    _url_pattern = "((http|https|ftp)\://([a-zA-Z0-9\.\-]+(\:[a-zA-Z0-9\.&amp;%\$\-]+)*@)*((25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])|localhost|([a-zA-Z0-9\-]+\.)*[a-zA-Z0-9\-]+\.(com|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|[a-zA-Z]{2}))(\:[0-9]+)*(/($|[a-zA-Z0-9\.\,\?\'\\\+&amp;%\$#\=~_\-]+))*)"  # noqa
     _email_re = re.compile(_email_pattern, re.I | re.U)
     _url_re = re.compile(_url_pattern)
     _hypertext_link_re1 = re.compile(r'\[(.*?)\]')
+
     def _hypertext_link_sub1(self, match):
         link_bits = match.group(1).split('|')
         num_bits = len(link_bits)
         if num_bits == 0:
-            return match.group(0)#return the whole thing
+            return match.group(0)  # return the whole thing
         elif num_bits == 1:
             link = link_bits[0]
             if self._url_re.match(link) or not self._email_re.match(link):
                 return '<a href="%s">%s</a>' % (link, link)
         elif num_bits in (2, 3):
-            #if self._url_re.match(link_bits[1]):
+            # if self._url_re.match(link_bits[1]):
             if num_bits == 2:
                 return '<a href="%s">%s</a>' % (link_bits[1], link_bits[0])
             else:
@@ -217,6 +196,7 @@ class JiveConverter(object):
         return '[' + '|'.join(link_bits) + ']'
 
     _hypertext_link_re2 = re.compile(r'\[url\]%s\[/url\]' % _url_pattern)
+
     def _hypertext_link_sub2(self, match):
         """convert to plain autolink"""
         link = match.group(1)
@@ -225,10 +205,10 @@ class JiveConverter(object):
     def _do_hypertext_links(self, text):
         """
         """
-        #now do these:
-        #[Пример сайта|http://www.example.com|Образец подсказки по сайту]
-        #[Пример сайта|http://www.example.com]
-        #[http://www.example.com]
+        # now do these:
+        # [Пример сайта|http://www.example.com|Образец подсказки по сайту]
+        # [Пример сайта|http://www.example.com]
+        # [http://www.example.com]
         return self._hypertext_link_re1.sub(self._hypertext_link_sub1, text)
 
     def _image_link_sub(self, match):
@@ -236,6 +216,7 @@ class JiveConverter(object):
         return '<img src="%s"/>' % src
 
     _image_link_re = re.compile(r'!(.*?)!')
+
     def _do_image_links(self, text):
         """
         !http://../post.gif!
@@ -246,13 +227,13 @@ class JiveConverter(object):
     def _do_links(self, text):
         """
         now do only image and href links
-        todo: more link types https://community.jivesoftware.com/markuphelpfull.jspa
+        TODO: more link types https://community.jivesoftware.com/markuphelpfull.jspa
         """
-        #do this first [url]http://...[/url] --> plain http://...
+        # do this first [url]http://...[/url] --> plain http://...
         text = self._hypertext_link_re2.sub(self._hypertext_link_sub2, text)
         text = self._do_hypertext_links(text)
         text = self._do_image_links(text)
-        #now take care of plain links
+        # now take care of plain links
         return self._do_auto_links(text)
 
     _h_re = re.compile(r'''
@@ -261,6 +242,7 @@ class JiveConverter(object):
         (.+?)       # \2 = Header text
         \n+
         ''', re.X | re.M)
+
     def _h_sub(self, match):
         n = match.group(1)
         text = self._run_span_gamut(match.group(2))
@@ -289,6 +271,7 @@ class JiveConverter(object):
     _super_re = re.compile(r"\^(?=\S)(.+?)(?<=\S)\^")
     _sub_re = re.compile(r"\~(?=\S)(.+?)(?<=\S)\~")
     _strike_re = re.compile(r"--(?=\S)(.+?)(?<=\S)--")
+
     def _do_inline_styling(self, text):
         text = self._bold_re.sub(r'<strong>\1</strong>', text)
         text = self._italics_re.sub(r'<em>\1</em>', text)
@@ -299,11 +282,12 @@ class JiveConverter(object):
 
     def _block_quote_sub0(self, match):
         bq = match.group(1)
-        #span gamut on this type of quote
+        # span gamut on this type of quote
         html = '<blockquote><p>%s</p></blockquote>' % self._run_span_gamut(bq)
         return self._hashed(html)
 
     _block_quote_re0 = re.compile(r'^bq. (.*?)\n', re.M)
+
     def _do_block_quotes0(self, text):
         """single line block quotes"""
         return self._block_quote_re0.sub(self._block_quote_sub0, text)
@@ -320,7 +304,7 @@ class JiveConverter(object):
 
         html = ''
         if author:
-            #todo: add i18n
+            # TODO: add i18n
             html = '<span class="quote-header">%s wrote:</span><br/>\n\n' % author
 
         html += self._run_block_gamut(text)
@@ -330,6 +314,7 @@ class JiveConverter(object):
         re.compile(r'^{quote}(.*?){quote}', re.M | re.S),
         re.compile(r'^\[quote=([^]]+)\](.*?){quote}', re.M | re.S)
     )
+
     def _do_block_quotes1(self, text):
         """regexable multiline block quotes"""
         for regex in self._block_quote_regexes1:
@@ -337,6 +322,7 @@ class JiveConverter(object):
         return text
 
     _block_quote_sub2_re = re.compile('^&gt; ?', re.M | re.S)
+
     def _block_quote_sub2(self, match):
         title = match.group(1)
         text = match.group(2)
@@ -347,8 +333,8 @@ class JiveConverter(object):
 
     _block_quote_re2 = re.compile(
         r'^&gt; {quote:title\=(.+?):}{quote}\n((:?&gt;(:? .*?)?\n)+)',
-        re.S | re.M
-    )
+        re.S | re.M)
+
     def _do_block_quotes2(self, text):
         """do block quote of type:
         &gt; {quote:title=some title:}{quote}
@@ -359,9 +345,9 @@ class JiveConverter(object):
         return self._block_quote_re2.sub(self._block_quote_sub2, text)
 
     def _do_block_quotes(self, text):
-        #single line quotes
+        # single line quotes
         text = self._do_block_quotes0(text)
-        #potentially multiline quotes
+        # potentially multiline quotes
         text = self._do_block_quotes1(text)
         return self._do_block_quotes2(text)
 
@@ -376,13 +362,15 @@ class JiveConverter(object):
         r'^((#|\*)(#|\*)+\s+(.*?)\n(\2(#|\*)*\s+(.*?)\n)*)',
         re.M
     )
+
     def _nested_list_sub(self, match):
         text = match.group(1)
-        #strip the first char of each line (either * or #)
+        # strip the first char of each line (either * or #)
         text = re.sub(r'^.(.*?)\n', r'\1\n', text)
         return '<li>%s</li>\n' % self._do_lists(text)
 
     _list_item_re = re.compile(r'^(:?#|\*)\s+(.*?)\n', re.M)
+
     def _list_item_sub(self, match):
         list_item_html = self._run_span_gamut(match.group(2))
         return '<li>%s</li>\n' % list_item_html
@@ -397,14 +385,15 @@ class JiveConverter(object):
 
     _list_re = re.compile(
         r'^((#|\*)(#|\*)*\s+(.*?)\n(\2(#|\*)*\s+(.*?)\n)*)',
-        re.M
-    )
+        re.M)
+
     def _do_lists(self, text):
-        #detect the list in the pattern and run the replacement
-        #this is used recursively for the nested lists
+        # detect the list in the pattern and run the replacement
+        # this is used recursively for the nested lists
         return self._list_re.sub(self._list_sub, text)
 
     _leading_blanks_re = re.compile(r'^(\s*)(.*?)\n', re.M)
+
     def _leading_blanks_sub(self, match):
         spaces = match.group(1)
         text = match.group(2)
@@ -425,15 +414,16 @@ class JiveConverter(object):
                 grafs.append(self._blocks[graf])
             else:
                 graf = self._run_span_gamut(graf.strip())
-                #preserve the line breaks
+                # preserve the line breaks
                 graf = re.sub('\n', '<br/>\n', graf)
-                #convert leading blanks into nbsp
+                # convert leading blanks into nbsp
                 graf = self._preserve_leading_blanks(graf)
                 grafs.append('<p>%s</p>' % graf)
 
         return '\n'.join(grafs)
 
     _auto_link_re = re.compile("((?<!(href|.src|data)=['\"])%s)" % _url_pattern)
+
     def _auto_link_sub(self, match):
         """auto-links are just passed through"""
         link = match.group(1)
@@ -446,6 +436,7 @@ class JiveConverter(object):
           )
           \]
         """ % _email_pattern, re.I | re.X | re.U)
+
     def _auto_email_link_sub(self, match):
         email = match.group(1)
         return '<a href="mailto:%s">%s</a>' % (email, email)
@@ -455,6 +446,7 @@ class JiveConverter(object):
         return self._auto_email_link_re.sub(self._auto_email_link_sub, text)
 
     _indent_re = re.compile(r'^(.*?)$', re.M)
+
     def _indent(self, text, indent_pattern=r'    \1'):
         # Remove one level of line-leading tabs or spaces
         return self._indent_re.sub(indent_pattern, text)

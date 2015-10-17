@@ -3481,7 +3481,7 @@ ins .post-tag, ins p, ins {
 }
 body.question-page ins, body.main-page ins {
   /* a hack for google adwords
-     * todo: make rule above more specific
+     * TODO: make rule above more specific
      * and remove this one */
 
   background: transparent;
@@ -3680,7 +3680,7 @@ label.retag-error {
     text-align: center;
 }
 */
-/* todo: get rid of this in html */
+/* TODO: get rid of this in html */
 .favorites-empty {
   width: 32px;
   height: 45px;
@@ -3709,7 +3709,7 @@ label.retag-error {
 .user-info-table .gravatar {
   margin: 0;
 }
-/* todo: remove this hack? */
+/* TODO: remove this hack? */
 .user-stats-table .narrow {
   width: 660px;
 }

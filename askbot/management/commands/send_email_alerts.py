@@ -35,7 +35,7 @@ def get_all_origin_posts(mentions):
     return list(origin_posts)
 
 
-#todo: refactor this as class
+# TODO: refactor this as class
 def extend_question_list(
                     src, dst, cutoff_time = None,
                     limit=False, add_mention=False,
@@ -48,8 +48,8 @@ def extend_question_list(
     update reporting cutoff time for each question
     to the latest value to be more permissive about updates
     """
-    if src is None:#is not QuerySet
-        return #will not do anything if subscription of this type is not used
+    if src is None:# is not QuerySet
+        return # will not do anything if subscription of this type is not used
     if limit and len(dst.keys()) >= askbot_settings.MAX_ALERTS_PER_EMAIL:
         return
     if cutoff_time is None:
@@ -68,9 +68,9 @@ def extend_question_list(
             dst[q] = meta_data
 
         if cutoff_time > meta_data['cutoff_time']:
-            #the latest cutoff time wins for a given question
-            #if the question falls into several subscription groups
-            #this makes mailer more eager in sending email
+            # the latest cutoff time wins for a given question
+            # if the question falls into several subscription groups
+            # this makes mailer more eager in sending email
             meta_data['cutoff_time'] = cutoff_time
         if add_mention:
             if 'mentions' in meta_data:
@@ -144,19 +144,19 @@ class Command(NoArgsCommand):
 
         should_proceed = False
         for feed in user_feeds:
-            if feed.should_send_now() == True:
+            if feed.should_send_now() is True:
                 should_proceed = True
                 break
 
-        #shortcircuit - if there is no ripe feed to work on for this user
-        if should_proceed == False:
+        # shortcircuit - if there is no ripe feed to work on for this user
+        if not should_proceed:
             return {}
 
-        #these are placeholders for separate query sets per question group
-        #there are four groups - one for each EmailFeedSetting.feed_type
-        #and each group has subtypes A and B
-        #that's because of the strange thing commented below
-        #see note on Q and F objects marked with todo tag
+        # these are placeholders for separate query sets per question group
+        # there are four groups - one for each EmailFeedSetting.feed_type
+        # and each group has subtypes A and B
+        # that's because of the strange thing commented below
+        # see note on Q and F objects marked with TODO tag
         q_sel_A = None
         q_sel_B = None
 
@@ -169,13 +169,13 @@ class Command(NoArgsCommand):
         q_all_A = None
         q_all_B = None
 
-        #base question query set for this user
-        #basic things - not deleted, not closed, not too old
-        #not last edited by the same user
+        # base question query set for this user
+        # basic things - not deleted, not closed, not too old
+        # not last edited by the same user
         base_qs = Post.objects.get_questions().exclude(
             thread__last_activity_by=user
         ).exclude(
-            thread__last_activity_at__lt=user.date_joined#exclude old stuff
+            thread__last_activity_at__lt=user.date_joined# exclude old stuff
         ).exclude(
             deleted=True
         ).exclude(
@@ -184,22 +184,22 @@ class Command(NoArgsCommand):
 
         if askbot_settings.CONTENT_MODERATION_MODE == 'premoderation':
             base_qs = base_qs.filter(approved = True)
-        #todo: for some reason filter on did not work as expected ~Q(viewed__who=user) |
+        # TODO: for some reason filter on did not work as expected ~Q(viewed__who=user) |
         #      Q(viewed__who=user,viewed__when__lt=F('thread__last_activity_at'))
-        #returns way more questions than you might think it should
-        #so because of that I've created separate query sets Q_set2 and Q_set3
-        #plus two separate queries run faster!
+        # returns way more questions than you might think it should
+        # so because of that I've created separate query sets Q_set2 and Q_set3
+        # plus two separate queries run faster!
 
-        #build two two queries based
+        # build two two queries based
 
-        #questions that are not seen by the user at all
+        # questions that are not seen by the user at all
         not_seen_qs = base_qs.filter(~Q(viewed__who=user))
-        #questions that were seen, but before last modification
+        # questions that were seen, but before last modification
         seen_before_last_mod_qs = base_qs.filter(
             Q(viewed__who=user, viewed__when__lt=F('thread__last_activity_at'))
         )
 
-        #shorten variables for convenience
+        # shorten variables for convenience
         Q_set_A = not_seen_qs
         Q_set_B = seen_before_last_mod_qs
 
@@ -207,29 +207,29 @@ class Command(NoArgsCommand):
 
         for feed in user_feeds:
             if feed.feed_type == 'm_and_c':
-                #alerts on mentions and comments are processed separately
-                #because comments to questions do not trigger change of last_updated
-                #this may be changed in the future though, see
-                #http://askbot.org/en/question/96/
+                # alerts on mentions and comments are processed separately
+                # because comments to questions do not trigger change of last_updated
+                # this may be changed in the future though, see
+                # http://askbot.org/en/question/96/
                 continue
 
-            #each group of updates represented by the corresponding
-            #query set has it's own cutoff time
-            #that cutoff time is computed for each user individually
-            #and stored as a parameter "cutoff_time"
+            # each group of updates represented by the corresponding
+            # query set has it's own cutoff time
+            # that cutoff time is computed for each user individually
+            # and stored as a parameter "cutoff_time"
 
-            #we won't send email for a given question if an email has been
-            #sent after that cutoff_time
+            # we won't send email for a given question if an email has been
+            # sent after that cutoff_time
             if feed.should_send_now():
-                if DEBUG_THIS_COMMAND == False:
+                if not DEBUG_THIS_COMMAND:
                     feed.mark_reported_now()
                 cutoff_time = feed.get_previous_report_cutoff_time()
 
                 if feed.feed_type == 'q_sel':
                     q_sel_A = Q_set_A.filter(thread__followed_by=user)
-                    q_sel_A.cutoff_time = cutoff_time #store cutoff time per query set
+                    q_sel_A.cutoff_time = cutoff_time # store cutoff time per query set
                     q_sel_B = Q_set_B.filter(thread__followed_by=user)
-                    q_sel_B.cutoff_time = cutoff_time #store cutoff time per query set
+                    q_sel_B.cutoff_time = cutoff_time # store cutoff time per query set
 
                 elif feed.feed_type == 'q_ask':
                     q_ask_A = Q_set_A.filter(author=user)
@@ -255,19 +255,19 @@ class Command(NoArgsCommand):
                     q_all_A.cutoff_time = cutoff_time
                     q_all_B.cutoff_time = cutoff_time
 
-        #build ordered list questions for the email report
+        # build ordered list questions for the email report
         q_list = SortedDict()
 
-        #todo: refactor q_list into a separate class?
+        # TODO: refactor q_list into a separate class?
         extend_question_list(q_sel_A, q_list, languages=languages)
         extend_question_list(q_sel_B, q_list, languages=languages)
 
-        #build list of comment and mention responses here
-        #it is separate because posts are not marked as changed
-        #when people add comments
-        #mention responses could be collected in the loop above, but
-        #it is inconvenient, because feed_type m_and_c bundles the two
-        #also we collect metadata for these here
+        # build list of comment and mention responses here
+        # it is separate because posts are not marked as changed
+        # when people add comments
+        # mention responses could be collected in the loop above, but
+        # it is inconvenient, because feed_type m_and_c bundles the two
+        # also we collect metadata for these here
         try:
             feed = user_feeds.get(feed_type='m_and_c')
             if feed.should_send_now():
@@ -283,8 +283,8 @@ class Command(NoArgsCommand):
                     if post.author_id != user.pk:
                         continue
 
-                    #skip is post was seen by the user after
-                    #the comment posting time
+                    # skip is post was seen by the user after
+                    # the comment posting time
                     q_commented.append(post.get_origin_post())
 
                 extend_question_list(
@@ -300,10 +300,10 @@ class Command(NoArgsCommand):
                     mentioned_whom=user
                 )
 
-                #print('have %d mentions' % len(mentions))
-                #MM = Activity.objects.filter(activity_type = const.TYPE_ACTIVITY_MENTION)
-                #print('have %d total mentions' % len(MM))
-                #for m in MM:
+                # print('have %d mentions' % len(mentions))
+                # MM = Activity.objects.filter(activity_type = const.TYPE_ACTIVITY_MENTION)
+                # print('have %d total mentions' % len(MM))
+                # for m in MM:
                 #    print(m)
 
                 mention_posts = get_all_origin_posts(mentions)
@@ -346,22 +346,22 @@ class Command(NoArgsCommand):
         ctype = ContentType.objects.get_for_model(Post)
         EMAIL_UPDATE_ACTIVITY = const.TYPE_ACTIVITY_EMAIL_UPDATE_SENT
 
-        #up to this point we still don't know if emails about
-        #collected questions were sent recently
-        #the next loop examines activity record and decides
-        #for each question, whether it needs to be included or not
-        #into the report
+        # up to this point we still don't know if emails about
+        # collected questions were sent recently
+        # the next loop examines activity record and decides
+        # for each question, whether it needs to be included or not
+        # into the report
 
         for q, meta_data in q_list.items():
-            #this loop edits meta_data for each question
-            #so that user will receive counts on new edits new answers, etc
-            #and marks questions that need to be skipped
-            #because an email about them was sent recently enough
+            # this loop edits meta_data for each question
+            # so that user will receive counts on new edits new answers, etc
+            # and marks questions that need to be skipped
+            # because an email about them was sent recently enough
 
-            #also it keeps a record of latest email activity per question per user
+            # also it keeps a record of latest email activity per question per user
             try:
-                #todo: is it possible to use content_object here, instead of
-                #content type and object_id pair?
+                # TODO: is it possible to use content_object here, instead of
+                # content type and object_id pair?
                 update_info = Activity.objects.get(
                     user=user,
                     content_type=ctype,
@@ -375,28 +375,28 @@ class Command(NoArgsCommand):
                     content_object=q,
                     activity_type=EMAIL_UPDATE_ACTIVITY
                 )
-                emailed_at = datetime.datetime(1970, 1, 1)#long time ago
+                emailed_at = datetime.datetime(1970, 1, 1)# long time ago
             except Activity.MultipleObjectsReturned:
                 raise Exception(
                                 'server error - multiple question email activities '
                                 'found per user-question pair'
                                 )
 
-            cutoff_time = meta_data['cutoff_time']#cutoff time for the question
+            cutoff_time = meta_data['cutoff_time']# cutoff time for the question
 
-            #skip question if we need to wait longer because
-            #the delay before the next email has not yet elapsed
-            #or if last email was sent after the most recent modification
+            # skip question if we need to wait longer because
+            # the delay before the next email has not yet elapsed
+            # or if last email was sent after the most recent modification
             if emailed_at > cutoff_time or emailed_at > q.thread.last_activity_at:
                 meta_data['skip'] = True
                 continue
 
-            #collect info on all sorts of news that happened after
-            #the most recent emailing to the user about this question
+            # collect info on all sorts of news that happened after
+            # the most recent emailing to the user about this question
             q_rev = q.revisions.filter(revised_at__gt=emailed_at)
             q_rev = q_rev.exclude(author=user)
 
-            #now update all sorts of metadata per question
+            # now update all sorts of metadata per question
             meta_data['q_rev'] = len(q_rev)
             if len(q_rev) > 0 and q.added_at == q_rev[0].revised_at:
                 meta_data['q_rev'] = 0
@@ -426,28 +426,28 @@ class Command(NoArgsCommand):
             comments = meta_data.get('comments', 0)
             mentions = meta_data.get('mentions', 0)
 
-            #print(meta_data)
-            #finally skip question if there are no news indeed
+            # print(meta_data)
+            # finally skip question if there are no news indeed
             if len(q_rev) + len(new_ans) + len(ans_rev) + comments + mentions == 0:
                 meta_data['skip'] = True
-                #print('skipping')
+                # print('skipping')
             else:
                 meta_data['skip'] = False
-                #print('not skipping')
+                # print('not skipping')
                 update_info.active_at = datetime.datetime.now()
-                if DEBUG_THIS_COMMAND == False:
-                    update_info.save() #save question email update activity
-        #q_list is actually an ordered dictionary
-        #print('user %s gets %d' % (user.username, len(q_list.keys())))
-        #todo: sort question list by update time
+                if not DEBUG_THIS_COMMAND:
+                    update_info.save() # save question email update activity
+        # q_list is actually an ordered dictionary
+        # print('user %s gets %d' % (user.username, len(q_list.keys())))
+        # TODO: sort question list by update time
         return q_list
 
     def send_email_alerts(self, user):
-        #does not change the database, only sends the email
-        #todo: move this to template
+        # does not change the database, only sends the email
+        # TODO: move this to template
         user.add_missing_askbot_subscriptions()
 
-        #todo: q_list is a dictionary, not a list
+        # TODO: q_list is a dictionary, not a list
         q_list = self.get_updated_questions_for_user(user)
 
         if len(q_list.keys()) == 0:
@@ -474,7 +474,7 @@ class Command(NoArgsCommand):
                 if meta_data['skip']:
                     continue
                 if items_added >= askbot_settings.MAX_ALERTS_PER_EMAIL:
-                    items_unreported = num_q - items_added #may be inaccurate actually, but it's ok
+                    items_unreported = num_q - items_added # may be inaccurate actually, but it's ok
                     break
                 else:
                     items_added += 1
@@ -497,7 +497,7 @@ class Command(NoArgsCommand):
                 'user': user
             })
 
-            if DEBUG_THIS_COMMAND == True:
+            if DEBUG_THIS_COMMAND is True:
                 recipient_email = askbot_settings.ADMIN_EMAIL
             else:
                 recipient_email = user.email

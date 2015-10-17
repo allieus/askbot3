@@ -81,7 +81,7 @@ FileUploadDialog.prototype.getInputElement = function () {
 FileUploadDialog.prototype.installFileUploadHandler = function (handler) {
     var upload_input = this.getInputElement();
     upload_input.unbind('change');
-    //todo: fix this - make event handler reinstall work
+    //TODO: fix this - make event handler reinstall work
     upload_input.change(handler);
 };
 

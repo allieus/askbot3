@@ -69,34 +69,34 @@ class OnScreenUpdateNotificationTests(TestCase):
         ]
 
     def setUp(self):
-        #users for the question
+        # users for the question
         self.u11 = create_user('user11', 'user11@example.com', status='m')
         self.u12 = create_user('user12', 'user12@example.com', status='m')
         self.u13 = create_user('user13', 'user13@example.com', status='m')
         self.u14 = create_user('user14', 'user14@example.com', status='m')
 
-        #users for first answer
-        self.u21 = create_user('user21', 'user21@example.com', status='m')#post answer
-        self.u22 = create_user('user22', 'user22@example.com', status='m')#edit answer
+        # users for first answer
+        self.u21 = create_user('user21', 'user21@example.com', status='m')# post answer
+        self.u22 = create_user('user22', 'user22@example.com', status='m')# edit answer
         self.u23 = create_user('user23', 'user23@example.com', status='m')
         self.u24 = create_user('user24', 'user24@example.com', status='m')
 
-        #users for second answer
-        self.u31 = create_user('user31', 'user31@example.com', status='m')#post answer
-        self.u32 = create_user('user32', 'user32@example.com', status='m')#edit answer
+        # users for second answer
+        self.u31 = create_user('user31', 'user31@example.com', status='m')# post answer
+        self.u32 = create_user('user32', 'user32@example.com', status='m')# edit answer
         self.u33 = create_user('user33', 'user33@example.com', status='m')
         self.u34 = create_user('user34', 'user34@example.com', status='m')
 
-        #a hack to initialize .users list
+        # a hack to initialize .users list
         self.reload_users()
 
-        #pre-populate askbot with some content
-        #create a question and two answers, each post gets two comments
-        #users have two digit codes. What users do in the setup code
-        #is explained below (x is a variable that takes integer values of [1-3])
-        #user x1 makes a post, users x2 and x3 add comments to that post
-        #users 1x work on question, 2x and 3x on the answers
-        #users x4 do not do anyting in the setup code
+        # pre-populate askbot with some content
+        # create a question and two answers, each post gets two comments
+        # users have two digit codes. What users do in the setup code
+        # is explained below (x is a variable that takes integer values of [1-3])
+        # user x1 makes a post, users x2 and x3 add comments to that post
+        # users 1x work on question, 2x and 3x on the answers
+        # users x4 do not do anyting in the setup code
 
         self.thread = models.Thread.objects.create_new(
                             title = 'test question',
@@ -379,7 +379,7 @@ class OnScreenUpdateNotificationTests(TestCase):
         self.assertEqual(len(notifications), 1)
         self.assertEqual(
             set(notifications[0].recipients.all()),
-            set([self.u11, self.u12, self.u13])#all users are notified
+            set([self.u11, self.u12, self.u13])# all users are notified
         )
         self.assertNewResponseCountsEqual(
             [
@@ -399,7 +399,7 @@ class OnScreenUpdateNotificationTests(TestCase):
         self.u12.visit_question(self.question)
         notifications = get_re_notif_after(timestamp)
         self.assertEqual(len(notifications), 1)
-        self.assertEqual(#visitors are not notified
+        self.assertEqual(# visitors are not notified
             set(notifications[0].recipients.all()),
             set([self.u11, self.u12, self.u13])
         )

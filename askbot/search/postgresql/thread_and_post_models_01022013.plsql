@@ -66,7 +66,7 @@ $$ LANGUAGE plpgsql;
 
 SELECT setup_aggregates();
 
-/* language name resolution function. todo: move languace conv to python code */
+/* language name resolution function. TODO: move languace conv to python code */
 DROP FUNCTION IF EXISTS get_language_name_from_code(lang_code text);
 CREATE OR REPLACE FUNCTION get_language_name_from_code(lang_code text)
 RETURNS regconfig AS
@@ -119,7 +119,7 @@ DECLARE
     lang_name regconfig;
 BEGIN
     lang_name = get_language_name_from_code(lang_code);
-    /* todo add weight depending on votes */
+    /* TODO add weight depending on votes */
     RETURN  setweight(to_tsvector(lang_name, coalesce(title, '')), 'A') ||
             setweight(to_tsvector(lang_name, coalesce(tagnames, '')), 'A');
 END;
@@ -133,12 +133,12 @@ $$
 DECLARE
     lang_name regconfig;
 BEGIN
-    /* todo adjust weights to reflect votes */
+    /* TODO adjust weights to reflect votes */
     lang_name = get_language_name_from_code(lang_code);
     IF post_type='question' THEN
         RETURN setweight(to_tsvector(lang_name, coalesce(text, '')), 'B');
     ELSIF post_type='answer' THEN
-        /* todo reflect whether the answer acepted or has many points */
+        /* TODO reflect whether the answer acepted or has many points */
         RETURN setweight(to_tsvector(lang_name, coalesce(text, '')), 'C');
     ELSIF post_type='comment' THEN
         RETURN setweight(to_tsvector(lang_name, coalesce(text, '')), 'D');

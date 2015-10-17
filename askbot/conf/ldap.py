@@ -183,7 +183,7 @@ settings.register(
 
 # May be necessary, but not handled properly.
 # --> Commenting out until handled properly in backends.ldap_authenticate()
-#settings.register(
+# settings.register(
 #    livesettings.StringValue(
 #        LDAP_SETTINGS,
 #        'LDAP_PROXYDN',
@@ -192,7 +192,7 @@ settings.register(
 #    )
 #)
 #
-#settings.register(
+# settings.register(
 #    livesettings.StringValue(
 #        LDAP_SETTINGS,
 #        'LDAP_PROXYDN_PASSWORD',

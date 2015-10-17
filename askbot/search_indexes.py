@@ -1,1 +1,1 @@
-from askbot.search.haystack.indexes import ThreadIndex, UserIndex
+from askbot.search.haystack.indexes import ThreadIndex, UserIndex  # noqa

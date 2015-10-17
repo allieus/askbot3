@@ -66,7 +66,7 @@ def title_line(title, char):
 def create_module_content(module):
     """Build the text of the module file."""
     text = write_heading(module)
-    #text += write_sub(module)
+    # text += write_sub(module)
     text += write_automodule_directive(module)
     return text
 
@@ -83,11 +83,11 @@ def create_package_content(package, py_files, sub_packages):
     text = write_heading(package, 'Package')
     text += write_automodule_directive(package)
 
-    #if has py_files or sub_packages
+    # if has py_files or sub_packages
     #   output Package summary:
     #   has #modules, #sub-packages, #members
 
-    #create links to sub-module files
+    # create links to sub-module files
     if py_files:
         text += '.. _modules::\n'
         text += '\n'
@@ -95,26 +95,26 @@ def create_package_content(package, py_files, sub_packages):
         text += '\n'
         for py_file in py_files:
             if py_file == '__init__.py':
-                #continue, because this file is being created for
-                #__init__.py of the current module
+                # continue, because this file is being created for
+                # __init__.py of the current module
                 continue
             py_file = os.path.splitext(py_file)[0]
             text += '* :ref:`%s.%s`\n' % (package, py_file)
         text += '\n'
 
-    #create links to sub-packages
+    # create links to sub-packages
     if sub_packages:
         text += '.. _packages::\n'
         text += '\n'
         text += title_line('Subpackages', '-')
         text += '\n'
         for sub in sub_packages:
-            #todo - add description here
+            # TODO - add description here
             text += '* :ref:`%s.%s`\n' % (package, sub)
     return text
-    #build toctree for the package page
-    #text += '.. toctree::\n\n'
-    #for sub in subs:
+    # build toctree for the package page
+    # text += '.. toctree::\n\n'
+    # for sub in subs:
     #    text += '    %s.%s\n' % (package, sub)
 
 def write_file(module_name, text_content, opts):
@@ -198,7 +198,7 @@ def recurse_tree(path, excludes, opts):
         subs = select_public_names(subs)
         subs = select_python_packages(directory, subs)
 
-        #calculate dotted python package name - like proj.pack.subpackage
+        # calculate dotted python package name - like proj.pack.subpackage
         package_name = directory.replace(os.path.sep, '.')
 
         if is_python_package(directory):
@@ -219,10 +219,9 @@ def recurse_tree(path, excludes, opts):
     if not opts.notoc:
         modules_toc(toc, opts)
 
+
 def modules_toc(modules, opts, name='modules'):
-    """
-    Create the module's index.
-    """
+    "Create the module's index."
     fname = create_file_name(name, opts)
     if not opts.force and os.path.exists(fname):
         print("File %s already exists." % name)
@@ -249,6 +248,7 @@ def modules_toc(modules, opts, name='modules'):
         fd.write(text)
         fd.close()
 
+
 def format_excludes(path, excludes):
     """
     Format the excluded directory list.
@@ -257,12 +257,13 @@ def format_excludes(path, excludes):
     """
     f_excludes = []
     for exclude in excludes:
-        #not sure about the "not startswith" part
+        # not sure about the "not startswith" part
         if not os.path.isabs(exclude) and not exclude.startswith(path):
             exclude = os.path.join(path, exclude)
         # remove trailing slash
         f_excludes.append(exclude.rstrip(os.path.sep))
     return f_excludes
+
 
 def is_directory_excluded(directory, excludes):
     """Returns true if directory is in the exclude list
@@ -272,6 +273,7 @@ def is_directory_excluded(directory, excludes):
         if directory.startswith(exclude):
             return True
     return False
+
 
 def select_py_files(files):
     """
@@ -311,7 +313,6 @@ Note: By default this script will not overwrite already created files.""")
             print('%s is not a valid directory.' % args)
 
 
-
-
 if __name__ == '__main__':
     main()
+

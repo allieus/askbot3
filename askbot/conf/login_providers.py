@@ -4,17 +4,14 @@ External service key settings
 from askbot.conf.settings_wrapper import settings
 from askbot.conf.super_groups import LOGIN_USERS_COMMUNICATION
 from askbot.deps import livesettings
-from django.utils import six
 from django.utils.translation import string_concat
 from django.utils.translation import ugettext_lazy as _
-from django.conf import settings as django_settings
 from askbot.skins import utils as skin_utils
 
 LOGIN_PROVIDERS = livesettings.ConfigurationGroup(
-                    'LOGIN_PROVIDERS',
-                    _('Login provider setings'),
-                    super_group = LOGIN_USERS_COMMUNICATION
-                )
+    'LOGIN_PROVIDERS',
+    _('Login provider setings'),
+    super_group=LOGIN_USERS_COMMUNICATION)
 
 settings.register(
     livesettings.BooleanValue(
@@ -26,13 +23,13 @@ settings.register(
     )
 )
 
-#todo: remove this - we don't want the local login button
-#but instead always show the login/password field when used
+# TODO: remove this - we don't want the local login button
+# but instead always show the login/password field when used
 settings.register(
     livesettings.BooleanValue(
         LOGIN_PROVIDERS,
         'SIGNIN_ALWAYS_SHOW_LOCAL_LOGIN',
-        default = True,
+        default=True,
         description=_('Always display local login form and hide "Askbot" button.'),
     )
 )
@@ -41,7 +38,7 @@ settings.register(
     livesettings.BooleanValue(
         LOGIN_PROVIDERS,
         'SIGNIN_WORDPRESS_SITE_ENABLED',
-        default = False,
+        default=False,
         description=_('Activate to allow login with self-hosted wordpress site'),
         help_text=_('to activate this feature you must fill out the wordpress xml-rpc setting bellow')
     )
@@ -51,7 +48,7 @@ settings.register(
     livesettings.URLValue(
         LOGIN_PROVIDERS,
         'WORDPRESS_SITE_URL',
-        default = '',
+        default='',
         description=_('Fill it with the wordpress url to the xml-rpc, normally http://mysite.com/xmlrpc.php'),
         help_text=_('To enable, go to Settings->Writing->Remote Publishing and check the box for XML-RPC')
     )
@@ -148,13 +145,13 @@ providers = (
     'Facebook',
     'Fedora',
     'Flickr',
-    #'Google',
+    # 'Google',
     'Mozilla Persona',
     # 'Twitter',
     'MediaWiki',
     'LinkedIn',
     'LiveJournal',
-    #'myOpenID',
+    # 'myOpenID',
     'OpenID',
     'Technorati',
     'Wordpress',
@@ -178,7 +175,7 @@ GOOGLE_METHOD_CHOICES = (
 
 for provider in providers:
     if provider == 'local':
-        provider_string = six.text_type(_('local password'))
+        provider_string = _('local password')
     else:
         provider_string = provider
 
@@ -230,9 +227,8 @@ for provider in providers:
             )
         )
 
-
     if provider == 'local':
-        #add Google settings here as one-off
+        # add Google settings here as one-off
         settings.register(
             livesettings.StringValue(
                 LOGIN_PROVIDERS,
@@ -245,3 +241,4 @@ for provider in providers:
                 )
             )
         )
+

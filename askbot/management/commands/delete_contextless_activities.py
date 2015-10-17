@@ -2,7 +2,6 @@ from __future__ import print_function
 from django.core.management.base import NoArgsCommand
 from askbot.utils.console import ProgressBar
 from askbot.models import Activity
-from askbot import const
 
 class Command(NoArgsCommand):
     def handle_noargs(self, **options):
@@ -11,11 +10,11 @@ class Command(NoArgsCommand):
         message = "Searching for context-less activity objects:"
         for act in ProgressBar(acts.iterator(), acts.count(), message):
             try:
-                if act.object_id != None and act.content_object == None:
+                if act.object_id is not None and act.content_object is None:
                     act.delete()
                     deleted_count += 1
             except:
-                #this can happen if we have a stale content type
+                # this can happen if we have a stale content type
                 act.delete()
 
         if deleted_count:

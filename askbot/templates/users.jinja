@@ -98,14 +98,14 @@
     <script type="text/javascript" src="{{ '/js/post.js'|media }}"></script>
     {% endcompress %}
     <script type="text/javascript">
-        //todo move javascript out
+        //TODO move javascript out
         {% if group and request.user.is_authenticated() %}
             $(document).ready(function(){
                 var group_join_btn = new GroupJoinButton();
                 group_join_btn.decorate($('.group-join-btn'));
                 //setup WMD editor
                 if (askbot['data']['userIsAdminOrMod']){
-                    //todo: this is kind of Attacklab.init ... should not be here
+                    //TODO: this is kind of Attacklab.init ... should not be here
                     Attacklab.wmd = function(){
                         Attacklab.loadEnv = function(){
                             var mergeEnv = function(env){

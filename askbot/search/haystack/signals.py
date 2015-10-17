@@ -34,7 +34,7 @@ class AskbotRealtimeSignalProcessor(RealtimeSignalProcessor):
 
     def teardown(self):
         super(AskbotRealtimeSignalProcessor, self).setup()
-        #askbot signals
+        # askbot signals
         try:
             askbot_signals.after_post_removed.disconnect(self.handle_delete)
         except ImportError:

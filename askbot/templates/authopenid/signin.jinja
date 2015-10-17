@@ -56,7 +56,7 @@
                 show_buttons = have_buttons
             )
         }}
-          {% if use_password_login == True %}
+        {% if use_password_login %}
         <fieldset id="password-fs"
             {% if user.is_anonymous() %}
                 {% if not login_form.username.errors and not login_form.password_login_failed %}
@@ -111,7 +111,7 @@
                 </div>
                 <p id="local_login_buttons">
                     <input class="button" name="login_with_password" type="submit" value="{% trans %}Sign in{% endtrans %}" />
-                    {% if settings.USE_LDAP_FOR_PASSWORD_LOGIN == False %}
+                    {% if not settings.USE_LDAP_FOR_PASSWORD_LOGIN %}
                     <a class="create-password-account" style="vertical-align:middle" href="{{ url("user_signup_with_password") }}">{% trans %}Create a password-protected account{% endtrans %}</a>
                     {% endif %}
                 </p>

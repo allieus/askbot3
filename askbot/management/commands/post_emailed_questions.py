@@ -13,7 +13,7 @@ be enabled via ALLOW_ASKING_BY_EMAIL
 and IMAP settings in the settings.py must be configured
 correctly
 
-todo: use templates for the email formatting
+TODO: use templates for the email formatting
 """
 import imaplib
 import email
@@ -44,8 +44,8 @@ def parse_message(msg):
         if isinstance(msg, list):
             raise CannotParseEmail(sender, subject)
 
-    #ctype = msg.get_content_type()#text/plain only
-    raw_body = msg.get_payload()#text/plain only
+    # ctype = msg.get_content_type()# text/plain only
+    raw_body = msg.get_payload()# text/plain only
     encoding = msg.get('Content-Transfer-Encoding')
     if encoding == 'base64':
         body = base64.b64decode(raw_body)
@@ -69,7 +69,7 @@ class Command(NoArgsCommand):
         if not askbot_settings.ALLOW_ASKING_BY_EMAIL:
             raise CommandError('Asking by email is not enabled')
 
-        #open imap server and select the inbox
+        # open imap server and select the inbox
         if django_settings.IMAP_USE_TLS:
             imap_getter = imaplib.IMAP4_SSL
         else:
@@ -84,19 +84,19 @@ class Command(NoArgsCommand):
         )
         imap.select('INBOX')
 
-        #get message ids
+        # get message ids
         junk, ids = imap.search(None, 'ALL')
 
         if len(ids[0].strip()) == 0:
-            #with empty inbox - close and exit
+            # with empty inbox - close and exit
             imap.close()
             imap.logout()
             return
 
-        #for each id - read a message, parse it and post a question
+        # for each id - read a message, parse it and post a question
         for msg_id in ids[0].split(' '):
             junk, data = imap.fetch(msg_id, '(RFC822)')
-            #message_body = data[0][1]
+            # message_body = data[0][1]
             msg = email.message_from_string(data[0][1])
             imap.store(msg_id, '+FLAGS', '\\Deleted')
             try:

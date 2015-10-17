@@ -1,7 +1,6 @@
 from django import template
 from django.contrib.sites.models import Site
 from django.core import urlresolvers
-from django.utils import six
 from askbot.deps.livesettings import config_value
 from askbot.deps.livesettings.utils import url_join
 import logging
@@ -9,6 +8,7 @@ import logging
 log = logging.getLogger('configuration.config_tags')
 
 register = template.Library()
+
 
 def force_space(value, chars=40):
     """Forces spaces every `chars` in value"""
@@ -30,13 +30,14 @@ def force_space(value, chars=40):
 
     return ' '.join(out)
 
-def break_at(value,  chars=40):
+
+@register.filter
+def break_at(value, chars=40):
     """Force spaces into long lines which don't have spaces"""
-    #todo: EF - lazy patch
+    # TODO: EF - lazy patch
     return value
 
     chars = int(chars)
-    value = six.text_type(value)
     if len(value) < chars:
         return value
     else:
@@ -50,8 +51,8 @@ def break_at(value,  chars=40):
 
     return " ".join(out)
 
-register.filter('break_at', break_at)
 
+@register.filter
 def config_boolean(option):
     """Looks up the configuration option, returning true or false."""
     args = option.split('.')
@@ -62,10 +63,8 @@ def config_boolean(option):
         val = False
     if val:
         return "true"
-    else:
-        return ""
+    return ""
 
-register.filter('config_boolean', config_boolean)
 
 def admin_site_views(view):
     """Returns a formatted list of sites, rendering for view, if any"""
@@ -83,10 +82,6 @@ def admin_site_views(view):
 
         links.append((site.name, url_join(paths)))
 
-    ret = {
-        'links' : links,
-    }
-    return ret
-
+    return {'links': links}
 
 register.inclusion_tag('askbot.deps.livesettings/_admin_site_views.html')(admin_site_views)

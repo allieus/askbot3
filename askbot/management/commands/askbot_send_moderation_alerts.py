@@ -20,7 +20,7 @@ def get_last_mod_alert_activity():
     last_act = acts[0]
 
     if count > 1:
-        #get last moderation activity and delete all others
+        # get last moderation activity and delete all others
         acts = acts.exclude(id=last_act.id)
         acts.delete()
 
@@ -37,10 +37,10 @@ def get_last_notified_user():
 def select_moderators_to_notify(candidates, num_needed):
     candidates_count = candidates.count()
 
-    #special case - if we need to notify the same number of
-    #moderators that are available, then we don't rotate them
-    #and notify all, b/c otherwise we would stop notifications
-    #because there are not enough moderators
+    # special case - if we need to notify the same number of
+    # moderators that are available, then we don't rotate them
+    # and notify all, b/c otherwise we would stop notifications
+    # because there are not enough moderators
     if candidates_count <= num_needed:
         return list(candidates)
 
@@ -53,7 +53,7 @@ def select_moderators_to_notify(candidates, num_needed):
     if num_mods >= num_needed:
         return mods[:num_needed]
     else:
-        #wrap around the end to the beginning
+        # wrap around the end to the beginning
         num_missing = num_needed - num_mods
         more_mods = get_moderators().order_by('id')
         more_mods = more_mods[:num_missing]
@@ -81,12 +81,12 @@ def remember_last_moderator(user):
 
 class Command(NoArgsCommand):
     def handle_noargs(self, *args, **kwargs):
-        #get size of moderation queue
+        # get size of moderation queue
         queue = Activity.objects.filter(activity_type__in=const.MODERATED_ACTIVITY_TYPES)
         if queue.count() == 0:
             return
 
-        #get moderators
+        # get moderators
         mods = get_moderators().order_by('id')
         if mods.count() == 0:
             return

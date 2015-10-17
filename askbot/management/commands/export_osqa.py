@@ -23,7 +23,7 @@ class XMLExportSerializer(Serializer):
         self.start_serialization()
         for obj in queryset:
             self.start_object(obj)
-            #the line below is the only one that was changed
+            # the line below is the only one that was changed
             for field in obj._meta.fields:
                 if field.serialize:
                     if field.rel is None:
