@@ -193,7 +193,7 @@ def import_data(request):
         'dump_upload_form': form,
         'need_configuration': (not stackexchange.is_ready())
     }
-    return render(request, 'import_data.html', data)
+    return render(request, 'import_data.jinja', data)
 
 @csrf.csrf_protect
 @decorators.check_authorization_to_post(ugettext_lazy('Please log in to make posts'))
@@ -321,7 +321,7 @@ def ask(request):#view used to ask a new question
         'tag_names': list()#need to keep context in sync with edit_question for tag editor
     }
     data.update(context.get_for_tag_editor())
-    return render(request, 'ask.html', data)
+    return render(request, 'ask.jinja', data)
 
 @login_required
 @csrf.csrf_protect
@@ -368,7 +368,7 @@ def retag_question(request, id):
             'question': question,
             'form' : form,
         }
-        return render(request, 'question_retag.html', data)
+        return render(request, 'question_retag.jinja', data)
     except exceptions.PermissionDenied as e:
         if request.is_ajax():
             response_data = {
@@ -491,7 +491,7 @@ def edit_question(request, id):
             'category_tree_data': askbot_settings.CATEGORY_TREE
         }
         data.update(context.get_for_tag_editor())
-        return render(request, 'question_edit.html', data)
+        return render(request, 'question_edit.jinja', data)
 
     except exceptions.PermissionDenied as e:
         request.user.message_set.create(message = force_text(e))
@@ -590,7 +590,7 @@ def edit_answer(request, id):
         )
         data.update(extra_context)
 
-        return render(request, 'answer_edit.html', data)
+        return render(request, 'answer_edit.jinja', data)
 
     except exceptions.PermissionDenied as e:
         request.user.message_set.create(message = force_text(e))

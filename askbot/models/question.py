@@ -4,6 +4,7 @@ import datetime
 import logging
 import operator
 import re
+from functools import cmp_to_key
 
 from copy import copy
 from django.conf import settings as django_settings
@@ -115,9 +116,6 @@ class ThreadQuerySet(models.query.QuerySet):
                 filter_parameters['title__search'] = search_query
             else:
                 filter_parameters['title__icontains'] = search_query
-
-            if getattr(django_settings, 'ASKBOT_MULTILINGUAL', False):
-                filter_parameters['language_code'] = get_language()
 
             return self.filter(**filter_parameters)
 
@@ -314,9 +312,6 @@ class ThreadManager(BaseQuerySetManager):
             'posts__post_type': 'question',
             'posts__deleted': False
         }
-
-        if getattr(django_settings, 'ASKBOT_MULTILINGUAL', False):
-            primary_filter['language_code'] = get_language()
 
         # TODO: add a possibility to see deleted questions
         qs = self.filter(**primary_filter)
@@ -728,10 +723,7 @@ class Thread(models.Model):
             counts[word] = sum(map(lambda w: w.lower() == word.lower(), post_words))
 
         #5) sort words by count
-        sorted_words = sorted(
-                        common_words,
-                        lambda a, b: cmp(counts[b], counts[a])
-                    )
+        sorted_words = sorted(common_words, key=cmp_to_key(lambda a, b: cmp(counts[b], counts[a])))
 
         #6) extract correct number of most frequently used tags
         need_tags = askbot_settings.MAX_TAGS_PER_POST - len(existing_tags)
@@ -1218,7 +1210,7 @@ class Thread(models.Model):
                     from askbot.models import Post
                     #order by insures that
                     posts = list(Post.objects.filter(id__in=post_id_set))
-                    for post in sorted(posts, cmp=cmp_post_types):
+                    for post in sorted(posts, key=cmp_to_key(cmp_post_types)):
                         rev = rev_map[post.id]
                         post.text = rev.text
                         post.html = post.parse_post_text()['html']
@@ -1260,8 +1252,6 @@ class Thread(models.Model):
             'deleted': False,
             'post_type__in': ('question', 'answer', 'comment'),
         }
-        if getattr(django_settings, 'ASKBOT_MULTILINGUAL', False):
-            kwargs['language_code'] = self.language_code or get_language()
         return self.posts.filter(**kwargs)
 
     def get_post_data(self, sort_method=None, user=None):

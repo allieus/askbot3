@@ -46,7 +46,7 @@ def widgets(request):
         'question_widgets': models.QuestionWidget.objects.all().count(),
         'page_class': 'widgets'
     }
-    return render(request, 'embed/widgets.html', data)
+    return render(request, 'embed/widgets.jinja', data)
 
 @csrf.csrf_protect
 def ask_widget(request, widget_id):
@@ -133,7 +133,7 @@ def ask_widget(request, widget_id):
             'widget': widget,
             'editor_type': askbot_settings.EDITOR_TYPE
            }
-    return render(request, 'embed/ask_by_widget.html', data)
+    return render(request, 'embed/ask_by_widget.jinja', data)
 
 @login_required
 def ask_widget_complete(request):
@@ -148,7 +148,7 @@ def ask_widget_complete(request):
         del request.session['widget_css']
 
     data = {'question_url': question_url, 'custom_css': custom_css}
-    return render(request, 'embed/ask_widget_complete.html', data)
+    return render(request, 'embed/ask_widget_complete.jinja', data)
 
 
 @decorators.moderators_only
@@ -159,7 +159,7 @@ def list_widgets(request, model):
             'widgets': widgets,
             'widget_name': model
            }
-    return render(request, 'embed/list_widgets.html', data)
+    return render(request, 'embed/list_widgets.jinja', data)
 
 @decorators.moderators_only
 @csrf.csrf_protect
@@ -178,7 +178,7 @@ def create_widget(request, model):
     data = {'form': form,
             'action': 'edit',
             'widget_name': model}
-    return render(request, 'embed/widget_form.html', data)
+    return render(request, 'embed/widget_form.jinja', data)
 
 @decorators.moderators_only
 @csrf.csrf_protect
@@ -218,7 +218,7 @@ def edit_widget(request, model, widget_id):
     data = {'form': form,
             'action': 'edit',
             'widget_name': model}
-    return render(request, 'embed/widget_form.html', data)
+    return render(request, 'embed/widget_form.jinja', data)
 
 @decorators.moderators_only
 @csrf.csrf_protect
@@ -231,7 +231,7 @@ def delete_widget(request, model, widget_id):
     else:
         return render(
             request,
-            'embed/delete_widget.html',
+            'embed/delete_widget.jinja',
             {'widget': widget, 'widget_name': model}
         )
 
@@ -291,4 +291,4 @@ def question_widget(request, widget_id):
              'widget': widget
            }
 
-    return render(request, 'embed/question_widget.html', data)
+    return render(request, 'embed/question_widget.jinja', data)

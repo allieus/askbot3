@@ -32,7 +32,7 @@ def application_settings(request):
     #    return {}
     my_settings = askbot_settings.as_dict()
     my_settings['LANGUAGE_CODE'] = getattr(request, 'LANGUAGE_CODE', settings.LANGUAGE_CODE)
-    my_settings['MULTILINGUAL'] = getattr(settings, 'ASKBOT_MULTILINGUAL', False)
+    my_settings['MULTILINGUAL'] = False  # FIXME: REMOVE ME
     my_settings['LANGUAGES_DICT'] = dict(getattr(settings, 'LANGUAGES', []))
     my_settings['ALLOWED_UPLOAD_FILE_TYPES'] = \
             settings.ASKBOT_ALLOWED_UPLOAD_FILE_TYPES
@@ -55,23 +55,22 @@ def application_settings(request):
         tinymce_plugins = settings.TINYMCE_DEFAULT_CONFIG.get('plugins', '').split(',')
         my_settings['TINYMCE_PLUGINS'] = map(lambda v: v.strip(), tinymce_plugins)
     else:
-        my_settings['TINYMCE_PLUGINS'] = [];
+        my_settings['TINYMCE_PLUGINS'] = []
 
     my_settings['LOGOUT_REDIRECT_URL'] = url_utils.get_logout_redirect_url()
 
     current_language = get_language()
 
-    #for some languages we will start searching for shorter words
+    # for some languages we will start searching for shorter words
     if current_language == 'ja':
-        #we need to open the search box and show info message about
-        #the japanese lang search
+        # we need to open the search box and show info message about the japanese lang search
         min_search_word_length = 1
     else:
         min_search_word_length = my_settings['MIN_SEARCH_WORD_LENGTH']
 
     need_scope_links = askbot_settings.ALL_SCOPE_ENABLED or \
-                    askbot_settings.UNANSWERED_SCOPE_ENABLED or \
-                    (request.user.is_authenticated() and askbot_settings.FOLLOWED_SCOPE_ENABLED)
+        askbot_settings.UNANSWERED_SCOPE_ENABLED or \
+        (request.user.is_authenticated() and askbot_settings.FOLLOWED_SCOPE_ENABLED)
 
     context = {
         'base_url': site_url(''),
@@ -85,14 +84,10 @@ def application_settings(request):
         'noscript_url': const.DEPENDENCY_URLS['noscript'],
     }
 
-    use_askbot_login = 'askbot.deps.django_authopenid' in settings.INSTALLED_APPS
-    my_settings['USE_ASKBOT_LOGIN_SYSTEM'] = use_askbot_login
-    if use_askbot_login and request.user.is_anonymous():
-        from askbot.deps.django_authopenid import context as login_context
-        context.update(login_context.login_context(request))
+    my_settings['USE_ASKBOT_LOGIN_SYSTEM'] = False  # not using askbot.deps.django_authopenid
 
     if askbot_settings.GROUPS_ENABLED:
-        #calculate context needed to list all the groups
+        # calculate context needed to list all the groups
         def _get_group_url(group):
             """calculates url to the group based on its id and name"""
             group_slug = slugify(group['name'])
@@ -101,22 +96,19 @@ def application_settings(request):
                 kwargs={'group_id': group['id'], 'group_slug': group_slug}
             )
 
-        #load id's and names of all groups
+        # load id's and names of all groups
         global_group = models.Group.objects.get_global_group()
         groups = models.Group.objects.exclude_personal()
         groups = groups.exclude(id=global_group.id)
         groups_data = list(groups.values('id', 'name'))
 
-        #sort groups_data alphanumerically, but case-insensitive
-        groups_data = sorted(
-                        groups_data,
-                        lambda x, y: cmp(x['name'].lower(), y['name'].lower())
-                    )
+        # sort groups_data alphanumerically, but case-insensitive
+        groups_data = sorted(groups_data, key=lambda data: data['name'].lower())
 
-        #insert data for the global group at the first position
+        # insert data for the global group at the first position
         groups_data.insert(0, {'id': global_group.id, 'name': global_group.name})
 
-        #build group_list for the context
+        # build group_list for the context
         group_list = list()
         for group in groups_data:
             link = _get_group_url(group)

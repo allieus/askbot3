@@ -119,27 +119,6 @@ settings.register(
 settings.register(
     livesettings.StringValue(
         EXTERNAL_KEYS,
-        'TWITTER_KEY',
-        description=_('Twitter consumer key'),
-        help_text=_(
-            'Please register your forum at <a href="%(url)s">'
-            'twitter applications site</a>'
-        ) % {'url': const.DEPENDENCY_URLS['twitter-apps']},
-
-    )
-)
-
-settings.register(
-    livesettings.StringValue(
-        EXTERNAL_KEYS,
-        'TWITTER_SECRET',
-        description=_('Twitter consumer secret'),
-    )
-)
-
-settings.register(
-    livesettings.StringValue(
-        EXTERNAL_KEYS,
         'MEDIAWIKI_KEY',
         description=_('MediaWiki consumer key'),
         help_text=_(

@@ -12,6 +12,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import translation
 from askbot import api, models
 from askbot.utils import console
+from askbot.utils.db import commit_manually
+
 
 def get_admin(seed_user_id = None):
     """requests admin with an optional seeded user id
@@ -95,7 +97,7 @@ ask you to confirm your action before making changes.
 
     )
 
-    #@transaction.commit_manually
+    #@commit_manually
     def handle(self, *args, **options):
         """command handle function. reads tag names, decodes
         them using the standard input encoding and attempts to find

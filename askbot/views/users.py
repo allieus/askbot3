@@ -240,7 +240,7 @@ def show_users(request, by_group=False, group_id=None, group_slug=None):
         'users' : users_page,
     }
 
-    return render(request, 'users.html', data)
+    return render(request, 'users.jinja', data)
 
 @csrf.csrf_protect
 def user_moderate(request, subject, context):
@@ -340,7 +340,7 @@ def user_moderate(request, subject, context):
         'user_status_changed_message': user_status_changed_message
     }
     context.update(data)
-    return render(request, 'user_profile/user_moderate.html', context)
+    return render(request, 'user_profile/user_moderate.jinja', context)
 
 #non-view function
 def set_new_email(user, new_email, nomessage=False):
@@ -424,7 +424,7 @@ def edit_user(request, id):
         'support_custom_avatars': ('avatar' in django_settings.INSTALLED_APPS),
         'view_user': user,
     }
-    return render(request, 'user_profile/user_edit.html', data)
+    return render(request, 'user_profile/user_edit.jinja', data)
 
 def user_stats(request, user, context):
     question_filter = {}
@@ -628,7 +628,7 @@ def user_stats(request, user, context):
                             )
     context.update(extra_context)
 
-    return render(request, 'user_profile/user_stats.html', context)
+    return render(request, 'user_profile/user_stats.jinja', context)
 
 def user_recent(request, user, context):
 
@@ -720,7 +720,7 @@ def user_recent(request, user, context):
         'activities' : activities
     }
     context.update(data)
-    return render(request, 'user_profile/user_recent.html', context)
+    return render(request, 'user_profile/user_recent.jinja', context)
 
 #not a view - no direct url route here, called by `user_responses`
 @csrf.csrf_protect
@@ -752,7 +752,7 @@ def show_group_join_requests(request, user, context):
         'join_requests': join_requests
     }
     context.update(data)
-    return render(request, 'user_inbox/group_join_requests.html', context)
+    return render(request, 'user_inbox/group_join_requests.jinja', context)
 
 
 @owner_or_moderator_required
@@ -806,14 +806,14 @@ def user_responses(request, user, context):
                 thread_id = request.GET['thread_id']
                 context.update(ThreadDetails().get_context(request, thread_id))
                 context['group_messaging_template_name'] = \
-                    'group_messaging/home_thread_details.html'
+                    'group_messaging/home_thread_details.jinja'
             except Message.DoesNotExist:
                 raise Http404
         else:
-            context['group_messaging_template_name'] = 'group_messaging/home.html'
+            context['group_messaging_template_name'] = 'group_messaging/home.jinja'
             #here we take shortcut, because we don't care about
             #all the extra context loaded below
-        return render(request, 'user_inbox/messages.html', context)
+        return render(request, 'user_inbox/messages.jinja', context)
     else:
         raise Http404
 
@@ -889,7 +889,7 @@ def user_responses(request, user, context):
         'messages' : filtered_message_list,
     }
     context.update(data)
-    template = 'user_inbox/responses.html'
+    template = 'user_inbox/responses.jinja'
     return render(request, template, context)
 
 def user_network(request, user, context):
@@ -902,7 +902,7 @@ def user_network(request, user, context):
         'tab_name': 'network',
     }
     context.update(data)
-    return render(request, 'user_profile/user_network.html', context)
+    return render(request, 'user_profile/user_network.jinja', context)
 
 @owner_or_moderator_required
 def user_votes(request, user, context):
@@ -931,7 +931,7 @@ def user_votes(request, user, context):
         'votes' : votes[:const.USER_VIEW_DATA_SIZE]
     }
     context.update(data)
-    return render(request, 'user_profile/user_votes.html', context)
+    return render(request, 'user_profile/user_votes.jinja', context)
 
 
 def user_reputation(request, user, context):
@@ -953,7 +953,7 @@ def user_reputation(request, user, context):
         'reps': reps
     }
     context.update(data)
-    return render(request, 'user_profile/user_reputation.html', context)
+    return render(request, 'user_profile/user_reputation.jinja', context)
 
 
 def user_favorites(request, user, context):
@@ -992,7 +992,7 @@ def user_favorites(request, user, context):
         'page_size': const.USER_POSTS_PAGE_SIZE
     }
     context.update(data)
-    return render(request, 'user_profile/user_favorites.html', context)
+    return render(request, 'user_profile/user_favorites.jinja', context)
 
 
 @csrf.csrf_protect
@@ -1083,7 +1083,7 @@ def user_email_subscriptions(request, user, context):
     context.update(view_context.get_for_tag_editor())
     return render(
         request,
-        'user_profile/user_email_subscriptions.html',
+        'user_profile/user_email_subscriptions.jinja',
         context
     )
 
@@ -1103,7 +1103,7 @@ def user_custom_tab(request, user, context):
         'tab_name': tab_settings['SLUG'],
         'page_title': page_title
     })
-    return render(request, 'user_profile/custom_tab.html', context)
+    return render(request, 'user_profile/custom_tab.jinja', context)
 
 USER_VIEW_CALL_TABLE = {
     'stats': user_stats,
@@ -1214,4 +1214,4 @@ def groups(request, id = None, slug = None):
         'tab_name': scope,
         'page_class': 'groups-page'
     }
-    return render(request, 'groups.html', data)
+    return render(request, 'groups.jinja', data)

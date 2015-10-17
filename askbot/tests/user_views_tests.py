@@ -4,10 +4,11 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from mock import Mock
-import urllib
+
 try:
-    from urllib.parse import urlparse, parse_qsl
+    from urllib.parse import urlparse, parse_qsl, unquote
 except ImportError:
+    from urllib import unquote
     from urlparse import urlparse, parse_qsl
 
 class UserViewsTests(AskbotTestCase):
@@ -31,7 +32,7 @@ class UserViewsTests(AskbotTestCase):
         self.assertEqual(parsed_url.path, reverse('user_signin'))
 
         next = dict(parse_qsl(parsed_url.query))['next']
-        next_url = urllib.unquote(next)
+        next_url = unquote(next)
         parsed_url = urlparse(next_url)
 
         self.assertEqual(parsed_url.path, request.path)

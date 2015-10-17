@@ -6,7 +6,6 @@ Time-stamp: <2008-07-19 23:16:19 carljm context_processors.py>
 """
 from django.conf import settings as django_settings
 from django.utils import six
-from django.utils.encoding import StrAndUnicode
 from django.utils.encoding import force_text
 
 from askbot.user_messages import get_and_delete_messages
@@ -34,7 +33,7 @@ def user_messages(request):
 
 
 @six.python_2_unicode_compatible
-class LazyMessages(StrAndUnicode):
+class LazyMessages(object):
     """
     Lazy message container, so messages aren't actually retrieved from
     session and deleted until the template asks for them.

@@ -2,6 +2,7 @@ from __future__ import print_function
 from askbot import models
 from askbot.conf import settings as askbot_settings
 from askbot.utils.console import ProgressBar
+from askbot.utils.db import commit_manually
 from askbot.utils.slug import slugify
 from askbot.utils.jive import JiveConverter
 from askbot.utils.jive import internal_link_re
@@ -186,7 +187,7 @@ class Command(BaseCommand):
         self.convert_jive_markup_to_html()
         models.Message.objects.all().delete()
 
-    @transaction.commit_manually
+    @commit_manually
     def add_legacy_links(self):
         questions = models.Post.objects.filter(post_type='question')
         count = questions.count()
@@ -202,13 +203,13 @@ For your reference, the original is [available here|%s]{quote}"""
             transaction.commit()
         transaction.commit()
 
-    @transaction.commit_manually
+    @commit_manually
     def make_redirects(self):
         """todo: implement this when needed"""
         pass
 
 
-    @transaction.commit_manually
+    @commit_manually
     def convert_jive_markup_to_html(self):
         posts = models.Post.objects.all()
         count = posts.count()
@@ -220,7 +221,7 @@ For your reference, the original is [available here|%s]{quote}"""
             transaction.commit()
         transaction.commit()
 
-    @transaction.commit_manually
+    @commit_manually
     def fix_internal_links(self):
         jive_url = self.jive_url
         print('Base url of old forum: %s' % jive_url)
@@ -233,7 +234,7 @@ For your reference, the original is [available here|%s]{quote}"""
             transaction.commit()
         transaction.commit()
 
-    @transaction.commit_manually
+    @commit_manually
     def promote_company_replies(self, domain):
         admin = turn_first_company_user_to_admin(domain)
         if admin is None:
@@ -257,7 +258,7 @@ For your reference, the original is [available here|%s]{quote}"""
             transaction.commit()
         transaction.commit()
 
-    @transaction.commit_manually
+    @commit_manually
     def import_users(self):
         """import users from jive to askbot"""
 
@@ -294,7 +295,7 @@ For your reference, the original is [available here|%s]{quote}"""
             threads_soup = forum.find_all('Thread')
             self.import_threads(threads_soup, forum.find('Name').text)
 
-    @transaction.commit_manually
+    @commit_manually
     def import_threads(self, threads, tag_name):
         message = 'Importing threads for %s' % tag_name
         for thread in ProgressBar(iter(threads), len(threads), message):

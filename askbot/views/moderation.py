@@ -206,7 +206,7 @@ def moderation_queue(request):
         'post_reject_reasons': reject_reasons,
         'messages' : queue,
     }
-    template = 'moderation/queue.html'
+    template = 'moderation/queue.jinja'
     return render(request, template, data)
 
 

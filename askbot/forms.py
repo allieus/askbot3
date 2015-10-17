@@ -8,7 +8,7 @@ from askbot import const
 from askbot.const import message_keys
 from django.conf import settings as django_settings
 from django.core.exceptions import PermissionDenied
-from django.forms.util import ErrorList
+from django.forms.utils import ErrorList
 from django.utils import six
 from django.utils.html import strip_tags
 from django.utils.datastructures import SortedDict
@@ -163,7 +163,7 @@ class CountryField(forms.ChoiceField):
             for key, name in data.COUNTRIES.items():
                 country_choices.append((key, name))
 
-        country_choices = sorted(country_choices, cmp=lambda a,b: cmp(a[1], b[1]))
+        country_choices = sorted(country_choices, key=lambda choices: choices[1])
 
         country_choices = (('unknown', _('select country')),) + tuple(country_choices)
         kwargs['choices'] = kwargs.pop('choices', country_choices)
@@ -1060,9 +1060,6 @@ class AskForm(PostAsSomeoneForm, PostPrivatelyForm):
         if user.is_anonymous() or not askbot_settings.ALLOW_ASK_ANONYMOUSLY:
             self.hide_field('ask_anonymously')
 
-        if getattr(django_settings, 'ASKBOT_MULTILINGUAL', False):
-            self.fields['language'] = LanguageField()
-
         if should_use_recaptcha(user):
             self.fields['recaptcha'] = AskbotReCaptchaField()
 
@@ -1366,18 +1363,13 @@ class EditQuestionForm(PostAsSomeoneForm, PostPrivatelyForm):
                                                     required=False,
                                                 )
 
-        if getattr(django_settings, 'ASKBOT_MULTILINGUAL', False):
-            self.fields['language'] = LanguageField()
-
         if should_use_recaptcha(self.user):
             self.fields['recaptcha'] = AskbotReCaptchaField()
-
 
     def clean(self):
         edit_anonymously = not self.cleaned_data.get('reveal_identity', True)
         self.cleaned_data['edit_anonymously'] = edit_anonymously
         return self.cleaned_data
-
 
     def has_changed(self):
         if super(EditQuestionForm, self).has_changed():
@@ -1388,13 +1380,7 @@ class EditQuestionForm(PostAsSomeoneForm, PostPrivatelyForm):
             if was_private != self.cleaned_data['post_privately']:
                 return True
 
-        if getattr(django_settings, 'ASKBOT_MULTILINGUAL', False):
-            old_language = self.question.thread.language_code
-            if old_language != self.cleaned_data['language']:
-                return True
-        else:
-            return False
-
+        return False
 
     def can_edit_anonymously(self):
         """determines if the user cat keep editing the question
@@ -1790,14 +1776,14 @@ class GetUserItemsForm(forms.Form):
     user_id = forms.IntegerField()
 
 class NewCommentForm(forms.Form):
-    comment = forms.CharField(max)
+    comment = forms.CharField()
     post_id = forms.IntegerField()
     avatar_size = forms.IntegerField()
+
     def __init__(self, *args, **kwargs):
         super(NewCommentForm, self).__init__(*args, **kwargs)
-        self.fields['comment'] = forms.CharField(
-                                    max_length=askbot_settings.MAX_COMMENT_LENGTH
-                                )
+        self.fields['comment'] = forms.CharField(max_length=askbot_settings.MAX_COMMENT_LENGTH)
+
 
 class EditCommentForm(forms.Form):
     comment_id = forms.IntegerField()

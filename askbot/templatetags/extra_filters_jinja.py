@@ -5,7 +5,6 @@ import pytz
 import re
 import time
 import urllib
-from coffin import template as coffin_template
 from bs4 import BeautifulSoup
 from django.core import exceptions as django_exceptions
 from django.utils.translation import ugettext as _
@@ -33,9 +32,11 @@ from askbot.shims.django_shims import ResolverMatch
 from django_countries import countries
 from django_countries import settings as countries_settings
 
-register = coffin_template.Library()
+from django_jinja import library
 
-absolutize_urls = register.filter(absolutize_urls)
+
+
+absolutize_urls = library.filter(absolutize_urls)
 
 TIMEZONE_STR = pytz.timezone(
                     django_settings.TIME_ZONE
@@ -43,25 +44,25 @@ TIMEZONE_STR = pytz.timezone(
                     datetime.datetime.now()
                 ).strftime('%z')
 
-@register.filter
+@library.filter
 def add_tz_offset(datetime_object):
     return str(datetime_object) + ' ' + TIMEZONE_STR
 
-@register.filter
+@library.filter
 def as_js_bool(some_object):
     if bool(some_object):
         return 'true'
     return 'false'
 
-@register.filter
+@library.filter
 def as_json(data):
     return json.dumps(data)
 
-@register.filter
+@library.filter
 def is_current_language(lang):
     return lang == django_get_language()
 
-@register.filter
+@library.filter
 def is_empty_editor_value(value):
     if value == None:
         return True
@@ -73,18 +74,18 @@ def is_empty_editor_value(value):
         return soup.getText().strip() == ''
     return False
 
-@register.filter
+@library.filter
 def to_int(value):
     return int(value)
 
-@register.filter
+@library.filter
 def safe_urlquote(text, quote_plus=False):
     if quote_plus:
         return urllib.quote_plus(text.encode('utf8'))
     else:
         return urllib.quote(text.encode('utf8'))
 
-@register.filter
+@library.filter
 def show_block_to(block_name, user):
     block = getattr(askbot_settings, block_name)
     if block:
@@ -93,17 +94,17 @@ def show_block_to(block_name, user):
         return (require_anon is False) or user.is_anonymous()
     return False
 
-@register.filter
+@library.filter
 def strip_path(url):
     """removes path part of the url"""
     return url_utils.strip_path(url)
 
-@register.filter
+@library.filter
 def strip_tags(text):
     """remove html tags"""
     return html_utils.strip_tags(text)
 
-@register.filter
+@library.filter
 def can_see_private_user_data(viewer, target):
     if viewer.is_authenticated():
         if viewer == target:
@@ -113,7 +114,7 @@ def can_see_private_user_data(viewer, target):
             return askbot_settings.SHOW_ADMINS_PRIVATE_USER_DATA
     return False
 
-@register.filter
+@library.filter
 def clean_login_url(url):
     """pass through, unless user was originally on the logout page"""
     try:
@@ -125,7 +126,7 @@ def clean_login_url(url):
         pass
     return reverse('index')
 
-@register.filter
+@library.filter
 def transurl(url):
     """translate url, when appropriate and percent-
     escape it, that's important, othervise it won't match
@@ -140,7 +141,7 @@ def transurl(url):
         return urllib.quote(_(url).encode('utf-8'))
     return url
 
-@register.filter
+@library.filter
 def truncate_html_post(post_html):
     """truncates html if it is longer than 100 words"""
     post_html = Truncator(post_html).words(5, html=True)
@@ -149,26 +150,26 @@ def truncate_html_post(post_html):
     post_html += '<div class="clearfix"></div></div>'
     return post_html
 
-@register.filter
+@library.filter
 def country_display_name(country_code):
     country_dict = dict(countries.COUNTRIES)
     return country_dict[country_code]
 
-@register.filter
+@library.filter
 def country_flag_url(country_code):
     return countries_settings.FLAG_URL % country_code
 
-@register.filter
+@library.filter
 def collapse(input):
     input = force_text(input)
     return ' '.join(input.split())
 
 
-@register.filter
+@library.filter
 def split(string, separator):
     return string.split(separator)
 
-@register.filter
+@library.filter
 def get_age(birthday):
     current_time = datetime.datetime(*time.localtime()[0:6])
     year = birthday.year
@@ -177,15 +178,15 @@ def get_age(birthday):
     diff = current_time - datetime.datetime(year,month,day,0,0,0)
     return diff.days / 365
 
-@register.filter
+@library.filter
 def equal(one, other):
     return one == other
 
-@register.filter
+@library.filter
 def not_equal(one, other):
     return one != other
 
-@register.filter
+@library.filter
 def media(url):
     """media filter - same as media tag, but
     to be used as a filter in jinja templates
@@ -196,43 +197,25 @@ def media(url):
     else:
         return ''
 
-@register.filter
+@library.filter
 def fullmedia(url):
     return site_url_func(media(url))
 
-@register.filter
+@library.filter
 def site_url(url):
     return site_url_func(url)
 
-diff_date = register.filter(functions.diff_date)
+diff_date = library.filter(functions.diff_date)
 
-setup_paginator = register.filter(functions.setup_paginator)
+setup_paginator = library.filter(functions.setup_paginator)
 
-slugify = register.filter(slugify)
+slugify = library.filter(slugify)
 
-register.filter(
-            name = 'intcomma',
-            filter_func = humanize.intcomma,
-            jinja2_only = True
-        )
+library.filter(name='intcomma', fn=humanize.intcomma)
+library.filter(name='urlencode', fn=defaultfilters.urlencode)
+library.filter(name='linebreaks', fn=defaultfilters.linebreaks)
+library.filter(name='default_if_none', fn=defaultfilters.default_if_none)
 
-register.filter(
-            name = 'urlencode',
-            filter_func = defaultfilters.urlencode,
-            jinja2_only = True
-        )
-
-register.filter(
-            name = 'linebreaks',
-            filter_func = defaultfilters.linebreaks,
-            jinja2_only = True
-        )
-
-register.filter(
-            name = 'default_if_none',
-            filter_func = defaultfilters.default_if_none,
-            jinja2_only = True
-        )
 
 def make_template_filter_from_permission_assertion(
                                 assertion_name = None,
@@ -266,11 +249,11 @@ def make_template_filter_from_permission_assertion(
             except django_exceptions.PermissionDenied:
                 return False
 
-    register.filter(filter_name, filter_function)
+    library.filter(filter_name, filter_function)
     return filter_function
 
 
-@register.filter
+@library.filter
 def can_moderate_user(user, other_user):
     if user.is_authenticated() and user.can_moderate_user(other_user):
         return True
@@ -362,9 +345,9 @@ def can_see_offensive_flags(user, post):
         return False
 # Manual Jinja filter registration this leaves can_see_offensive_flags() untouched (unwrapped by decorator),
 # which is needed by some tests
-register.filter('can_see_offensive_flags', can_see_offensive_flags)
+library.filter('can_see_offensive_flags', can_see_offensive_flags)
 
-@register.filter
+@library.filter
 def humanize_counter(number):
     if number == 0:
         return _('no')
@@ -378,21 +361,21 @@ def humanize_counter(number):
     else:
         return str(number)
 
-@register.filter
+@library.filter
 def py_pluralize(source, count):
     plural_forms = source.strip().split('\n')
     return _py_pluralize(plural_forms, count)
 
-@register.filter
+@library.filter
 def absolute_value(number):
     return abs(number)
 
-@register.filter
+@library.filter
 def get_empty_search_state(unused):
     from askbot.search.state_manager import SearchState
     return SearchState.get_empty()
 
-@register.filter
+@library.filter
 def sub_vars(text, user=None):
     """replaces placeholders {{ USER_NAME }}
     {{ SITE_NAME }}, {{ SITE_LINK }} with relevant values"""
@@ -412,6 +395,6 @@ def sub_vars(text, user=None):
     text = sitelink_re.sub(site_link('index', site_name), text)
     return text
 
-@register.filter
+@library.filter
 def convert_markdown(text):
     return markdown_input_converter(text)

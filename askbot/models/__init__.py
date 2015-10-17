@@ -703,7 +703,7 @@ def _assert_user_can(
     """
     action_display = action_display or _('perform this action')
 
-    from askbot.deps.django_authopenid.util import email_is_blacklisted
+    from askbot.utils.auth import email_is_blacklisted
 
     if askbot_settings.READ_ONLY_MODE_ENABLED:
         error_message = _(
@@ -2784,10 +2784,7 @@ def user_get_languages(self):
 
 
 def user_get_primary_language(self):
-    if getattr(django_settings, 'ASKBOT_MULTILINGUAL', False):
-        return self.get_languages()[0]
-    else:
-        return django_settings.LANGUAGE_CODE
+    return django_settings.LANGUAGE_CODE
 
 def get_profile_link(self, text=None):
     profile_link = '<a href="%s">%s</a>' \
@@ -4136,17 +4133,6 @@ def autoapprove_reputable_user(user=None, reputation_before=None, *args, **kwarg
     if user.is_watched() and reputation_before < margin and user.reputation >= margin:
         user.set_status('a')
 
-def init_badge_data(sender, app=None, migration=None, method=None, **kwargs):
-    """initializes badge data from the hardcoded badge info,
-    e.g. in askbot/models/badges.py"""
-    #mig_name is the name of latest migration that changes model
-    #askbot.models.BadgeData. It's important that we run this
-    #only after the `askbot_badgedata` table is fully constructed
-    mig_name = '0186_auto__add_field_badgedata_display_order'
-    if app == 'askbot' and method == 'forward' and migration.name() == mig_name:
-        from askbot.models import badges
-        badges.init_badges()
-
 def record_spam_rejection(
     sender, spam=None, text=None, user=None, ip_addr='unknown', **kwargs
 ):
@@ -4176,14 +4162,6 @@ def record_spam_rejection(
         activity.active_at = now
         activity.summary = summary
         activity.save()
-
-
-from south.signals import ran_migration
-
-ran_migration.connect(
-    init_badge_data,
-    dispatch_uid='init_badge_data_on_post_syncdb'
-)
 
 
 # signals for User model save changes

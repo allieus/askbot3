@@ -9,7 +9,7 @@ from .utils import language_from_alias
 
 class BaseIndex(indexes.SearchIndex):
 
-    i18n_enabled = getattr(settings, 'ASKBOT_MULTILINGUAL', True)
+    i18n_enabled = False  # FIXME: REMOVE ME
 
     text = indexes.CharField(document=True, use_template=True)
 

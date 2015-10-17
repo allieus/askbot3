@@ -1,5 +1,6 @@
 """models for the ``group_messaging`` app
 """
+from importlib import import_module
 from askbot.mail import send_mail #todo: remove dependency?
 from askbot.mail.messages import GroupMessagingEmailAlert
 from django.conf import settings as django_settings
@@ -10,7 +11,6 @@ from django.db import models
 from django.db.models import signals
 from django.template import Context
 from django.template.loader import get_template
-from django.utils.importlib import import_module
 from django.utils.translation import ugettext as _
 from group_messaging.signals import response_created
 from group_messaging.signals import thread_created
@@ -97,7 +97,7 @@ class SenderList(models.Model):
     sender list is populated automatically
     as new messages are created
     """
-    recipient = models.ForeignKey(Group, unique=True)
+    recipient = models.OneToOneField(Group)
     senders = models.ManyToManyField(User)
     objects = SenderListManager()
 

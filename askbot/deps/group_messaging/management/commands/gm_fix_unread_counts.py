@@ -3,10 +3,11 @@ from askbot.models import User
 from askbot.utils.console import ProgressBar
 from group_messaging.models import get_unread_inbox_counter
 from django.db import transaction
+from askbot.utils.db import commit_manually
 
 class Command(NoArgsCommand):
 
-    @transaction.commit_manually
+    @commit_manually
     def handle_noargs(self, *args, **kwargs):
         users = User.objects.all()
         count = users.count()

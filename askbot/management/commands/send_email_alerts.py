@@ -14,12 +14,12 @@ from django.utils.translation import ugettext as _
 from django.utils.translation import activate as activate_language
 
 from askbot import const
-from askbot.deps.django_authopenid.util import email_is_blacklisted
 from askbot.conf import settings as askbot_settings
 from askbot.models import User, Post, PostRevision, Thread
 from askbot.models import Activity, EmailFeedSetting
 from askbot.mail.messages import BatchEmailAlert
 from askbot.mail import send_mail
+from askbot.utils.auth import email_is_blacklisted
 from askbot.utils.html import site_url
 
 
@@ -203,10 +203,7 @@ class Command(NoArgsCommand):
         Q_set_A = not_seen_qs
         Q_set_B = seen_before_last_mod_qs
 
-        if getattr(django_settings, 'ASKBOT_MULTILINGUAL', False):
-            languages = user.languages.split()
-        else:
-            languages = None
+        languages = None
 
         for feed in user_feeds:
             if feed.feed_type == 'm_and_c':

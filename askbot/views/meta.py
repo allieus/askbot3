@@ -43,7 +43,7 @@ import re
 def generic_view(request, template=None, page_class=None, context=None):
     """this may be not necessary, since it is just a rewrite of render"""
     if request is None:  # a plug for strange import errors in django startup
-        return render_to_response('django_error.html')
+        return render_to_response('django_error.jinja')
     context = context or {}
     context['page_class'] = page_class
     return render(request, template, Context(context))
@@ -56,7 +56,7 @@ def markdown_flatpage(request, page_class=None, setting_name=None):
         'title': askbot_settings.get_description(setting_name)
     }
     return generic_view(
-        request, template='askbot_flatpage.html',
+        request, template='askbot_flatpage.jinja',
         page_class=page_class, context=context
     )
 
@@ -74,7 +74,7 @@ def config_variable(request, variable_name = None, mimetype = None):
     else:
         return HttpResponseForbidden()
 
-def about(request, template='static_page.html'):
+def about(request, template='static_page.jinja'):
     title = _('About %(site)s') % {'site': askbot_settings.APP_SHORT_NAME}
     data = {
         'title': title,
@@ -83,10 +83,10 @@ def about(request, template='static_page.html'):
     }
     return render(request, template, data)
 
-def page_not_found(request, template='404.html'):
+def page_not_found(request, template='404.jinja'):
     return generic_view(request, template)
 
-def server_error(request, template='500.html'):
+def server_error(request, template='500.jinja'):
     return generic_view(request, template)
 
 def help(request):
@@ -97,14 +97,14 @@ def help(request):
             'page_class': 'meta',
             'active_tab': 'help',
         }
-        return render(request, 'static_page.html', data)
+        return render(request, 'static_page.jinja', data)
     else:
         data = {
             'active_tab': 'help',
             'app_name': askbot_settings.APP_SHORT_NAME,
             'page_class': 'meta'
         }
-        return render(request, 'help_static.html', data)
+        return render(request, 'help_static.jinja', data)
 
 def faq(request):
     if askbot_settings.FORUM_FAQ.strip() != '':
@@ -114,7 +114,7 @@ def faq(request):
             'page_class': 'meta',
             'active_tab': 'faq',
         }
-        return render(request, 'static_page.html', data)
+        return render(request, 'static_page.jinja', data)
     else:
         data = {
             'gravatar_faq_url': reverse('faq') + '#gravatar',
@@ -122,7 +122,7 @@ def faq(request):
             'page_class': 'meta',
             'active_tab': 'faq',
         }
-        return render(request, 'faq_static.html', data)
+        return render(request, 'faq_static.jinja', data)
 
 @csrf.csrf_protect
 def feedback(request):
@@ -172,7 +172,7 @@ def feedback(request):
                 )
 
     data['form'] = form
-    return render(request, 'feedback.html', data)
+    return render(request, 'feedback.jinja', data)
 feedback.CANCEL_MESSAGE=ugettext_lazy('We look forward to hearing your feedback! Please, give it next time :)')
 
 def privacy(request):
@@ -181,7 +181,7 @@ def privacy(request):
         'page_class': 'meta',
         'content': askbot_settings.FORUM_PRIVACY
     }
-    return render(request, 'static_page.html', data)
+    return render(request, 'static_page.jinja', data)
 
 def badges(request):#user status/reputation system
     #todo: supplement database data with the stuff from badges.py
@@ -206,7 +206,7 @@ def badges(request):#user status/reputation system
         'page_class': 'meta',
         'my_badge_ids' : my_badge_ids
     }
-    return render(request, 'badges.html', data)
+    return render(request, 'badges.jinja', data)
 
 def badge(request, id):
     #todo: supplement database data with the stuff from badges.py
@@ -227,7 +227,7 @@ def badge(request, id):
         'badge' : badge,
         'page_class': 'meta',
     }
-    return render(request, 'badge.html', data)
+    return render(request, 'badge.jinja', data)
 
 @moderators_only
 def list_suggested_tags(request):
@@ -267,4 +267,4 @@ def list_suggested_tags(request):
         'page_title': _('Suggested tags'),
         'paginator_context' : paginator_context,
     }
-    return render(request, 'list_suggested_tags.html', data)
+    return render(request, 'list_suggested_tags.jinja', data)

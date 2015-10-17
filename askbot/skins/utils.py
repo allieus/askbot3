@@ -8,12 +8,15 @@ the lookup resolution process for templates and media works as follows:
 from __future__ import print_function
 import os
 import logging
-import urllib
+try:
+    from urllib.parse import unquote
+except ImportError:
+    from urllib import unquote
+from collections import OrderedDict
 import askbot
 from askbot.utils import hasher
 from django.conf import settings as django_settings
 from django.utils.encoding import force_text
-from django.utils.datastructures import SortedDict
 
 class MediaNotFound(Exception):
     """raised when media file is not found"""
@@ -23,7 +26,7 @@ def get_skins_from_dir(directory):
     """returns sorted dict with skin data, like get_available_skins
     but from a specific directory
     """
-    skins = SortedDict()
+    skins = OrderedDict()
     for item in sorted(os.listdir(directory)):
         item_dir = os.path.join(directory, item)
         if os.path.isdir(item_dir):
@@ -41,7 +44,7 @@ def get_available_skins(selected=None):
 
     selected skin is guaranteed to be the first item in the dictionary
     """
-    skins = SortedDict()
+    skins = OrderedDict()
     if hasattr(django_settings, 'ASKBOT_EXTRA_SKINS_DIR'):
         skins.update(get_skins_from_dir(django_settings.ASKBOT_EXTRA_SKINS_DIR))
 
@@ -53,7 +56,7 @@ def get_available_skins(selected=None):
         skins.clear()
         skins[selected] = selected_dir
     elif selected == 'default':
-        skins = SortedDict()
+        skins = OrderedDict()
     elif selected:
         raise ValueError(
             'skin ' + str(selected) + \
@@ -103,7 +106,7 @@ def get_media_url(url, ignore_missing = False):
     """
     #import datetime
     #before = datetime.datetime.now()
-    url = urllib.unquote(force_text(url))
+    url = unquote(force_text(url))
     while url[0] == '/': url = url[1:]
 
     #a hack allowing urls media stored on external locations to

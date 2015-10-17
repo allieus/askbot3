@@ -1,6 +1,9 @@
 """Search state manager object"""
 import re
-import urllib
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib import quote
 import copy
 
 from django.core import urlresolvers
@@ -93,7 +96,7 @@ class SearchState(object):
         author=None, page=None, page_size=None, user_logged_in=False
     ):
         # INFO: zip(*[('a', 1), ('b', 2)])[0] == ('a', 'b')
-        if (scope not in zip(*const.POST_SCOPE_LIST)[0]) or (scope == 'followed' and not user_logged_in):
+        if (scope not in list(zip(*const.POST_SCOPE_LIST))[0]) or (scope == 'followed' and not user_logged_in):
             if user_logged_in:
                 self.scope = askbot_settings.DEFAULT_SCOPE_AUTHENTICATED
             else:
@@ -118,7 +121,7 @@ class SearchState(object):
             self.query_users = None
             self.query_title = None
 
-        if (sort not in zip(*const.POST_SORT_METHODS)[0]) or (sort == 'relevance-desc' and (not self.query or not askbot.conf.should_show_sort_by_relevance())):
+        if (sort not in list(zip(*const.POST_SORT_METHODS))[0]) or (sort == 'relevance-desc' and (not self.query or not askbot.conf.should_show_sort_by_relevance())):
             self.sort = const.DEFAULT_POST_SORT_METHOD
         else:
             self.sort = sort
@@ -173,7 +176,7 @@ class SearchState(object):
     #
     # Tag separator (const.TAG_SEP) remains unencoded to clearly mark tag boundaries
     # _+.- stay unencoded to keep tags in URL as verbose as possible
-    #      (note that urllib.quote() in Python 2.7 treats _.- as safe chars, but let's be explicit)
+    #      (note that quote() in Python 2.7 treats _.- as safe chars, but let's be explicit)
     # Hash (#) is not safe and has to be encodeded, as it's used as URL has delimiter
     #
     SAFE_CHARS = const.TAG_SEP + '_+.-'
@@ -201,13 +204,13 @@ class SearchState(object):
 
         #order of items is important!!!
         if self.tags:
-            lst.append('tags:' + urllib.quote(smart_str(const.TAG_SEP.join(self.tags)), safe=self.SAFE_CHARS))
+            lst.append('tags:' + quote(smart_str(const.TAG_SEP.join(self.tags)), safe=self.SAFE_CHARS))
         if self.author:
             lst.append('author:' + str(self.author))
         if self.page:
             lst.append('page:' + str(self.page))
         if self.query:
-            lst.append('query:' + urllib.quote(smart_str(self.query), safe=self.SAFE_CHARS))
+            lst.append('query:' + quote(smart_str(self.query), safe=self.SAFE_CHARS))
         return '/'.join(lst) + '/'
 
     def deepcopy(self): # TODO: test me

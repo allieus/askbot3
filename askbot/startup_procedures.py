@@ -709,15 +709,6 @@ def test_haystack():
                     }"""
                 errors.append(message)
 
-            if getattr(django_settings, 'ASKBOT_MULTILINGUAL'):
-                if not hasattr(django_settings, "HAYSTACK_ROUTERS"):
-                    message = "Please add HAYSTACK_ROUTERS = ['askbot.search.haystack.routers.LanguageRouter',] to settings.py"
-                    errors.append(message)
-                elif 'askbot.search.haystack.routers.LanguageRouter' not in \
-                        getattr(django_settings, 'HAYSTACK_ROUTERS'):
-                    message = "'askbot.search.haystack.routers.LanguageRouter' to HAYSTACK_ROUTERS as first element in settings.py"
-                    errors.append(message)
-
             if getattr(django_settings, 'HAYSTACK_SIGNAL_PROCESSOR',
                        '').endswith('AskbotCelerySignalProcessor'):
                 try_import('celery_haystack', 'celery-haystack', short_message = True)
@@ -979,17 +970,7 @@ def test_secret_key():
         ])
 
 def test_locale_middlewares():
-    is_multilang = getattr(django_settings, 'ASKBOT_MULTILINGUAL', False)
-    django_locale_middleware = 'django.middleware.locale.LocaleMiddleware'
-    askbot_locale_middleware = 'askbot.middleware.locale.LocaleMiddleware'
     errors = list()
-
-    if is_multilang:
-        if askbot_locale_middleware in django_settings.MIDDLEWARE_CLASSES:
-            errors.append("Please remove '%s' from your MIDDLEWARE_CLASSES" % askbot_locale_middleware)
-        if django_locale_middleware not in django_settings.MIDDLEWARE_CLASSES:
-            errors.append("Please add '%s' to your MIDDLEWARE_CLASSES" % django_locale_middleware)
-
     print_errors(errors)
 
 
@@ -1009,33 +990,13 @@ def test_recaptcha():
 
 
 def test_multilingual():
-    is_multilang = getattr(django_settings, 'ASKBOT_MULTILINGUAL', False)
-
     errors = list()
-
-    django_version = django.VERSION
-    if is_multilang and django_version[0] == 1 and django_version[1] < 4:
-        errors.append('ASKBOT_MULTILINGUAL=True works only with django >= 1.4')
-
-    if is_multilang:
-        middleware = 'django.middleware.locale.LocaleMiddleware'
-        if middleware not in django_settings.MIDDLEWARE_CLASSES:
-            errors.append(
-                "add 'django.middleware.locale.LocaleMiddleware' to your MIDDLEWARE_CLASSES "
-                "if you want a multilingual setup"
-            )
-
-    trans_url = getattr(django_settings, 'ASKBOT_TRANSLATE_URL', False)
-    if is_multilang and trans_url:
-        errors.append(
-            'Please set ASKBOT_TRANSLATE_URL to False, the "True" option '
-            'is currently not supported due to a bug in django'
-        )
-
+    # django_version = django.VERSION
+    # trans_url = getattr(django_settings, 'ASKBOT_TRANSLATE_URL', False)
     print_errors(errors)
 
 def test_messages_framework():
-    if not 'django.contrib.messages' in django_settings.INSTALLED_APPS:
+    if 'django.contrib.messages' not in django_settings.INSTALLED_APPS:
         errors = ('Add to the INSTALLED_APPS section of your settings.py:\n "django.contrib.messages"', )
         print_errors(errors)
 
@@ -1045,7 +1006,8 @@ def test_service_url_prefix():
     message = 'Service url prefix must have > 1 letters and must end with /'
     if prefix:
         if len(prefix) == 1 or (not prefix.endswith('/')):
-            print_errors((message,))
+            errors.append(message)
+    print_errors(errors)
 
 def test_versions():
     """inform of version incompatibilities, where possible"""

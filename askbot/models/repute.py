@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import datetime
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import six
@@ -149,7 +149,7 @@ class Award(models.Model):
     badge      = models.ForeignKey(BadgeData, related_name='award_badge')
     content_type   = models.ForeignKey(ContentType)
     object_id      = models.PositiveIntegerField()
-    content_object = generic.GenericForeignKey('content_type', 'object_id')
+    content_object = GenericForeignKey('content_type', 'object_id')
     awarded_at = models.DateTimeField(default=datetime.datetime.now)
     notified   = models.BooleanField(default=False)
 

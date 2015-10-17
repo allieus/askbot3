@@ -123,7 +123,7 @@ def show_list(request, user_id=None, extra_context=None, avatar_size=128):
         'view_user': user
     }
     context.update(extra_context or {})
-    return render(request, 'avatar/show_list.html', context)
+    return render(request, 'avatar/show_list.jinja', context)
 
 @admin_or_owner_required
 def set_primary(request, user_id=None, extra_context=None, avatar_size=128):

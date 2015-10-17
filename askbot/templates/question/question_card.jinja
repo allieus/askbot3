@@ -1,0 +1,34 @@
+<div class="post js-question" data-post-id="{{ question.id }}">
+    <div class="vote-buttons">
+        {% include "question/question_vote_buttons.jinja" %}
+
+        {% include "question/share_buttons.jinja" %}
+    </div>
+    <div id="post-id-{{question.id}}" class="post-content{% if question.deleted %} deleted{% endif %}">
+        <h1><a href="{{ question.get_absolute_url() }}">{{ thread.get_title()|escape }}</a></h1>
+        {% include "question/question_tags.jinja" %}
+        <div class="clearfix"></div>
+
+        <div class="post-body">
+            <div class="post-update-info-container">
+                {% include "question/question_author_info.jinja" %}
+            </div>
+            {% if question.needs_moderation() %}
+                <p class="moderated">{% trans %}This post is awaiting moderation{% endtrans %}</p>
+            {% endif %}
+            {{ question.summary }}
+        </div>
+        <div id="question-controls" class="post-controls">
+            {% include "question/question_controls.jinja" %}
+        </div>
+        {% if thread.closed %}
+            <div class="clearfix"></div>
+            {# ==== START: question/closed_question_info.jinja ==== #}
+            {% include "question/closed_question_info.jinja" %}
+            {# ==== END: question/closed_question_info.jinja ==== #}
+        {% endif %}
+        {% if settings.QUESTION_COMMENTS_ENABLED %}
+            {% include "question/question_comments.jinja" %}
+        {% endif %}
+    </div>
+</div>

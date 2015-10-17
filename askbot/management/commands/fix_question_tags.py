@@ -9,6 +9,7 @@ from askbot import const
 from askbot import models
 from askbot import forms
 from askbot.utils import console
+from askbot.utils.db import commit_manually
 from askbot.utils.slug import slugify_camelcase
 from askbot import signals
 from askbot.conf import settings as askbot_settings
@@ -53,8 +54,7 @@ class Command(NoArgsCommand):
                 tags=' '.join(tagnames)
             )
 
-
-    @transaction.commit_manually
+    @commit_manually
     def run_command(self, lang):
         """method that runs the actual command"""
         #go through tags and find character case duplicates and eliminate them

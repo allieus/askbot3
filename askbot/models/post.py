@@ -1002,11 +1002,6 @@ class Post(models.Model):
         if not hasattr(self, '_thread_cache') and thread:
             self._thread_cache = thread
 
-        is_multilingual = getattr(django_settings, 'ASKBOT_MULTILINGUAL', False)
-        if is_multilingual:
-            request_language = get_language()
-            activate_language(language or self.language_code)
-
         if self.is_answer():
             if not question_post:
                 question_post = self.thread._question_post()
@@ -1033,9 +1028,6 @@ class Post(models.Model):
                 {'url': origin_post.get_absolute_url(thread=thread), 'id':self.id}
         else:
             raise NotImplementedError
-
-        if is_multilingual:
-            activate_language(request_language)
 
         return url
 
@@ -1584,16 +1576,7 @@ class Post(models.Model):
         subscribers = self.filter_authorized_users(subscribers)
 
         #filter subscribers by language
-        if getattr(django_settings, 'ASKBOT_MULTILINGUAL', False):
-            language = self.thread.language_code
-            filtered_subscribers = list()
-            for subscriber in subscribers:
-                subscriber_languages = subscriber.get_languages()
-                if language in subscriber_languages:
-                    filtered_subscribers.append(subscriber)
-            return filtered_subscribers
-        else:
-            return subscribers
+        return subscribers
 
     def get_notify_sets(self, mentioned_users=None, exclude_list=None):
         """returns three lists of users in a dictionary with keys:
@@ -2505,22 +2488,12 @@ class PostRevision(models.Model):
         super(PostRevision, self).save(**kwargs)
 
     def get_absolute_url(self):
-
-        is_multilingual = getattr(django_settings, 'ASKBOT_MULTILINGUAL', False)
-
-        if is_multilingual:
-            request_language = get_language()
-            activate_language(self.post.language_code)
-
         if self.post.is_question():
             url = reverse('question_revisions', args = (self.post.id,))
         elif self.post.is_answer():
             url = reverse('answer_revisions', kwargs = {'id':self.post.id})
         else:
             url = self.post.get_absolute_url()
-
-        if is_multilingual:
-            activate_language(request_language)
 
         return url
 

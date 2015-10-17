@@ -327,23 +327,23 @@ class InstantEmailAlert(BaseEmail):
             reply_separator = user_action
 
         return {
-           'admin_email': askbot_settings.ADMIN_EMAIL,
-           'recipient_user': to_user,
-           'update_author_name': from_user.username,
-           'receiving_user_name': to_user.username,
-           'receiving_user_karma': to_user.reputation,
-           'reply_by_email_karma_threshold': askbot_settings.MIN_REP_TO_POST_BY_EMAIL,
-           'can_reply': can_reply,
-           'content_preview': content_preview,
-           'update_type': update_type,
-           'update_activity': update_activity,
-           'post': post,
-           'post_url': post_url,
-           'origin_post': origin_post,
-           'thread_title': origin_post.thread.title,
-           'reply_separator': reply_separator,
-           'reply_address': reply_address,
-           'is_multilingual': getattr(django_settings, 'ASKBOT_MULTILINGUAL', False)
+            'admin_email': askbot_settings.ADMIN_EMAIL,
+            'recipient_user': to_user,
+            'update_author_name': from_user.username,
+            'receiving_user_name': to_user.username,
+            'receiving_user_karma': to_user.reputation,
+            'reply_by_email_karma_threshold': askbot_settings.MIN_REP_TO_POST_BY_EMAIL,
+            'can_reply': can_reply,
+            'content_preview': content_preview,
+            'update_type': update_type,
+            'update_activity': update_activity,
+            'post': post,
+            'post_url': post_url,
+            'origin_post': origin_post,
+            'thread_title': origin_post.thread.title,
+            'reply_separator': reply_separator,
+            'reply_address': reply_address,
+            'is_multilingual': False,  # FIXME: REMOVE ME
         }
 
 
@@ -571,7 +571,7 @@ class BatchEmailAlert(BaseEmail):
             'recipient_user': user,
             'admin_email': askbot_settings.ADMIN_EMAIL,
             'site_name': askbot_settings.APP_SHORT_NAME,
-            'is_multilingual': getattr(django_settings, 'ASKBOT_MULTILINGUAL', False)
+            'is_multilingual': False,  # FIXME: REMOVE ME
         })
         return context
 

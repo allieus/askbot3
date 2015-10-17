@@ -1,0 +1,21 @@
+{% extends "two_column_body.jinja" %}
+<!-- tags.jinja -->
+{% block title %}{% filter trim %}{% trans %}Tags{% endtrans %}{% endfilter %}{% endblock %}
+{% block content %}
+{% include "tags/content.jinja" %}
+{% endblock %}
+{% block endjs %}
+    <script type="text/javascript">
+    /*<![CDATA[*/
+        $().ready(function(){
+            $("#ipSearchTag").focus();
+            $("#type-tag").attr('checked',true);
+            Hilite.exact = false;
+            Hilite.elementid = "searchtags";
+            Hilite.debug_referrer = location.href;
+        });
+    /*]]>*/
+    </script>
+    {% include "tags/custom_javascript.jinja" ignore missing %}
+{% endblock %}
+<!-- end tags.jinja -->

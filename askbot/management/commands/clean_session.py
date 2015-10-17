@@ -6,6 +6,7 @@ from django.contrib.sessions.models import Session
 from django.db import transaction
 from optparse import make_option
 from askbot.utils.console import ProgressBar
+from askbot.utils.db import commit_manually
 from datetime import datetime
 
 ITEMS_PER_TRANSACTION = 1000
@@ -22,7 +23,7 @@ class Command(NoArgsCommand):
                 ),
             )
 
-    @transaction.commit_manually
+    @commit_manually
     def handle_noargs(self, **options):
         """deletes old sessions"""
         quiet = options.get('quiet', False)

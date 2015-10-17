@@ -4,7 +4,7 @@ from django.template.loader import get_template
 
 def internal_error(request):
     """Error 500 view with context"""
-    template = get_template('500.html')
+    template = get_template('500.jinja')
     try:
         result = template.render(RequestContext(request))
     except Exception:

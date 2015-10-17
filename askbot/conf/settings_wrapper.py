@@ -217,13 +217,8 @@ def update_cached_value(key, value, language_code=None):
         cache.set(cache_key, settings_dict)
 
 def cached_value_update_handler(setting=None, new_value=None, language_code=None, *args, **kwargs):
-    key=setting.key
-    if setting.localized == False and django_settings.ASKBOT_MULTILINGUAL:
-        languages = dict(django_settings.LANGUAGES).keys()
-        for lang in languages:
-            update_cached_value(key, new_value, lang)
-    else:
-        update_cached_value(key, new_value, language_code)
+    key = setting.key
+    update_cached_value(key, new_value, language_code)
 
 signals.configuration_value_changed.connect(
     cached_value_update_handler,

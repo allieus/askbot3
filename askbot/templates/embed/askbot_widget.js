@@ -38,7 +38,7 @@ var {{variable_name}} = {
     containerDiv.appendChild(closeButton);
 
     var iframe = document.createElement('iframe');
-    iframe.setAttribute('src', protocol + '//{{host}}{% url ask_by_widget widget.id %}');
+    iframe.setAttribute('src', protocol + '//{{ host }}{{ url("ask_by_widget", widget.id) }}');
 
     containerDiv.appendChild(iframe);
 

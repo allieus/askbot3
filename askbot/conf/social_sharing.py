@@ -33,20 +33,6 @@ settings.register(
 settings.register(
     BooleanValue(
         SOCIAL_SHARING,
-        'ENABLE_SHARING_TWITTER',
-        default=True,
-        description=_('Check to enable sharing of questions on Twitter'),
-        help_text=_(
-            'Important - to actually start sharing on twitter, '
-            'it is required to set up Twitter consumer key and secret '
-            'in the "keys to external services" section.'
-        )
-    )
-)
-
-settings.register(
-    BooleanValue(
-        SOCIAL_SHARING,
         'ENABLE_SHARING_FACEBOOK',
         default=True,
         description=_('Check to enable sharing of questions on Facebook')

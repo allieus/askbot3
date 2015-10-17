@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from django.core.management.base import CommandError, BaseCommand
 from django.db import transaction
 from askbot.models import User
+from askbot.utils.db import commit_manually
 
 # TODO: this command is broken - doesn't take into account UNIQUE constraints
 #       and therefore causes db errors:
@@ -15,7 +16,7 @@ class MergeUsersBaseCommand(BaseCommand):
     args = '<from_user_id> <to_user_id>'
     help = 'Merge an account and all information from a <user_id> to a <user_id>, deleting the <from_user>'
 
-    @transaction.commit_manually
+    @commit_manually
     def handle(self, *arguments, **options):
         self.parse_arguments(*arguments)
 

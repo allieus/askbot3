@@ -7,12 +7,12 @@ from __future__ import unicode_literals
 from __future__ import absolute_import
 import json
 from decimal import Decimal
+from collections import OrderedDict
 from django import forms
 from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.cache import cache
 from django.utils import six
-from django.utils.datastructures import SortedDict
 from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
@@ -41,7 +41,7 @@ log = logging.getLogger('configuration')
 
 NOTSET = object()
 
-class SortedDotDict(SortedDict):
+class SortedDotDict(OrderedDict):
 
     def __getattr__(self, key):
         try:
@@ -292,7 +292,7 @@ class Value(object):
 
     def make_fields(self, **kwargs):
         if self.localized:
-            langs_dict = SortedDict(django_settings.LANGUAGES)
+            langs_dict = OrderedDict(django_settings.LANGUAGES)
             default_code = django_settings.LANGUAGE_CODE
             default_name = langs_dict[default_code]
             langs_dict.insert(0, default_code, default_name)

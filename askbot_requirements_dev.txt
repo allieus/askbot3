@@ -6,8 +6,6 @@ django>=1.8.5
 Jinja2
 # Coffin>=0.3,<=0.3.8
 -e git+https://github.com/allieus/coffin#egg=coffin
-South>=0.7.1
-#-e git+https://github.com/matthiask/south.git#egg=south
 oauth2
 Lamson
 markdown2
@@ -19,7 +17,7 @@ django-compressor>=1.5
 -e hg+https://allieus@bitbucket.org/allieus/django-keyedcache#egg=keyedcache
 # django-threaded-multihost
 -e hg+https://allieus@bitbucket.org/allieus/django-threaded-multihost#egg=threaded_multihost
-django-robots>=1.0
+django-robots>=1.1
 unidecode
 django-countries>=3.3
 django-celery>=3.0.11

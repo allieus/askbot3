@@ -14,14 +14,18 @@ from askbot.utils.functions import split_list, mark_safe_lazy
 from askbot import const
 from longerusername import MAX_USERNAME_LENGTH
 import logging
-import urllib
+
+try:
+    from urllib.parse import unquote
+except ImportError:
+    from urllib import unquote
 
 
 def clean_next(next_url, default=None):
     if next_url is None or not next_url.startswith('/'):
         return default or reverse('index')
     if isinstance(next_url, six.string_types):
-        next_url = force_text(urllib.unquote(next_url), 'utf-8', 'replace')
+        next_url = force_text(unquote(next_url), 'utf-8', 'replace')
     return next_url.strip()
 
 def get_error_list(form_instance):
@@ -225,7 +229,7 @@ def moderated_email_validator(email):
             ):
             raise forms.ValidationError(error_msg)
     else:
-        from askbot.deps.django_authopenid.util import email_is_blacklisted
+        from askbot.utils.auth import email_is_blacklisted
         blacklisting_on = askbot_settings.BLACKLISTED_EMAIL_PATTERNS_MODE != 'disabled'
         if blacklisting_on and email_is_blacklisted(email):
             raise forms.ValidationError(error_msg)

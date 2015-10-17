@@ -16,6 +16,7 @@ from django.db import transaction
 from django.utils import translation
 from askbot import const, models
 from askbot.utils import console
+from askbot.utils.db import commit_manually
 from askbot.management.commands.rename_tags import get_admin
 
 def get_tags_by_ids(tag_ids):
@@ -84,7 +85,7 @@ rename_tags, but using tag id's
         ),
     )
 
-    #@transaction.commit_manually
+    #@commit_manually
     def handle(self, *args, **options):
         """command handle function. retrieves tags by id
         """

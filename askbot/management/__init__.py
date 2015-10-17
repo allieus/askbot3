@@ -4,6 +4,7 @@ from django.core.management.base import NoArgsCommand
 from django.db import transaction
 from askbot import signals
 from askbot.utils import console
+from askbot.utils.db import commit_manually
 
 class NoArgsJob(NoArgsCommand):
     """Base class for a job command -
@@ -45,7 +46,7 @@ class NoArgsJob(NoArgsCommand):
         for batch in self.batches:
             self.run_batch(batch)
 
-    @transaction.commit_manually
+    @commit_manually
     def run_batch(self, batch):
         """runs the single batch
         prints batch title

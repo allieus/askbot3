@@ -4,7 +4,6 @@ django-transaction-hooks
 -e git+https://github.com/allieus/coffin#egg=coffin
 Jinja2
 Lamson
-South>=0.7.1
 # akismet
 -e git+https://github.com/allieus/python-akismet#egg=akismet
 beautifulsoup4
@@ -19,7 +18,7 @@ django-countries>=3.3
 django-kombu>=0.9.4
 django-picklefield>=0.3.0
 django-recaptcha>=1.0.3
-django-robots>=1.0
+django-robots>=1.1
 # django-threaded-multihost
 -e hg+https://allieus@bitbucket.org/allieus/django-threaded-multihost#egg=threaded_multihost
 django-tinymce>=1.5.1b2

@@ -285,7 +285,7 @@ def get_thread_shared_users(request):
     data = {
         'users': users,
     }
-    html = render_into_skin_as_string('widgets/user_list.html', data, request)
+    html = render_into_skin_as_string('widgets/user_list.jinja', data, request)
     re_data = json.dumps({
         'html': html,
         'users_count': users.count(),
@@ -301,7 +301,7 @@ def get_thread_shared_groups(request):
     thread = models.Thread.objects.get(id=thread_id)
     groups = thread.get_groups_shared_with()
     data = {'groups': groups}
-    html = render_into_skin_as_string('widgets/groups_list.html', data, request)
+    html = render_into_skin_as_string('widgets/groups_list.jinja', data, request)
     re_data = json.dumps({
         'html': html,
         'groups_count': groups.count(),
@@ -314,7 +314,7 @@ def get_html_template(request):
     """returns rendered template"""
     template_name = request.REQUEST.get('template_name', None)
     allowed_templates = (
-        'widgets/tag_category_selector.html',
+        'widgets/tag_category_selector.jinja',
     )
     #have allow simple context for the templates
     if template_name not in allowed_templates:
@@ -489,7 +489,7 @@ def subscribe_for_tags(request):
             return HttpResponseRedirect(reverse('index'))
         else:
             data = {'tags': tag_names}
-            return render(request, 'subscribe_for_tags.html', data)
+            return render(request, 'subscribe_for_tags.jinja', data)
     else:
         all_tag_names = pure_tag_names + wildcards
         message = _('Please sign in to subscribe for: %(tags)s') \
@@ -504,7 +504,7 @@ def list_bulk_tag_subscription(request):
         raise Http404
     object_list = models.BulkTagSubscription.objects.all()
     data = {'object_list': object_list}
-    return render(request, 'tags/list_bulk_tag_subscription.html', data)
+    return render(request, 'tags/list_bulk_tag_subscription.jinja', data)
 
 @decorators.moderators_only
 def create_bulk_tag_subscription(request):
@@ -534,7 +534,7 @@ def create_bulk_tag_subscription(request):
     else:
         data['form'] = forms.BulkTagSubscriptionForm()
 
-    return render(request, 'tags/form_bulk_tag_subscription.html', data)
+    return render(request, 'tags/form_bulk_tag_subscription.jinja', data)
 
 @decorators.moderators_only
 def edit_bulk_tag_subscription(request, pk):
@@ -593,7 +593,7 @@ def edit_bulk_tag_subscription(request, pk):
                     'form': forms.BulkTagSubscriptionForm(initial=form_initial),
                    })
 
-    return render(request, 'tags/form_bulk_tag_subscription.html', data)
+    return render(request, 'tags/form_bulk_tag_subscription.jinja', data)
 
 @csrf.csrf_protect
 @decorators.ajax_only
@@ -708,7 +708,7 @@ def close(request, id):#close question
                 'question': question,
                 'form': form,
             }
-            return render(request, 'close.html', data)
+            return render(request, 'close.jinja', data)
     except exceptions.PermissionDenied as e:
         request.user.message_set.create(message = force_text(e))
         return HttpResponseRedirect(question.get_absolute_url())
@@ -737,7 +737,7 @@ def reopen(request, id):#re-open question
                 'closed_by_profile_url': closed_by_profile_url,
                 'closed_by_username': closed_by_username,
             }
-            return render(request, 'reopen.html', data)
+            return render(request, 'reopen.jinja', data)
 
     except exceptions.PermissionDenied as e:
         request.user.message_set.create(message = force_text(e))
@@ -843,7 +843,7 @@ def edit_group_membership(request):
             try:
                 group = models.Group.objects.get(name=group_name)
                 request.user.edit_group_membership(user, group, 'add')
-                template = get_template('widgets/group_snippet.html')
+                template = get_template('widgets/group_snippet.jinja')
                 return {
                     'name': group.name,
                     'description': getattr(group.description, 'text', ''),

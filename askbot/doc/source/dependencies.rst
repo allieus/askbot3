@@ -27,7 +27,6 @@ do not work please try to look up those packages or notify askbot maintainers at
 
 .. _django-1.1.2: http://www.djangoproject.com/download/1.1.2/tarball/
 .. _django-debug-toolbar: http://github.com/robhudson/django-debug-toolbar
-.. _South: http://www.aeracode.org/releases/south/
 .. _recaptcha-client: http://code.google.com/p/django-recaptcha/
 .. _markdown2: http://code.google.com/p/python-markdown2/
 .. _html5lib: http://code.google.com/p/html5lib/

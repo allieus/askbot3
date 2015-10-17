@@ -144,7 +144,7 @@ def questions(request, **kwargs):
         rss_query_dict.setlist('tags', search_state.tags)
         context_feed_url += '?' + rss_query_dict.urlencode()
 
-    reset_method_count = len(filter(None, [search_state.query, search_state.tags, meta_data.get('author_name', None)]))
+    reset_method_count = len(list(filter(None, [search_state.query, search_state.tags, meta_data.get('author_name', None)])))
 
     if request.is_ajax():
         q_count = paginator.count
@@ -154,7 +154,7 @@ def questions(request, **kwargs):
         question_counter = question_counter % {'q_num': humanize.intcomma(q_count),}
 
         if q_count > search_state.page_size:
-            paginator_tpl = get_template('main_page/paginator.html')
+            paginator_tpl = get_template('main_page/paginator.jinja')
             paginator_html = paginator_tpl.render(
                 RequestContext(
                     request, {
@@ -168,7 +168,7 @@ def questions(request, **kwargs):
         else:
             paginator_html = ''
 
-        questions_tpl = get_template('main_page/questions_loop.html')
+        questions_tpl = get_template('main_page/questions_loop.jinja')
         questions_html = questions_tpl.render(
             RequestContext(
                 request, {
@@ -196,7 +196,7 @@ def questions(request, **kwargs):
             'non_existing_tags': meta_data['non_existing_tags'],
         }
 
-        related_tags_tpl = get_template('widgets/related_tags.html')
+        related_tags_tpl = get_template('widgets/related_tags.jinja')
         related_tags_data = {
             'tags': related_tags,
             'tag_list_type': tag_list_type,
@@ -284,7 +284,7 @@ def questions(request, **kwargs):
                 ) % url
                 request.user.message_set.create(message=msg)
 
-        return render(request, 'main_page.html', template_data)
+        return render(request, 'main_page.jinja', template_data)
         #print(datetime.datetime.now() - before)
         #return res
 
@@ -296,7 +296,7 @@ def get_top_answers(request):
         owner = models.User.objects.get(id=form.cleaned_data['user_id'])
         paginator = owner.get_top_answers_paginator(visitor=request.user)
         answers = paginator.page(form.cleaned_data['page_number']).object_list
-        template = get_template('user_profile/user_answers_list.html')
+        template = get_template('user_profile/user_answers_list.jinja')
         answers_html = template.render({'top_answers': answers})
         json_string = json.dumps({
                             'html': answers_html,
@@ -372,13 +372,13 @@ def tags(request):#view showing a listing of available tags - plain list
     data.update(context.get_extra('ASKBOT_TAGS_PAGE_EXTRA_CONTEXT', request, data))
 
     if request.is_ajax():
-        template = get_template('tags/content.html')
+        template = get_template('tags/content.jinja')
         template_context = RequestContext(request, data)
         json_data = {'success': True, 'html': template.render(template_context)}
         json_string = json.dumps(json_data)
         return HttpResponse(json_string, content_type='application/json')
     else:
-        return render(request, 'tags.html', data)
+        return render(request, 'tags.jinja', data)
 
 @csrf.csrf_protect
 def question(request, id):#refactor - long subroutine. display question body, answers and comments
@@ -514,18 +514,6 @@ def question(request, id):#refactor - long subroutine. display question body, an
             return HttpResponseRedirect(reverse('question', kwargs = {'id': id}))
 
     thread = question_post.thread
-
-    if getattr(django_settings, 'ASKBOT_MULTILINGUAL', False):
-        request_lang = translation.get_language()
-        if request_lang != thread.language_code:
-            template = get_template('question/lang_switch_message.html')
-            message = template.render(Context({
-                'post_lang': get_language_name(thread.language_code),
-                'request_lang': get_language_name(request_lang),
-                'home_url': reverse_i18n(request_lang, 'questions')
-            }))
-            request.user.message_set.create(message=message)
-            return HttpResponseRedirect(thread.get_absolute_url())
 
     logging.debug('answer_sort_method=' + force_text(answer_sort_method))
 
@@ -668,7 +656,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
     extra = context.get_extra('ASKBOT_QUESTION_PAGE_EXTRA_CONTEXT', request, data)
     data.update(extra)
 
-    return render(request, 'question.html', data)
+    return render(request, 'question.jinja', data)
     #print(datetime.datetime.now() - before)
     #return res
 
@@ -699,7 +687,7 @@ def revisions(request, id, post_type = None):
         'post': post,
         'revisions': revisions,
     }
-    return render(request, 'revisions.html', data)
+    return render(request, 'revisions.jinja', data)
 
 @ajax_only
 @anonymous_forbidden
@@ -771,7 +759,7 @@ def get_perms_data(request):
         )
         data.append(setting)
 
-    template = get_template('widgets/user_perms.html')
+    template = get_template('widgets/user_perms.jinja')
     html = template.render({
         'user': request.user,
         'perms_data': data

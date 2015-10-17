@@ -637,21 +637,6 @@ urlpatterns = patterns('',
         views.readers.get_perms_data,
         name='get_perms_data'
     ),
-    service_url(
-        r'^start-sharing-twitter/$',
-        views.sharing.start_sharing_twitter,
-        name='start_sharing_twitter'
-    ),
-    service_url(
-        r'^save-twitter-access-token/$',
-        views.sharing.save_twitter_access_token,
-        name='save_twitter_access_token'
-    ),
-    service_url(#ajax post only
-        r'^change-social-sharing-mode/$',
-        views.sharing.change_social_sharing_mode,
-        name='change_social_sharing_mode'
-    ),
     #upload url is ajax only
     service_url(
         r'^%s$' % pgettext('urls', 'upload/'),
@@ -681,14 +666,6 @@ urlpatterns = patterns('',
     service_url('^api/v1/questions/$', views.api_v1.questions, name='api_v1_questions'),
     service_url('^api/v1/questions/(?P<question_id>\d+)/$', views.api_v1.question, name='api_v1_question'),
 )
-
-if 'askbot.deps.django_authopenid' in settings.INSTALLED_APPS:
-    urlpatterns += (
-        service_url(
-            r'^%s' % pgettext('urls', 'account/'),
-            include('askbot.deps.django_authopenid.urls')
-        ),
-    )
 
 if 'avatar' in settings.INSTALLED_APPS:
     urlpatterns += (

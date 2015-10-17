@@ -2,12 +2,13 @@
 from askbot import const
 from askbot.models import User
 from askbot.utils.console import ProgressBar
+from askbot.utils.db import commit_manually
 from django.core.management.base import NoArgsCommand
 from django.db import transaction
 
-class Command(NoArgsCommand):
 
-    @transaction.commit_manually
+class Command(NoArgsCommand):
+    @commit_manually
     def handle_noargs(self, *args, **kwargs):
         users = User.objects.all()
         count = users.count()

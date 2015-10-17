@@ -160,9 +160,7 @@ class RssLastestQuestionsFeed(Feed):
 
         #initial filtering
         filters = {'deleted': False}
-        if getattr(django_settings, 'ASKBOT_MULTILINGUAL', False):
-            filters['language_code'] = get_language()
-            
+
         qs = Post.objects.get_questions().filter(**filters)
 
         #get search string and tags from GET

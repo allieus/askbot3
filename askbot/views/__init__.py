@@ -7,7 +7,6 @@ from askbot.views import emails
 from askbot.views import meta
 from askbot.views import moderation
 from askbot.views import readers
-from askbot.views import sharing
 from askbot.views import users
 from askbot.views import widgets
 from askbot.views import writers
