@@ -144,6 +144,7 @@ def load_skins(language_code):
         skins[skin_code].set_language(language_code)
     return skins
 
+
 def get_app_dir_env(language_code):
     env = AppDirectoryEnvironment(
         extensions=['jinja2.ext.i18n'],
@@ -154,6 +155,7 @@ def get_app_dir_env(language_code):
 
 LOADERS = django_settings.TEMPLATE_LOADERS
 SKINS = dict()
+
 
 if 'askbot.skins.loaders.Loader' in LOADERS:
     if HAS_ASKBOT_LOCALE_MIDDLEWARE:

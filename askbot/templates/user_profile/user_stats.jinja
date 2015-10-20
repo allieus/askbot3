@@ -1,10 +1,14 @@
 {% extends "user_profile/user.jinja" %}
-{% import "macros.jinja" as macros %}
-{% import "user_profile/macros.jinja" as user_profile_macros %}
+
+{% import "macros.jinja" as macros with context %}
+
+{% import "user_profile/macros.jinja" as user_profile_macros with context %}
+
 <!-- user_stats.jinja -->
 {% block profilesection %}
     {% trans %}overview{% endtrans %}
 {% endblock %}
+
 {% block usercontent %}
     {% include "user_profile/user_info.jinja" %}
     <a name="questions"></a>
@@ -97,6 +101,7 @@
     </div>
     {% endif %}
 {% endblock %}
+
 {% block endjs %}
     {{ super() }}
     <script type="text/javascript">

@@ -1,15 +1,9 @@
-import os
-try:
-    from urllib.parse import urlparse, urlunparse, ParseResult
-except ImportError:
-    from urlparse import urlparse, urlunparse, ParseResult
 from django.core.urlresolvers import reverse
 from django.conf import settings
-try:
-    from django.conf.urls import url
-except ImportError:
-    from django.conf.urls.defaults import url
+from django.conf.urls import url
 from django.utils import translation
+from django.utils.six.moves.urllib.parse import urlparse, urlunparse, ParseResult
+
 
 def reverse_i18n(lang, *args, **kwargs):
     """reverses url in requested language"""
@@ -33,6 +27,7 @@ def service_url(*args, **kwargs):
     new_args[0] = pattern
     return url(*new_args, **kwargs)
 
+
 def strip_path(url):
     """srips path, params and hash fragments of the url"""
     purl = urlparse(url)
@@ -44,6 +39,7 @@ def strip_path(url):
         )
     )
 
+
 def append_trailing_slash(urlpath):
     """if path is empty - returns slash
     if not and path does not end with the slash
@@ -54,6 +50,7 @@ def append_trailing_slash(urlpath):
     elif not urlpath.endswith('/'):
         return urlpath + '/'
     return urlpath
+
 
 def urls_equal(url1, url2, ignore_trailing_slash=False):
     """True, if urls are equal"""
@@ -76,11 +73,14 @@ def urls_equal(url1, url2, ignore_trailing_slash=False):
     # test remaining items in the parsed url
     return purl1[3:] == purl2[3:]
 
+
 def get_login_url():
     return settings.LOGIN_URL
 
+
 def get_logout_url():
     return settings.LOGOUT_URL
+
 
 def get_logout_redirect_url():
     if hasattr(settings, 'LOGOUT_REDIRECT_URL'):

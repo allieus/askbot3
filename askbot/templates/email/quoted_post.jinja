@@ -1,9 +1,4 @@
-{% from "email/macros.jinja" import quoted_post %}
-{{ quoted_post(
-        post=post,
-        quote_level=quote_level,
-        recipient=recipient,
-        is_leaf_post=is_leaf_post,
-        format=format
-    )
-}}
+{% from "email/macros.jinja" import quoted_post with context %}
+
+{{ quoted_post(post=post, quote_level=quote_level, recipient=recipient, is_leaf_post=is_leaf_post, format=format) }}
+

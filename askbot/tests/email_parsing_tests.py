@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from django.conf import settings as django_settings
-from django.template import Context
-from django.template.loader import get_template
 from askbot import mail
 from askbot.mail.messages import WelcomeEmailRespondable
-from askbot import models
 from askbot.tests import utils
-from askbot.utils.html import get_text_from_html
+
 
 class EmailParsingTests(utils.AskbotTestCase):
 

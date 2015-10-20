@@ -1,5 +1,7 @@
 {% extends "email/base_mail.jinja" %}
-{% import "email/macros.jinja" as macros %}
+
+{% import "email/macros.jinja" as macros with context %}
+
 {# parameters:
     * min_upvotes
     * username
@@ -8,7 +10,8 @@
 #}
 {% block headline %}
     {% trans user=username|escape %}{{ username }}, your content could not be posted by email just yet.{% endtrans %}
-{%endblock%}
+{% endblock %}
+
 {% block content %}
     <p>
     {% trans %}To make posts by email, you need to receive about {{ min_upvotes }} upvotes.{% endtrans %}<br/>
@@ -18,3 +21,4 @@
 {% block footer %}
     {% include "email/footer.jinja" %}
 {% endblock %}
+

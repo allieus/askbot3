@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 import copy
 import datetime
 import json
-from operator import attrgetter
 import time
 from askbot.search.state_manager import SearchState
 from django.conf import settings as django_settings
@@ -10,10 +9,7 @@ from django.contrib.auth.models import User
 from django.core import cache, urlresolvers
 from django.core.cache.backends.dummy import DummyCache
 from django.core.cache.backends.locmem import LocMemCache
-
-from django.core.exceptions import ValidationError
-from django.template.loader import get_template
-from django.template import Context
+from django.template.loader import render_to_string
 from askbot.tests.utils import AskbotTestCase
 from askbot.models import Post
 from askbot.models import PostRevision
@@ -331,9 +327,9 @@ class ThreadRenderLowLevelCachingTests(AskbotTestCase):
             'thread': thread,
             'question': thread._question_post(),
             'search_state': ss,
-            'visitor': None
+            'visitor': None,
         }
-        proper_html = get_template('widgets/question_summary.html').render(Context(context))
+        proper_html = render_to_string('widgets/question_summary.html', context)
         self.assertEqual(test_html, proper_html)
 
         # Make double-check that all tags are included
@@ -359,7 +355,7 @@ class ThreadRenderLowLevelCachingTests(AskbotTestCase):
         ss = ss.add_tag('mini-mini')
         context['search_state'] = ss
         test_html = thread.get_summary_html(search_state=ss)
-        proper_html = get_template('widgets/question_summary.html').render(Context(context))
+        proper_html = render_to_string('widgets/question_summary.html', context)
 
         self.assertEqual(test_html, proper_html)
 
@@ -378,18 +374,17 @@ class ThreadRenderLowLevelCachingTests(AskbotTestCase):
         self.assertIsNotNone(thread.get_cached_summary_html())
 
         ###
-        cache.cache.delete(key) # let's start over
+        cache.cache.delete(key)  # let's start over
 
         self.assertFalse(thread.summary_html_cached())
         self.assertIsNone(thread.get_cached_summary_html())
 
-        context = {
+        html = render_to_string('widgets/question_summary.html', {
             'thread': thread,
             'question': self.q,
             'search_state': DummySearchState(),
             'visitor': None
-        }
-        html = get_template('widgets/question_summary.html').render(Context(context))
+        })
         filled_html = html.replace('<<<tag1>>>', SearchState.get_empty().add_tag('tag1').full_url())\
                           .replace('<<<tag2>>>', SearchState.get_empty().add_tag('tag2').full_url())\
                           .replace('<<<tag3>>>', SearchState.get_empty().add_tag('tag3').full_url())
@@ -451,15 +446,12 @@ class ThreadRenderCacheUpdateTests(AskbotTestCase):
         cache.cache = self.old_cache  # Restore caching
 
     def _html_for_question(self, q):
-        context = {
+        return render_to_string('widgets/question_summary.html', {
             'thread': q.thread,
             'question': q,
             'search_state': DummySearchState(),
-            'visitor': None
-        }
-        return get_template(
-            'widgets/question_summary.html'
-        ).render(Context(context))
+            'visitor': None,
+        })
 
     def test_post_question(self):
         self.assertEqual(0, Post.objects.count())

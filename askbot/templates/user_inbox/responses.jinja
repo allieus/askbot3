@@ -1,8 +1,11 @@
 {% extends "user_inbox/base.jinja" %}
-{% import "macros.jinja" as macros %}
+
+{% import "macros.jinja" as macros with context %}
+
 {% block profilesection %}
     {% trans %}notifications{% endtrans %}
 {% endblock %}
+
 {% block inbox_content %}
     {% if messages %}
     <div class="js-manage-messages">
@@ -33,3 +36,4 @@
     {% endfor %}
     </div>
 {% endblock %}
+

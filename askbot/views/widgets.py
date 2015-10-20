@@ -8,13 +8,12 @@ from django.contrib.auth.decorators import login_required
 from askbot.conf import settings as askbot_settings
 from askbot.utils.decorators import moderators_only
 from askbot import models
-from askbot.models.widgets import AskWidget, QuestionWidget
 from askbot import forms
 
 
 WIDGETS_MODELS = {
-    'ask': AskWidget,
-    'question': QuestionWidget,
+    'ask': models.AskWidget,
+    'question': models.QuestionWidget,
 }
 
 WIDGETS_FORMS = {
@@ -42,8 +41,8 @@ def _get_form(key):
 @moderators_only
 def widgets(request):
     return render(request, 'embed/widgets.jinja', {
-        'ask_widgets': AskWidget.objects.all().count(),
-        'question_widgets': QuestionWidget.objects.all().count(),
+        'ask_widgets': models.AskWidget.objects.all().count(),
+        'question_widgets': models.QuestionWidget.objects.all().count(),
         'page_class': 'widgets'
     })
 
@@ -57,7 +56,7 @@ def ask_widget(request, widget_id):
         request.session['widget_question_url'] = question.get_absolute_url()
         return question
 
-    widget = get_object_or_404(AskWidget, id=widget_id)
+    widget = get_object_or_404(models.AskWidget, id=widget_id)
 
     if request.method == "POST":
 
@@ -236,7 +235,7 @@ def delete_widget(request, model, widget_id):
 
 
 def render_ask_widget_js(request, widget_id):
-    widget = get_object_or_404(AskWidget, pk=widget_id)
+    widget = get_object_or_404(models.AskWidget, pk=widget_id)
     variable_name = "AskbotAskWidget%d" % widget.id
     return render(request, 'embed/askbot_widget.js', {
         'widget': widget,
@@ -246,7 +245,7 @@ def render_ask_widget_js(request, widget_id):
 
 
 def render_ask_widget_css(request, widget_id):
-    widget = get_object_or_404(AskWidget, pk=widget_id)
+    widget = get_object_or_404(models.AskWidget, pk=widget_id)
     variable_name = "AskbotAskWidget%d" % widget.id
     return render(request, 'embed/askbot_widget.css', {
         'widget': widget,
@@ -260,7 +259,7 @@ def question_widget(request, widget_id):
     """Returns the first x questions based on certain tags.
     @returns template with those questions listed."""
     # make sure this is a GET request with the correct parameters.
-    widget = get_object_or_404(QuestionWidget, pk=widget_id)
+    widget = get_object_or_404(models.QuestionWidget, pk=widget_id)
 
     if request.method != 'GET':
         raise Http404

@@ -8,15 +8,13 @@ the lookup resolution process for templates and media works as follows:
 from __future__ import print_function
 import os
 import logging
-try:
-    from urllib.parse import unquote
-except ImportError:
-    from urllib import unquote
 from collections import OrderedDict
 import askbot
 from askbot.utils import hasher
 from django.conf import settings as django_settings
 from django.utils.encoding import force_text
+from django.utils.six.moves.urllib.parse import unquote
+
 
 class MediaNotFound(Exception):
     """raised when media file is not found"""

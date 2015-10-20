@@ -1,6 +1,7 @@
 """Forms, custom form fields and related utility functions used in AskBot"""
 from __future__ import unicode_literals
 import re
+from collections import OrderedDict
 import datetime
 from django import forms
 from askbot import const
@@ -10,7 +11,6 @@ from django.core.exceptions import PermissionDenied
 from django.forms.utils import ErrorList
 from django.utils import six
 from django.utils.html import strip_tags
-from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ungettext_lazy, string_concat
 from django.utils.translation import get_language
@@ -1577,7 +1577,7 @@ class EditUserEmailFeedsForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(EditUserEmailFeedsForm, self).__init__(*args, **kwargs)
-        self.fields = SortedDict((
+        self.fields = OrderedDict((
             ('asked_by_me', EmailFeedSettingField(label=askbot_settings.WORDS_ASKED_BY_ME)),
             ('answered_by_me', EmailFeedSettingField(label=askbot_settings.WORDS_ANSWERED_BY_ME)),
             ('individually_selected', EmailFeedSettingField(label=_('Individually selected'))),
@@ -1587,7 +1587,7 @@ class EditUserEmailFeedsForm(forms.Form):
 
     def set_initial_values(self, user=None):
         from askbot import models
-        KEY_MAP = dict([(v, k) for k, v in self.FORM_TO_MODEL_MAP.iteritems()])
+        KEY_MAP = dict([(v, k) for k, v in self.FORM_TO_MODEL_MAP.items()])
         if user is not None:
             settings = models.EmailFeedSetting.objects.filter(subscriber=user)
             initial_values = {}

@@ -1,8 +1,10 @@
 {# TODO - maybe disable navigation from ignored tags here when "hide" is on - with js? #}
-{% import "macros.jinja" as macros %}
+
+{% import "macros.jinja" as macros with context %}
+
 <div id="tagSelector" class="box">
     <h2>{% trans %}Interesting tags{% endtrans %}</h2>
-    {{ 
+    {{
         macros.tag_list_widget(
             interesting_tag_names,
             deletable = True,
@@ -28,7 +30,7 @@
             search_state = search_state
         )
     }}
-    {# TODO: add this via javascript 
+    {# TODO: add this via javascript
         "remove '%(tag_name)s' from the list of ignored tags"|
         format(tag_name = tag_name)
     #}
@@ -46,10 +48,9 @@
                 search_state = search_state
             )
         }}
-        {# TODO: add this via javascript 
+        {# TODO: add this via javascript
             "remove '%(tag_name)s' from the list of ignored tags"|
-            format(tag_name = tag_name)
-        #}
+            format(tag_name = tag_name) #}
         <div class="clearfix"></div>
         <div class="inputs">
             <input id="subscribedTagInput" autocomplete="off" type="text"/>
@@ -79,10 +80,7 @@
             {% if request.user.is_authenticated() %}
             <p>
                 <a 
-                    href="{% 
-                        url user_profile 
-                        request.user.id, request.user.username|slugify 
-                    %}?sort=email_subscriptions"
+                    href="{{ url("user_profile", request.user.id, request.user.username|slugify) }}?sort=email_subscriptions"
                 >{% trans %}Change frequency of emails{% endtrans %}</a>
             </p>
             {% endif %}

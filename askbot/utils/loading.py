@@ -2,6 +2,7 @@
 from django.conf import settings as django_settings
 from django.utils.module_loading import import_string
 
+
 def load_module(mod_path):
     """an equivalent of:
     from some.where import module

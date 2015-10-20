@@ -1,4 +1,5 @@
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
+
 <div id="group-wiki-{{group.id}}" class="box group-wiki">
     <h2>{% trans %}Group info{% endtrans %}</h2>
     <img class="group-logo"

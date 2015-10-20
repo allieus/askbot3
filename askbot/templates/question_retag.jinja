@@ -1,5 +1,7 @@
 {% extends "two_column_body.jinja" %}
-<!-- question_retag.jinja -->
+
+{% import "macros.jinja" as macros with context %}
+
 {% block title %}{% filter trim %}{{ settings.WORDS_RETAG_QUESTION|escape }}{% endfilter %}{% endblock %}
 {% block content %}
 <h1>{{ settings.WORDS_RETAG_QUESTION|escape }} [<a href="{{ question.get_absolute_url() }}">{% trans %}back{% endtrans %}</a>]</h1>
@@ -46,14 +48,10 @@
     {% endcompress %}
     <script type="text/javascript">
         $(document).ready(function(){
-            {% import "macros.jinja" as macros %}
-            {{ macros.tag_autocomplete_js(id = '#id_tags') }}
+            {{ macros.tag_autocomplete_js(id='#id_tags') }}
             $('fmretag').validate({
                rules: {
-                   tags: {
-                       required: true,
-                       maxength: 105
-                   }
+                   tags: { required: true, maxength: 105 }
                },
                messages: {
                    tags: {
@@ -67,4 +65,3 @@
            });
     </script>
 {% endblock %}
-<!-- end question_retag.jinja -->

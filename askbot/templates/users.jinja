@@ -3,12 +3,16 @@
 {% else %}
     {% extends "one_column_body.jinja" %}
 {% endif %}
-{% import "macros.jinja" as macros %}
+
+{% import "macros.jinja" as macros with context %}
+
 <!-- users.jinja -->
 {% block title %}{% filter trim %}{% trans %}Users{% endtrans %}{% endfilter %}{% endblock %}
+
 {% block forestyle %}
     <link rel="stylesheet" type="text/css" href="{{ '/wmd/wmd.css'|media }}" />
 {% endblock %}
+
 {% block content %}
 <div id="content-header">
     <h1 class="section-title">
@@ -61,24 +65,26 @@
         </div>
     </div>
     <div class="clearfix"></div>
-</div>
-{% if search_query %}
-    <p>{% trans search_query=search_query|escape %}users matching query {{search_query}}:{% endtrans %}</p>
-{% endif %}
-{% if not users.object_list %}
-    <p><span>{% trans %}No users found.{% endtrans %}</span></p>
-{% endif %}
-{{ macros.user_list(users.object_list) }}
-<div class="pager">
-    {{ macros.paginator(paginator_context) }}
-</div>
+    </div>
+    {% if search_query %}
+        <p>{% trans search_query=search_query|escape %}users matching query {{search_query}}:{% endtrans %}</p>
+    {% endif %}
+    {% if not users.object_list %}
+        <p><span>{% trans %}No users found.{% endtrans %}</span></p>
+    {% endif %}
+    {{ macros.user_list(users.object_list) }}
+    <div class="pager">
+        {{ macros.paginator(paginator_context) }}
+    </div>
 {% endblock %}
+
 {% block sidebar %}
     {% if group %}
         {# this widget takes variables: group, user_can_join_group, user_is_group_member #}
         {% include "widgets/group_info.jinja" %}
     {% endif %}
 {% endblock %}
+
 {% block endjs %}
     <script type="text/javascript">
         var Attacklab = Attacklab || {};

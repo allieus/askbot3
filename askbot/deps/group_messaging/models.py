@@ -2,10 +2,6 @@
 """
 import copy
 import datetime
-try:
-    from urllib.parse import urlencode
-except ImportError:
-    from urllib import urlencode
 from importlib import import_module
 from askbot.mail import send_mail  # TODO: remove dependency?
 from askbot.mail.messages import GroupMessagingEmailAlert
@@ -13,6 +9,8 @@ from django.conf import settings as django_settings
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Q, Manager, Model
+from django.utils.six.moves.urllib.parse import urlencode
 from django.utils.translation import ugettext as _
 from group_messaging.signals import response_created
 from group_messaging.signals import thread_created
@@ -53,12 +51,6 @@ def get_personal_group(user):
     return get_personal_group_by_user_id(user.id)
 
 
-def get_unread_inbox_counter(user):
-    """returns unread inbox counter for the user"""
-    counter, junk = UnreadInboxCounter.objects.get_or_create(user=user)
-    return counter
-
-
 def create_personal_group(user):
     """creates a personal group for the user"""
     group = Group(name=GROUP_NAME_TPL % user.id)
@@ -66,7 +58,7 @@ def create_personal_group(user):
     return group
 
 
-class LastVisitTime(models.Model):
+class LastVisitTime(Model):
     """just remembers when a user has
     last visited a given thread
     """
@@ -76,22 +68,21 @@ class LastVisitTime(models.Model):
 
     class Meta:
         unique_together = ('user', 'message')
+        db_table = 'group_messaging_lastvisittime'
 
 
-class SenderListManager(models.Manager):
+class SenderListManager(Manager):
     """model manager for the :class:`SenderList`"""
 
     def get_senders_for_user(self, user=None):
         """returns query set of :class:`User`"""
         user_groups = user.groups.all()
         lists = self.filter(recipient__in=user_groups)
-        user_ids = lists.values_list(
-                        'senders__id', flat=True
-                    ).distinct()
+        user_ids = lists.values_list('senders__id', flat=True).distinct()
         return User.objects.filter(id__in=user_ids)
 
 
-class SenderList(models.Model):
+class SenderList(Model):
     """a model to store denormalized data
     about who sends messages to any given person
     sender list is populated automatically
@@ -101,8 +92,11 @@ class SenderList(models.Model):
     senders = models.ManyToManyField(User)
     objects = SenderListManager()
 
+    class Meta:
+        db_table = 'group_messaging_senderlist'
 
-class MessageMemo(models.Model):
+
+class MessageMemo(Model):
     """A bridge between message recipients and messages
     these records are only created when user sees a message.
     The idea is that using groups as recipients, we can send
@@ -122,15 +116,14 @@ class MessageMemo(models.Model):
     )
     user = models.ForeignKey(User)
     message = models.ForeignKey('Message', related_name='memos')
-    status = models.SmallIntegerField(
-            choices=STATUS_CHOICES, default=SEEN
-        )
+    status = models.SmallIntegerField(choices=STATUS_CHOICES, default=SEEN)
 
     class Meta:
         unique_together = ('user', 'message')
+        db_table = 'group_messaging_messagememo'
 
 
-class MessageManager(models.Manager):
+class MessageManager(Manager):
     """model manager for the :class:`Message`"""
 
     def get_sent_threads(self, sender=None):
@@ -138,18 +131,14 @@ class MessageManager(models.Manager):
         this function does not deal with deleted=True
         """
         responses = self.filter(sender=sender)
-        responded_to = models.Q(descendants__in=responses, root=None)
-        seen_filter = models.Q(
+        responded_to = Q(descendants__in=responses, root=None)
+        seen_filter = Q(
             memos__status=MessageMemo.SEEN,
             memos__user=sender
         )
         seen_responses = self.filter(responded_to & seen_filter)
-        unseen_responses = self.filter(responded_to & ~models.Q(memos__user=sender))
-        return (
-            self.get_threads(sender=sender) \
-            | seen_responses.distinct() \
-            | unseen_responses.distinct()
-        ).distinct()
+        unseen_responses = self.filter(responded_to & ~Q(memos__user=sender))
+        return (self.get_threads(sender=sender) | seen_responses.distinct() | unseen_responses.distinct()).distinct()
 
     def get_threads(self, recipient=None, sender=None, deleted=False):
         """returns query set of first messages in conversations,
@@ -170,30 +159,24 @@ class MessageManager(models.Manager):
             # sender but no recipient in the args - we need "sent" origin threads
             recipient = sender
 
-        user_thread_filter = models.Q(**filter_kwargs)
+        user_thread_filter = Q(**filter_kwargs)
 
         message_filter = user_thread_filter
         if sender:
-            message_filter = message_filter & models.Q(sender=sender)
+            message_filter = message_filter & Q(sender=sender)
 
         if deleted:
-            deleted_filter = models.Q(
-                memos__status=MessageMemo.ARCHIVED,
-                memos__user=recipient
-            )
+            deleted_filter = Q(memos__status=MessageMemo.ARCHIVED, memos__user=recipient)
             return self.filter(message_filter & deleted_filter)
         else:
             # rather a tricky query (may need to change the idea to get rid of this)
             # select threads that have a memo for the user, but the memo is not ARCHIVED
             # in addition, select threads that have zero memos for the user
-            marked_as_non_deleted_filter = models.Q(
-                                            memos__status=MessageMemo.SEEN,
-                                            memos__user=recipient
-                                        )
+            marked_as_non_deleted_filter = Q(memos__status=MessageMemo.SEEN, memos__user=recipient)
             # part1 - marked as non-archived
             part1 = self.filter(message_filter & marked_as_non_deleted_filter)
             # part2 - messages for the user without an attached memo
-            part2 = self.filter(message_filter & ~models.Q(memos__user=recipient))
+            part2 = self.filter(message_filter & ~Q(memos__user=recipient))
             # strange that (part1 | part2).distinct() sometimes gives wrong result
             threads = list(set(part1) | set(part2))
             thread_ids = [thread.id for thread in threads]
@@ -228,11 +211,10 @@ class MessageManager(models.Manager):
     def create_thread(self, sender=None, recipients=None, text=None):
         """creates a stored message and adds recipients"""
         message = self.create(
-                    message_type=Message.STORED,
-                    sender=sender,
-                    senders_info=sender.username,
-                    text=text,
-                )
+            message_type=Message.STORED,
+            sender=sender,
+            senders_info=sender.username,
+            text=text)
         now = datetime.datetime.now()
         LastVisitTime.objects.create(message=message, user=sender, at=now)
         names = get_recipient_names(recipients)
@@ -245,11 +227,10 @@ class MessageManager(models.Manager):
 
     def create_response(self, sender=None, text=None, parent=None):
         message = self.create(
-                    parent=parent,
-                    message_type=Message.STORED,
-                    sender=sender,
-                    text=text,
-                )
+            parent=parent,
+            message_type=Message.STORED,
+            sender=sender,
+            text=text)
         # recipients are parent's recipients + sender
         # creator of response gets memo in the "read" status
         recipients = set(parent.recipients.all())
@@ -274,7 +255,7 @@ class MessageManager(models.Manager):
         return message
 
 
-class Message(models.Model):
+class Message(Model):
     """the message model allowing users to send
     messages to other users and groups, via
     personal groups.
@@ -288,45 +269,27 @@ class Message(models.Model):
         (TEMPORARY, 'will be shown until certain time')
     )
 
-    message_type = models.SmallIntegerField(
-        choices=MESSAGE_TYPE_CHOICES,
-        default=STORED,
-    )
-
+    message_type = models.SmallIntegerField(choices=MESSAGE_TYPE_CHOICES, default=STORED)
     sender = models.ForeignKey(User, related_name='group_messaging_sent_messages')
 
     # comma-separated list of a few names
     senders_info = models.TextField(default='')
 
     recipients = models.ManyToManyField(Group)
-
-    root = models.ForeignKey(
-        'self', null=True,
-        blank=True, related_name='descendants'
-    )
-
-    parent = models.ForeignKey(
-        'self', null=True,
-        blank=True, related_name='children'
-    )
-
+    root = models.ForeignKey('self', null=True, blank=True, related_name='descendants')
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
     headline = models.CharField(max_length=MAX_HEADLINE_LENGTH)
-
-    text = models.TextField(
-        null=True, blank=True,
-        help_text='source text for the message, e.g. in markdown format'
-    )
-
-    html = models.TextField(
-        null=True, blank=True,
-        help_text='rendered html of the message'
-    )
+    text = models.TextField(null=True, blank=True, help_text='source text for the message, e.g. in markdown format')
+    html = models.TextField(null=True, blank=True, help_text='rendered html of the message')
 
     sent_at = models.DateTimeField(auto_now_add=True)
     last_active_at = models.DateTimeField(auto_now_add=True)
     active_until = models.DateTimeField(blank=True, null=True)
 
     objects = MessageManager()
+
+    class Meta:
+        db_table = 'group_messaging_message'
 
     def add_recipient_names_to_senders_info(self, recipient_groups):
         names = get_recipient_names(recipient_groups)
@@ -339,7 +302,7 @@ class Message(models.Model):
         and updates the sender lists for all recipients
         todo: sender lists may be updated in a lazy way - per user
         """
-        self._cached_recipients_users = None # invalidate internal cache
+        self._cached_recipients_users = None  # invalidate internal cache
         self.recipients.add(*recipients)
         for recipient in recipients:
             sender_list, created = SenderList.objects.get_or_create(recipient=recipient)
@@ -386,14 +349,9 @@ class Message(models.Model):
             return self._cached_recipients_users
 
         groups = self.recipients.all()
-        recipients_users = User.objects.filter(
-                                    groups__in=groups
-                                ).exclude(
-                                    id=self.sender.id
-                                ).distinct()
+        recipients_users = User.objects.filter(groups__in=groups).exclude(id=self.sender.id).distinct()
         self._cached_recipients_users = recipients_users
         return recipients_users
-
 
     def get_timeline(self):
         """returns ordered query set of messages in the thread
@@ -402,15 +360,9 @@ class Message(models.Model):
         root_qs = Message.objects.filter(id=root.id)
         return (root.descendants.all() | root_qs).order_by('-sent_at')
 
-
     def is_archived_or_deleted(self, user):
-        memos = MessageMemo.objects.filter(
-                                    user=user,
-                                    message=self,
-                                    status__gt=MessageMemo.SEEN
-                                )
+        memos = MessageMemo.objects.filter(user=user, message=self, status__gt=MessageMemo.SEEN)
         return bool(memos.count())
-
 
     def is_unread_by_user(self, user, ignore_message=None):
         """True, if there is no "last visit timestamp"
@@ -424,24 +376,23 @@ class Message(models.Model):
         else:
             # see if there are new messages after the last visit
             last_visit_timestamp = timer.at
-            descendants_filter = models.Q(sent_at__gt=last_visit_timestamp)
+            descendants_filter = Q(sent_at__gt=last_visit_timestamp)
             if ignore_message:
                 # ignore message used for the newly posted message
                 # in the same request cycle. The idea is that
                 # this way we avoid multiple-counting of the unread
                 # threads
-                descendants_filter &= ~models.Q(id=ignore_message.id)
+                descendants_filter &= ~Q(id=ignore_message.id)
             follow_up_messages = self.descendants.filter(descendants_filter)
             # unread, if we have new followup messages
             return bool(follow_up_messages.count())
-
 
     def send_email_alert(self):
         """signal handler for the message post-save"""
         root_message = self.get_root_message()
         data = {
             'messages': self.get_timeline(),
-            'message': self
+            'message': self,
         }
         for user in self.get_recipients_users():
             # todo change url scheme so that all users have the same
@@ -454,18 +405,10 @@ class Message(models.Model):
             email = GroupMessagingEmailAlert(data)
             body_text = email.render_body()
             body_text = body_text.replace('THREAD_URL_HOLE', thread_url)
-            send_mail(
-                email.render_subject(),
-                body_text,
-                django_settings.DEFAULT_FROM_EMAIL,
-                [user.email,],
-            )
-
+            send_mail(email.render_subject(), body_text, django_settings.DEFAULT_FROM_EMAIL, [user.email])
 
     def update_senders_info(self):
-        """update the contributors info,
-        meant to be used on a root message only
-        """
+        """update the contributors info, meant to be used on a root message only"""
         senders_names = self.senders_info.split(',')
 
         if self.sender.username in senders_names:
@@ -499,12 +442,12 @@ class Message(models.Model):
         is_first_time = self.set_status_for_user(MessageMemo.SEEN, user)
         root = self.get_root_message()
         if is_first_time or root.is_unread_by_user(user):
-            inbox_counter = get_unread_inbox_counter(user)
+            inbox_counter = UnreadInboxCounter.get_for_user(user)
             inbox_counter.decrement()
             inbox_counter.save()
 
 
-class UnreadInboxCounter(models.Model):
+class UnreadInboxCounter(Model):
     """Stores number of unread messages
     per recipient group.
 
@@ -517,6 +460,9 @@ class UnreadInboxCounter(models.Model):
     """
     user = models.ForeignKey(User)
     count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'group_messaging_unreadinboxcounter'
 
     def decrement(self):
         """decrements count if > 1
@@ -539,13 +485,19 @@ class UnreadInboxCounter(models.Model):
             if thread.is_unread_by_user(self.user):
                 self.increment()
 
+    @classmethod
+    def get_for_user(cls, user):
+        """returns unread inbox counter for the user"""
+        instance, junk = cls.objects.get_or_create(user=user)
+        return instance
+
 
 def increment_unread_inbox_counters(sender, message, **kwargs):
     root_message = message.get_root_message()
     for user in message.get_recipients_users():
-        if message == root_message \
-            or not root_message.is_unread_by_user(user, ignore_message=message) \
-            or root_message.is_archived_or_deleted(user):
+        if message == root_message or \
+                not root_message.is_unread_by_user(user, ignore_message=message) or \
+                root_message.is_archived_or_deleted(user):
 
             # 1) if message is root - we have new thread,
             # so it's safe to increment the inbox counter
@@ -555,7 +507,7 @@ def increment_unread_inbox_counters(sender, message, **kwargs):
             # excluding the current message, which is obviously unread
             # 3) if root message is deleted or archived then increment
 
-            counter = get_unread_inbox_counter(user)
+            counter = UnreadInboxCounter.get_for_user(user)
             counter.increment()
             counter.save()
 

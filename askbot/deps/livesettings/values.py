@@ -82,6 +82,7 @@ class SuperGroup(object):
 
 BASE_SUPER_GROUP = SuperGroup(ugettext_lazy('Main'))
 
+
 class ConfigurationGroup(SortedDotDict):
     """A simple wrapper for a group of configuration values"""
     def __init__(self, key, name, *args, **kwargs):
@@ -112,6 +113,9 @@ class ConfigurationGroup(SortedDotDict):
 
         super(ConfigurationGroup, self).__init__(*args, **kwargs)
 
+    def __lt__(self, other):
+        return (self.ordering, self.name) < (other.ordering, other.name)
+
     def __cmp__(self, other):
         return cmp((self.ordering, self.name), (other.ordering, other.name))
 
@@ -139,11 +143,7 @@ class ConfigurationGroup(SortedDotDict):
         vals = super(ConfigurationGroup, self).values()
         return [v for v in vals if v.enabled()]
 
-BASE_GROUP = ConfigurationGroup(
-                            'BASE',
-                            ugettext_lazy('Base Settings'),
-                            ordering=0
-                        )
+BASE_GROUP = ConfigurationGroup('BASE', ugettext_lazy('Base Settings'), ordering=0)
 
 
 @python_2_unicode_compatible
@@ -202,6 +202,10 @@ class Value(object):
 
         self.creation_counter = Value.creation_counter
         Value.creation_counter += 1
+
+    def __lt__(self, other):
+        return (self.ordering, self.description, self.creation_counter) < \
+            (other.ordering, other.description, other.creation_counter)
 
     def __cmp__(self, other):
         return cmp((self.ordering, self.description, self.creation_counter), (other.ordering, other.description, other.creation_counter))
@@ -289,8 +293,7 @@ class Value(object):
             field = self.field(**kwargs)
 
         field.group = self.group
-        field.default_text = _('Default value: ') + \
-                self.get_default_editor_value(kwargs.get('language_code'))
+        field.default_text = _('Default value: ') + self.get_default_editor_value(kwargs.get('language_code'))
         return field
 
     def make_fields(self, **kwargs):
@@ -298,7 +301,7 @@ class Value(object):
             langs_dict = OrderedDict(django_settings.LANGUAGES)
             default_code = django_settings.LANGUAGE_CODE
             default_name = langs_dict[default_code]
-            langs_dict.insert(0, default_code, default_name)
+            langs_dict = OrderedDict([(default_code, default_name)] + list(langs_dict.items()))
             langs = langs_dict.keys()
         else:
             langs = (django_settings.LANGUAGE_CODE,)
@@ -334,7 +337,7 @@ class Value(object):
         return find_setting(self.group.key, key)
 
     # here we have duplicationg with get_setting function
-    setting = property(fget = _setting)
+    setting = property(fget=_setting)
 
     def get_setting(self, language_code=None):
         key = self.key
@@ -359,13 +362,10 @@ class Value(object):
                     val = self.default
                 else:
                     raise SettingNotSet('%s.%s is not in your LIVESETTINGS_OPTIONS' % (self.group.key, key))
-
         else:
             try:
                 val = self.setting.value
-
-            except SettingNotSet as sns:
-
+            except SettingNotSet:
                 if self.localized and lang == django_settings.LANGUAGE_CODE:
                     try:
                         unlocalized_setting = find_setting(self.group.key, self.key)
@@ -399,12 +399,13 @@ class Value(object):
                     if self.use_default:
                         val = self.default
                     else:
-                        raise ImproperlyConfigured("All settings used in startup must have defaults, %s.%s does not", self.group.key, key)
+                        raise ImproperlyConfigured("All settings used in startup must have defaults, %s.%s does not",
+                                                   self.group.key, key)
                 else:
                     import traceback
                     traceback.print_exc()
                     log.warn("Problem finding settings %s.%s, %s", self.group.key, key, e)
-                    raise SettingNotSet("Startup error, couldn't load %s.%s" %(self.group.key, key))
+                    raise SettingNotSet("Startup error, couldn't load %s.%s" % (self.group.key, key))
         return val
 
     def update(self, value, language_code=None):
@@ -442,17 +443,15 @@ class Value(object):
                     except SettingNotSet:
                         pass
 
-                signals.configuration_value_changed.send(self,
-                        old_value=current_value,
-                        new_value=new_value, setting=self,
-                        language_code=language_code)
+                signals.configuration_value_changed.send(self, old_value=current_value, new_value=new_value,
+                                                         setting=self, language_code=language_code)
 
                 if self.clear_cache:
                     cache.clear()
 
                 return True
         else:
-            log.debug('not updating setting %s.%s - askbot.deps.livesettings db is disabled',self.group.key, self.key)
+            log.debug('not updating setting %s.%s - askbot.deps.livesettings db is disabled', self.group.key, self.key)
 
         return False
 
@@ -497,7 +496,6 @@ class Value(object):
 
         return self.to_python(raw_value)
 
-
     # Subclasses should override the following methods where applicable
 
     def to_python(self, value):
@@ -517,6 +515,7 @@ class Value(object):
         if value == NOTSET:
             return NOTSET
         return six.text_type(value)
+
 
 ###############
 # VALUE TYPES #
@@ -542,6 +541,7 @@ class BooleanValue(Value):
 
     to_editor = to_python
 
+
 class DecimalValue(Value):
     class field(forms.DecimalField):
         def __init__(self, *args, **kwargs):
@@ -550,7 +550,7 @@ class DecimalValue(Value):
             forms.DecimalField.__init__(self, *args, **kwargs)
 
     def to_python(self, value):
-        if value==NOTSET:
+        if value == NOTSET:
             return Decimal("0")
 
         try:
@@ -564,6 +564,7 @@ class DecimalValue(Value):
             return "0"
         else:
             return six.text_type(value)
+
 
 # DurationValue has a lot of duplication and ugliness because of issue # 2443
 # Until DurationField is sorted out, this has to do some extra work
@@ -596,6 +597,7 @@ class DurationValue(Value):
         else:
             return six.text_type(value.days * 24 * 3600 + value.seconds + float(value.microseconds) / 1000000)
 
+
 class FloatValue(Value):
 
     class field(forms.FloatField):
@@ -615,6 +617,7 @@ class FloatValue(Value):
             return "0"
         else:
             return six.text_type(value)
+
 
 class IntegerValue(Value):
     class field(forms.IntegerField):
@@ -661,6 +664,7 @@ class PercentValue(Value):
         else:
             return six.text_type(value)
 
+
 class PositiveIntegerValue(IntegerValue):
 
     class field(forms.IntegerField):
@@ -686,6 +690,7 @@ class StringValue(Value):
 
     to_editor = to_python
 
+
 class URLValue(Value):
 
     class field(forms.URLField):
@@ -694,6 +699,7 @@ class URLValue(Value):
             kwargs['required'] = False
             self.language_code = kwargs.pop('language_code', django_settings.LANGUAGE_CODE)
             forms.URLField.__init__(self, *args, **kwargs)
+
 
 class LongStringValue(Value):
 
@@ -718,21 +724,12 @@ class LongStringValue(Value):
 
     to_editor = to_python
 
-class ImageValue(StringValue):
 
+class ImageValue(StringValue):
     def __init__(self, *args, **kwargs):
-        self.allowed_file_extensions = kwargs.pop(
-            'allowed_file_extensions',
-            ('jpg', 'gif', 'png')
-        )
-        self.upload_directory = kwargs.pop(
-                                    'upload_directory',
-                                    django_settings.MEDIA_ROOT
-                                )
-        self.upload_url = kwargs.pop(
-                                    'upload_url',
-                                    django_settings.MEDIA_URL
-                                )
+        self.allowed_file_extensions = kwargs.pop('allowed_file_extensions', ('jpg', 'gif', 'png'))
+        self.upload_directory = kwargs.pop('upload_directory', django_settings.MEDIA_ROOT)
+        self.upload_url = kwargs.pop('upload_url', django_settings.MEDIA_URL)
         self.url_resolver = kwargs.pop('url_resolver', None)
         super(ImageValue, self).__init__(*args, **kwargs)
 
@@ -742,7 +739,7 @@ class ImageValue(StringValue):
             self.allowed_file_extensions = kwargs.pop('allowed_file_extensions')
             self.language_code = kwargs.pop('language_code', django_settings.LANGUAGE_CODE)
             url_resolver = kwargs.pop('url_resolver')
-            kwargs['widget'] = ImageInput(url_resolver = url_resolver)
+            kwargs['widget'] = ImageInput(url_resolver=url_resolver)
             forms.FileField.__init__(self, *args, **kwargs)
 
         def clean(self, file_data, initial=None):
@@ -751,8 +748,7 @@ class ImageValue(StringValue):
             (base_name, ext) = os.path.splitext(file_data.name)
             # first character in ext is .
             if ext[1:].lower() not in self.allowed_file_extensions:
-                error_message = _('Allowed image file types are %(types)s') \
-                        % {'types': ', '.join(self.allowed_file_extensions)}
+                error_message = _('Allowed image file types are %(types)s') % {'types': ', '.join(self.allowed_file_extensions)}
                 raise forms.ValidationError(error_message)
 
     def make_field(self, **kwargs):
@@ -768,11 +764,10 @@ class ImageValue(StringValue):
         file_storage_class = storage.get_storage_class()
 
         storage_settings = {}
-        if django_settings.DEFAULT_FILE_STORAGE == \
-            'django.core.files.storage.FileSystemStorage':
+        if django_settings.DEFAULT_FILE_STORAGE == 'django.core.files.storage.FileSystemStorage':
             storage_settings = {
                 'location': self.upload_directory,
-                'base_url': self.upload_url
+                'base_url': self.upload_url,
             }
 
         file_storage = file_storage_class(**storage_settings)
@@ -792,6 +787,7 @@ class ImageValue(StringValue):
         # saved file path is relative to the upload_directory
         # so that things could be easily relocated
         super(ImageValue, self).update(url, language_code=language_code)
+
 
 class MultipleStringValue(Value):
 
@@ -827,8 +823,8 @@ class MultipleStringValue(Value):
                     log.warning('Could not decode returning empty list: %s', value)
                     return []
 
-
     to_editor = to_python
+
 
 class ModuleValue(Value):
     """Handles setting modules, storing them as strings in the db."""
@@ -859,3 +855,4 @@ class ModuleValue(Value):
         if value == NOTSET:
             value = ""
         return value
+

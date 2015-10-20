@@ -59,15 +59,11 @@ class MockUser(object):
 
 
 class ResponseAndMentionActivityManager(models.Manager):
-    def get_query_set(self):
+    def get_queryset(self):
         response_types = const.RESPONSE_ACTIVITY_TYPES_FOR_DISPLAY
         response_types += (const.TYPE_ACTIVITY_MENTION, )
-        return super(
-                    ResponseAndMentionActivityManager,
-                    self
-                ).get_query_set().filter(
-                    activity_type__in = response_types
-                )
+        return super(ResponseAndMentionActivityManager, self).get_queryset().filter(activity_type__in=response_types)
+
 
 class ActivityQuerySet(models.query.QuerySet):
     """query set for the `Activity` model"""
@@ -79,17 +75,14 @@ class ActivityQuerySet(models.query.QuerySet):
             if post and hasattr(post, 'get_origin_post'):
                 origin_posts.add(post.get_origin_post())
             else:
-                logging.debug(
-                            'method get_origin_post() not implemented for %s' \
-                            % force_text(post)
-                        )
+                logging.debug('method get_origin_post() not implemented for %s' % force_text(post))
         return list(origin_posts)
 
     def fetch_content_objects_dict(self):
         """return a dictionary where keys are activity ids
         and values - content objects"""
-        content_object_ids = defaultdict(list)# lists of c.object ids by c.types
-        activity_type_ids = dict()# links c.objects back to activity objects
+        content_object_ids = defaultdict(list)  # lists of c.object ids by c.types
+        activity_type_ids = dict()  # links c.objects back to activity objects
         for act in self:
             content_type_id = act.content_type_id
             object_id = act.object_id
@@ -112,7 +105,7 @@ class ActivityQuerySet(models.query.QuerySet):
 
 class ActivityManager(BaseQuerySetManager):
     """manager class for the `Activity` model"""
-    def get_query_set(self):
+    def get_queryset(self):
         return ActivityQuerySet(self.model)
 
     def create_new_mention(self, mentioned_by=None, mentioned_whom=None, mentioned_at=None, mentioned_in=None,
@@ -500,7 +493,7 @@ class GroupQuerySet(models.query.QuerySet):
 class GroupManager(BaseQuerySetManager):
     """model manager for askbot groups"""
 
-    def get_query_set(self):
+    def get_queryset(self):
         return GroupQuerySet(self.model)
 
     def get_global_group(self):
@@ -513,9 +506,9 @@ class GroupManager(BaseQuerySetManager):
         # TODO: change groups to django groups
         group_name = askbot_settings.GLOBAL_GROUP_NAME
         try:
-            return self.get_query_set().get(name=group_name)
+            return self.get_queryset().get(name=group_name)
         except Group.DoesNotExist:
-            return self.get_query_set().create(name=group_name)
+            return self.get_queryset().create(name=group_name)
 
     def create(self, **kwargs):
         name = kwargs['name']
@@ -526,13 +519,13 @@ class GroupManager(BaseQuerySetManager):
             pass
         return super(GroupManager, self).create(**kwargs)
 
-    def get_or_create(self, name = None, user = None, openness=None):
+    def get_or_create(self, name=None, user=None, openness=None):
         """creates a group tag or finds one, if exists"""
         # TODO: here we might fill out the group profile
         try:
             # iexact is important!!! b/c we don't want case variants
             # of tags
-            group = self.get(name__iexact = name)
+            group = self.get(name__iexact=name)
         except self.model.DoesNotExist:
             if openness is None:
                 group = self.create(name=name)
@@ -552,32 +545,21 @@ class Group(AuthGroup):
         (CLOSED, 'closed'),
     )
     logo_url = models.URLField(null=True)
-    description = models.OneToOneField(
-                    'Post', related_name='described_group',
-                    null=True, blank=True
-                )
+    description = models.OneToOneField('Post', related_name='described_group', null=True, blank=True)
     moderate_email = models.BooleanField(default=True)
     moderate_answers_to_enquirers = models.BooleanField(
-                        default=False,
-                        help_text='If true, answers to outsiders questions '
-                                'will be shown to the enquirers only when '
-                                'selected by the group moderators.'
-                    )
+        default=False,
+        help_text='If true, answers to outsiders questions '
+                  'will be shown to the enquirers only when '
+                  'selected by the group moderators.')
     openness = models.SmallIntegerField(default=CLOSED, choices=OPENNESS_CHOICES)
     # preapproved email addresses and domain names to auto-join groups
     # trick - the field is padded with space and all tokens are space separated
-    preapproved_emails = models.TextField(
-                            null = True, blank = True, default = ''
-                        )
+    preapproved_emails = models.TextField(null=True, blank=True, default='')
     # only domains - without the '@' or anything before them
-    preapproved_email_domains = models.TextField(
-                            null = True, blank = True, default = ''
-                        )
+    preapproved_email_domains = models.TextField(null=True, blank=True, default='')
 
-    is_vip = models.BooleanField(
-        default=False,
-        help_text='Check to make members of this group site moderators'
-    )
+    is_vip = models.BooleanField(default=False, help_text='Check to make members of this group site moderators')
     read_only = models.BooleanField(default=False)
 
     objects = GroupManager()
@@ -675,16 +657,7 @@ class Group(AuthGroup):
 
 class BulkTagSubscriptionManager(BaseQuerySetManager):
 
-    def create(
-                self,
-                tag_names=None,
-                user_list=None,
-                group_list=None,
-                tag_author=None,
-                language_code=None,
-                **kwargs
-            ):
-
+    def create(self, tag_names=None, user_list=None, group_list=None, tag_author=None, language_code=None, **kwargs):
         tag_names = tag_names or []
         user_list = user_list or []
         group_list = group_list or []
@@ -698,15 +671,14 @@ class BulkTagSubscriptionManager(BaseQuerySetManager):
             if new_tag_names:
                 assert(tag_author)
 
-            tags_id_list= [tag.id for tag in tags]
+            tags_id_list = [tag.id for tag in tags]
             tag_name_list = [tag.name for tag in tags]
 
             from askbot.models.tag import Tag
             new_tags = Tag.objects.create_in_bulk(
-                                tag_names=new_tag_names,
-                                user=tag_author,
-                                language_code=translation.get_language()
-                            )
+                tag_names=new_tag_names,
+                user=tag_author,
+                language_code=translation.get_language())
 
             tags_id_list.extend([tag.id for tag in new_tags])
             tag_name_list.extend([tag.name for tag in new_tags])

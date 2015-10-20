@@ -5,12 +5,13 @@ import sys
 from django.utils.translation import activate as activate_language
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
-from django.template import loader, Context
+from django.http import HttpRequest
+from django.template.loader import render_to_string
 from haystack.backends.solr_backend import SolrSearchBackend
 from haystack.constants import ID, DJANGO_CT, DJANGO_ID, DEFAULT_OPERATOR, DEFAULT_ALIAS
 
-SUPPORTED_LANGUAGES = ['en', 'es', 'ru', 'cn', \
-                       'zn', 'fr', 'it', 'jp', 'ko', 'de']
+
+SUPPORTED_LANGUAGES = ['en', 'es', 'ru', 'cn', 'zn', 'fr', 'it', 'jp', 'ko', 'de']
 
 
 class Command(BaseCommand):
@@ -43,14 +44,14 @@ class Command(BaseCommand):
             self.print_stdout(schema_xml)
 
     def build_context(self, using, language='en'):
-        from haystack import connections, connection_router
+        from haystack import connections
         backend = connections[using].get_backend()
 
         if not isinstance(backend, SolrSearchBackend):
             raise ImproperlyConfigured("'%s' isn't configured as a SolrEngine)." % backend.connection_alias)
 
         content_field_name, fields = backend.build_schema(connections[using].get_unified_index().all_searchfields())
-        return Context({
+        return {
             'content_field_name': content_field_name,
             'fields': fields,
             'default_operator': DEFAULT_OPERATOR,
@@ -58,12 +59,11 @@ class Command(BaseCommand):
             'DJANGO_CT': DJANGO_CT,
             'DJANGO_ID': DJANGO_ID,
             'language': language,
-        })
+        }
 
     def build_template(self, using, language='en'):
-        t = loader.get_template('search_configuration/askbotsolr.xml')
-        c = self.build_context(using=using, language=language)
-        return t.render(c)
+        context = self.build_context(using=using, language=language)
+        return render_to_string('search_configuration/askbotsolr.xml', context, request=HttpRequest())
 
     def print_stdout(self, schema_xml):
         sys.stderr.write("\n")

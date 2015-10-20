@@ -1,9 +1,8 @@
-import json
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.http import HttpResponseNotAllowed
 from django.http import HttpResponseForbidden
-from django.template import Context
-from django.template.loader import get_template
+from django.template.loader import render_to_string
+
 
 class PjaxView(object):
     """custom class-based view
@@ -11,7 +10,7 @@ class PjaxView(object):
     of content in the traditional way, where
     the only the :method:`get_context` would be used.
     """
-    template_name = None # used only for the "GET" method
+    template_name = None  # used only for the "GET" method
     http_method_names = ('GET', 'POST')
 
     def render_to_response(self, context, template_name=None):
@@ -21,11 +20,8 @@ class PjaxView(object):
         for the pjax consumption
         """
         template_name = template_name or self.template_name
-        template = get_template(template_name)
-        html = template.render(Context(context))
-        json = json.dumps({'html': html, 'success': True})
-        return HttpResponse(json, content_type='application/json')
-
+        html = render_to_string(template_name, context)
+        return JsonResponse({'html': html, 'success': True})
 
     def get(self, request, *args, **kwargs):
         """view function for the "GET" method"""

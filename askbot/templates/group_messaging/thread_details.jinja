@@ -1,4 +1,5 @@
-{% from "group_messaging/macros.jinja" import message %}
+{% from "group_messaging/macros.jinja" import message with context %}
+
 <ul class="js-thread" data-thread-id="{{ root_message.id }}" data-thread-ordering="forward">
     <li>{{ message(root_message, request.user) }}</li>
     {% for response in responses %}

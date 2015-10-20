@@ -1,4 +1,4 @@
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
 
 {% macro tag_selection(tag_names, selection_type) %}
     <a name="{{selection_type}}-tags"></a>
@@ -17,3 +17,4 @@
         <div class="clearfix"></div>
     </div>
 {% endmacro %}
+

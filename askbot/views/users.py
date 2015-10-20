@@ -9,18 +9,12 @@ Also this module includes the view listing all forum users.
 
 from __future__ import print_function
 import calendar
-import collections
+from collections import defaultdict
 import functools
 import datetime
 import json
 import logging
 import operator
-
-try:
-    from urllib.parse import urlencode, quote
-except ImportError:
-    from urllib import urlencode, quote
-
 from django.db.models import Count
 from django.db.models import Q
 from django.conf import settings as django_settings
@@ -33,6 +27,7 @@ from django.shortcuts import render
 from django.shortcuts import redirect
 from django.http import Http404
 from django.utils.encoding import force_text
+from django.utils.six.moves.urllib.parse import urlencode, quote
 from django.utils.translation import get_language
 from django.utils.translation import string_concat
 from django.utils.translation import ugettext as _
@@ -40,7 +35,6 @@ from django.utils.translation import ungettext
 from django.utils.html import strip_tags as strip_all_tags
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
-
 from askbot.utils.slug import slugify
 from askbot.utils.html import sanitize_html
 from askbot.mail import send_mail
@@ -509,7 +503,7 @@ def user_stats(request, user, context):
     for post in awarded_posts:
         awarded_posts_map[post.id] = post
 
-    badges_dict = collections.defaultdict(list)
+    badges_dict = defaultdict(list)
 
     for award in user_awards:
         if not award.badge.is_enabled():
@@ -533,7 +527,7 @@ def user_stats(request, user, context):
         # "Assign" to its Badge
         badges_dict[award.badge].append(award)
 
-    badges = badges_dict.items()
+    badges = list(badges_dict.items())
     badges.sort(key=operator.itemgetter(1), reverse=True)
 
     user_groups = models.Group.objects.get_for_user(user=user)
@@ -544,7 +538,7 @@ def user_stats(request, user, context):
     if request.user.pk == user.pk:
         groups_membership_info = user.get_groups_membership_info(user_groups)
     else:
-        groups_membership_info = collections.defaultdict()
+        groups_membership_info = defaultdict()
 
     show_moderation_warning = (
         request.user.is_authenticated() and
@@ -824,7 +818,7 @@ def user_responses(request, user, context):
         response_list.append(response)
 
     # 4) sort by response id
-    response_list.sort(lambda x,y: cmp(y['question_id'], x['question_id']))
+    response_list.sort(key=lambda ele: ele['question_id'], reverse=True)
 
     # 5) group responses by thread (response_id is really the question post id)
     last_question_id = None # flag to know if the question id is different
@@ -840,7 +834,7 @@ def user_responses(request, user, context):
             last_question_id = message['question_id']
 
     # 6) sort responses by time
-    filtered_message_list.sort(lambda x,y: cmp(y['timestamp'], x['timestamp']))
+    filtered_message_list.sort(key=lambda ele: ele['timestamp'], reverse=True)
 
     reject_reasons = models.PostFlagReason.objects.all().order_by('title')
     data = {
@@ -1163,7 +1157,7 @@ def groups(request, id=None, slug=None):
     user_can_add_groups = request.user.is_authenticated() and \
         request.user.is_administrator_or_moderator()
 
-    groups_membership_info = collections.defaultdict()
+    groups_membership_info = defaultdict()
     if request.user.is_authenticated():
         # collect group memberhship information
         groups_membership_info = request.user.get_groups_membership_info(groups)

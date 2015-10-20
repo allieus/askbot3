@@ -2,20 +2,16 @@
 contains :class:`ForumModeMiddleware`, which is
 enabling support of closed forum mode
 """
+from django.conf import settings
+from django.contrib import messages as django_messages
+from django.core.urlresolvers import resolve
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext as _
-from django.conf import settings
-from django.core.urlresolvers import resolve
+from django.utils.six.moves.urllib.parse import quote_plus
 from askbot.shims.django_shims import ResolverMatch
 from askbot.conf import settings as askbot_settings
 
-try:
-    from urllib.parse import quote_plus
-except ImportError:
-    from urllib import quote_plus
-
 PROTECTED_VIEW_MODULES = ['askbot.views', 'askbot.feed']
-
 ALLOWED_VIEWS = ['askbot.views.meta.config_variable']
 
 
@@ -63,9 +59,8 @@ class ForumModeMiddleware(object):
                 return
 
             if is_view_protected(resolver_match.func):
-                request.user.message_set.create(
-                    _('Please log in to use %s') % askbot_settings.APP_SHORT_NAME
-                )
+                # request.user.message_set.create(_('Please log in to use %s') % askbot_settings.APP_SHORT_NAME)
+                django_messages.info(request, _('Please log in to use %s') % askbot_settings.APP_SHORT_NAME)
                 redirect_url = '%s?next=%s' % (
                     settings.LOGIN_URL,
                     quote_plus(request.get_full_path())

@@ -10,6 +10,8 @@ from django.conf import settings as django_settings
 from django.contrib.auth.models import User
 from django.core import urlresolvers
 from django.db import models
+from django.http import HttpRequest
+from django.template.loader import render_to_string
 from django.utils import html as html_utils
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.text import Truncator
@@ -31,8 +33,7 @@ from askbot.models.tag import tags_match_some_wildcard
 from askbot.conf import settings as askbot_settings
 from askbot import exceptions
 from askbot.utils import markup
-from askbot.utils.html import (get_word_count, has_moderated_tags,
-    moderate_tags, sanitize_html, strip_tags, site_url)
+from askbot.utils.html import (get_word_count, has_moderated_tags, moderate_tags, sanitize_html, site_url)
 from askbot.utils.transaction import defer_celery_task
 from askbot.models.base import BaseQuerySetManager, DraftContent
 
@@ -100,7 +101,7 @@ class PostQuerySet(models.query.QuerySet):
                 groups = [Group.objects.get_global_group()]
             else:
                 groups = user.get_groups()
-            return self.filter(groups__in = groups).distinct()
+            return self.filter(groups__in=groups).distinct()
         else:
             return self
 
@@ -109,10 +110,10 @@ class PostQuerySet(models.query.QuerySet):
         matching the full text query
         """
         return self.filter(
-            models.Q(thread__title__icontains = search_query)\
-            | models.Q(text__icontains = search_query)\
-            | models.Q(thread__tagnames = search_query)\
-            | models.Q(thread__posts__text__icontains = search_query, thread__posts__post_type='answer')
+            models.Q(thread__title__icontains=search_query)
+            | models.Q(text__icontains=search_query)
+            | models.Q(thread__tagnames=search_query)
+            | models.Q(thread__posts__text__icontains=search_query, thread__posts__post_type='answer')
         )
 #        # TODO - goes to thread - we search whole threads
 #        if getattr(django_settings, 'USE_SPHINX_SEARCH', False):
@@ -144,16 +145,9 @@ class PostQuerySet(models.query.QuerySet):
     def added_between(self, start, end):
         """questions added between ``start`` and ``end`` timestamps"""
         # TODO: goes to thread
-        return self.filter(
-            added_at__gt = start
-        ).exclude(
-            added_at__gt = end
-        )
+        return self.filter(added_at__gt=start).exclude(added_at__gt=end)
 
-    def get_questions_needing_reminder(self,
-                                       user = None,
-                                       activity_type = None,
-                                       recurrence_delay = None):
+    def get_questions_needing_reminder(self, user=None, activity_type=None, recurrence_delay=None):
         """returns list of questions that need a reminder,
         corresponding the given ``activity_type``
         ``user`` - is the user receiving the reminder
@@ -161,25 +155,16 @@ class PostQuerySet(models.query.QuerySet):
         reminders about the same question
         """
         # TODO: goes to thread
-        from askbot.models import Activity# avoid circular import
+        from askbot.models import Activity  # avoid circular import
         question_list = list()
         for question in self:
             try:
-                activity = Activity.objects.get(
-                    user = user,
-                    question = question,
-                    activity_type = activity_type
-                )
+                activity = Activity.objects.get(user=user, question=question, activity_type=activity_type)
                 now = datetime.datetime.now()
                 if now < activity.active_at + recurrence_delay:
                     continue
             except Activity.DoesNotExist:
-                activity = Activity(
-                    user = user,
-                    question = question,
-                    activity_type = activity_type,
-                    content_object = question,
-                )
+                activity = Activity(user=user, question=question, activity_type=activity_type, content_object=question)
             activity.active_at = datetime.datetime.now()
             activity.save()
             question_list.append(question)
@@ -197,7 +182,7 @@ class PostQuerySet(models.query.QuerySet):
 
 
 class PostManager(BaseQuerySetManager):
-    def get_query_set(self):
+    def get_queryset(self):
         return PostQuerySet(self.model)
 
     def get_questions(self, user=None):
@@ -214,30 +199,17 @@ class PostManager(BaseQuerySetManager):
     def get_comments(self):
         return self.filter(post_type='comment')
 
-    def create_new_tag_wiki(self, text = None, author = None):
+    def create_new_tag_wiki(self, text=None, author=None):
         return self.create_new(
-                            None,# this post type is threadless
-                            author,
-                            datetime.datetime.now(),
-                            text,
-                            wiki = True,
-                            post_type = 'tag_wiki'
-        )
+            None,  # this post type is threadless
+            author,
+            datetime.datetime.now(),
+            text,
+            wiki=True,
+            post_type='tag_wiki')
 
-    def create_new(
-                self,
-                thread,
-                author,
-                added_at,
-                text,
-                parent=None,
-                wiki=False,
-                is_private=False,
-                email_notify=False,
-                post_type=None,
-                by_email=False,
-                ip_addr=None
-            ):
+    def create_new(self, thread, author, added_at, text, parent=None, wiki=False, is_private=False,
+                   email_notify=False, post_type=None, by_email=False, ip_addr=None):
         # TODO: Some of this code will go to Post.objects.create_new
 
         assert(post_type in const.POST_TYPES)
@@ -269,7 +241,7 @@ class PostManager(BaseQuerySetManager):
         is_private = is_private or \
             (thread and thread.requires_response_moderation(author))
 
-        post.save() # saved so that revision can have post_id
+        post.save()  # saved so that revision can have post_id
 
         revision = post.add_revision(
             author=author,
@@ -297,33 +269,13 @@ class PostManager(BaseQuerySetManager):
                 sender=post.__class__
             )
 
-
         return post
 
     # TODO: instead of this, have Thread.add_answer()
-    def create_new_answer(
-                        self,
-                        thread,
-                        author,
-                        added_at,
-                        text,
-                        wiki=False,
-                        is_private=False,
-                        email_notify=False,
-                        by_email=False,
-                        ip_addr=None,
-                    ):
-        answer = self.create_new(
-                            thread,
-                            author,
-                            added_at,
-                            text,
-                            wiki=wiki,
-                            is_private=is_private,
-                            post_type='answer',
-                            by_email=by_email,
-                            ip_addr=ip_addr
-                        )
+    def create_new_answer(self, thread, author, added_at, text, wiki=False, is_private=False, email_notify=False,
+                          by_email=False, ip_addr=None):
+        answer = self.create_new(thread, author, added_at, text, wiki=wiki, is_private=is_private, post_type='answer',
+                                 by_email=by_email, ip_addr=ip_addr)
         # set notification/delete
         if email_notify:
             thread.followed_by.add(author)
@@ -340,7 +292,6 @@ class PostManager(BaseQuerySetManager):
             )
             thread.save()
         return answer
-
 
     def precache_comments(self, for_posts, visitor):
         """
@@ -432,17 +383,16 @@ class Post(models.Model):
     old_answer_id = models.PositiveIntegerField(null=True, blank=True, default=None, unique=True)
     old_comment_id = models.PositiveIntegerField(null=True, blank=True, default=None, unique=True)
 
-    parent = models.ForeignKey('Post', blank=True, null=True, related_name='comments') # Answer or Question for Comment
+    parent = models.ForeignKey('Post', blank=True, null=True, related_name='comments')  # Answer or Question for Comment
     thread = models.ForeignKey('Thread', blank=True, null=True, default=None, related_name='posts')
     current_revision = models.ForeignKey(
-                                'PostRevision',
-                                blank=True,
-                                null=True, # nullable b/c we have to first save post
-                                           # and then add link to current revision
-                                           #(which has a non-nullable fk to post)
-                                related_name='rendered_posts'
-                            )# "rendered" revision
-    groups = models.ManyToManyField('Group', through='PostToGroup', related_name = 'group_posts')# used for group-private posts
+        'PostRevision',
+        blank=True,
+        null=True,  # nullable b/c we have to first save post
+        # and then add link to current revision
+        #  (which has a non-nullable fk to post)
+        related_name='rendered_posts')  # "rendered" revision
+    groups = models.ManyToManyField('Group', through='PostToGroup', related_name='group_posts')  # used for group-private posts
 
     author = models.ForeignKey(User, related_name='posts')
     added_at = models.DateTimeField(default=datetime.datetime.now)
@@ -460,9 +410,9 @@ class Post(models.Model):
     # approvals - by whom and when
     approved = models.BooleanField(default=True, db_index=True)
 
-    deleted     = models.BooleanField(default=False, db_index=True)
-    deleted_at  = models.DateTimeField(null=True, blank=True)
-    deleted_by  = models.ForeignKey(User, null=True, blank=True, related_name='deleted_posts')
+    deleted = models.BooleanField(default=False, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(User, null=True, blank=True, related_name='deleted_posts')
 
     wiki = models.BooleanField(default=False)
     wikified_at = models.DateTimeField(null=True, blank=True)
@@ -481,13 +431,10 @@ class Post(models.Model):
     last_edited_at = models.DateTimeField(null=True, blank=True)
     last_edited_by = models.ForeignKey(User, null=True, blank=True, related_name='last_edited_posts')
 
-    html = models.TextField(null=True)# html rendition of the latest revision
-    text = models.TextField(null=True)# denormalized copy of latest revision
-    language_code = models.CharField(
-                                choices=django_settings.LANGUAGES,
-                                default=django_settings.LANGUAGE_CODE,
-                                max_length=16,
-                            )
+    html = models.TextField(null=True)  # html rendition of the latest revision
+    text = models.TextField(null=True)  # denormalized copy of latest revision
+    language_code = models.CharField(choices=django_settings.LANGUAGES, default=django_settings.LANGUAGE_CODE,
+                                     max_length=16)
 
     # Denormalised data
     summary = models.TextField(null=True)
@@ -511,6 +458,7 @@ class Post(models.Model):
     @property
     def score(self):
         return int(self.points)
+
     @score.setter
     def score(self, number):
         if number:
@@ -558,10 +506,7 @@ class Post(models.Model):
             op = self.get_origin_post()
 
             if op.id:
-                anticipated_authors = op.get_author_list(
-                    include_comments = True,
-                    recursive = True
-                )
+                anticipated_authors = op.get_author_list(include_comments=True, recursive=True)
             else:
                 anticipated_authors = list()
 
@@ -569,18 +514,13 @@ class Post(models.Model):
 
             extra_authors = set()
             for name_seed in extra_name_seeds:
-                extra_authors.update(
-                    User.objects.filter(username__istartswith = name_seed)
-                )
+                extra_authors.update(User.objects.filter(username__istartswith=name_seed))
 
             # it is important to preserve order here so that authors of post
             # get mentioned first
             anticipated_authors += list(extra_authors)
 
-            mentioned_authors, post_html = markup.mentionize_text(
-                text,
-                anticipated_authors
-            )
+            mentioned_authors, post_html = markup.mentionize_text(text, anticipated_authors)
 
             # TODO: stuff below possibly does not belong here
             # find mentions that were removed and identify any previously
@@ -588,9 +528,7 @@ class Post(models.Model):
             from askbot.models.user import Activity
             if self.pk is not None:
                 # only look for previous mentions if post was already saved before
-                prev_mention_qs = Activity.objects.get_mentions(
-                    mentioned_in = self
-                )
+                prev_mention_qs = Activity.objects.get_mentions(mentioned_in=self)
                 new_set = set(mentioned_authors)
                 for prev_mention in prev_mention_qs:
 
@@ -653,8 +591,8 @@ class Post(models.Model):
             groups = self.parent.groups.all()
             self.add_to_groups(groups)
         elif is_private or group_id:
-            self.make_private(author, group_id = group_id)
-        elif self.thread_id:# is connected to thread
+            self.make_private(author, group_id=group_id)
+        elif self.thread_id:  # is connected to thread
             # inherit privacy scope from thread
             thread_groups = self.thread.groups.all()
             self.add_to_groups(thread_groups)
@@ -662,10 +600,7 @@ class Post(models.Model):
             self.make_public()
 
         if last_revision:
-            diff = htmldiff(
-                        sanitize_html(last_revision),
-                        sanitize_html(self.html)
-                    )
+            diff = htmldiff(sanitize_html(last_revision), sanitize_html(self.html))
         else:
             diff = sanitize_html(self.get_snippet())
 
@@ -717,11 +652,9 @@ class Post(models.Model):
         assert(self.post_type == 'answer')
         all_answers = self.thread.get_answers(user=user)
 
-        matching_answers = all_answers.filter(
-                        added_at__lt=self.added_at,
-                    ).order_by('-added_at')
+        matching_answers = all_answers.filter(added_at__lt=self.added_at).order_by('-added_at')
 
-        if len(matching_answers) == 0:
+        if not matching_answers.exists():
             return None
 
         answer = matching_answers[0]
@@ -772,21 +705,10 @@ class Post(models.Model):
         PostToGroup.objects.filter(post=self, group__in=groups).delete()
         if self.is_answer() or self.is_question():
             comment_ids = self.comments.all().values_list('id', flat=True)
-            PostToGroup.objects.filter(
-                        post__id__in=comment_ids,
-                        group__in=groups
-                    ).delete()
+            PostToGroup.objects.filter(post__id__in=comment_ids, group__in=groups).delete()
 
-
-    def issue_update_notifications(
-                                self,
-                                updated_by=None,
-                                notify_sets=None,
-                                activity_type=None,
-                                suppress_email=False,
-                                timestamp=None,
-                                diff=None
-                            ):
+    def issue_update_notifications(self, updated_by=None, notify_sets=None, activity_type=None, suppress_email=False,
+                                   timestamp=None, diff=None):
         """Called when a post is updated. Arguments:
 
         * ``notify_sets`` - result of ``Post.get_notify_sets()`` method
@@ -803,14 +725,8 @@ class Post(models.Model):
             summary = self.get_snippet()
 
         from askbot.models import Activity
-        update_activity = Activity(
-                        user = updated_by,
-                        active_at = timestamp,
-                        content_object = self,
-                        activity_type = activity_type,
-                        question = self.get_origin_post(),
-                        summary = summary
-                    )
+        update_activity = Activity(user=updated_by, active_at=timestamp, content_object=self,
+                                   activity_type=activity_type, question=self.get_origin_post(), summary=summary)
         update_activity.save()
 
         update_activity.add_recipients(notify_sets['for_inbox'])
@@ -818,12 +734,8 @@ class Post(models.Model):
         # create new mentions (barring the double-adds)
         from askbot.models import Activity
         for u in notify_sets['for_mentions'] - notify_sets['for_inbox']:
-            Activity.objects.create_new_mention(
-                                    mentioned_whom = u,
-                                    mentioned_in = self,
-                                    mentioned_by = updated_by,
-                                    mentioned_at = timestamp
-                                )
+            Activity.objects.create_new_mention(mentioned_whom=u, mentioned_in=self, mentioned_by=updated_by,
+                                                mentioned_at=timestamp)
 
         for user in (notify_sets['for_inbox'] | notify_sets['for_mentions']):
             user.update_response_counts()
@@ -887,7 +799,7 @@ class Post(models.Model):
 
         if len(groups) == 0:
             message = _('Sharing did not work, because group is unknown')
-            user.message_set.create(message=message)
+            user.message_set.create(message=message)  # FIXME: django.contrib.messages
 
     def make_public(self):
         """removes the privacy mark from users groups"""
@@ -932,10 +844,7 @@ class Post(models.Model):
     def moderate_html(self):
         """moderate inline content, such
         as links and images"""
-        moderate = load_plugin(
-                            'ASKBOT_HTML_MODERATOR',
-                            'askbot.models.post.default_html_moderator'
-                        )
+        moderate = load_plugin('ASKBOT_HTML_MODERATOR', 'askbot.models.post.default_html_moderator')
 
         before = self.html
         after = moderate(self)
@@ -984,12 +893,7 @@ class Post(models.Model):
         # TODO: do we need this, can't we just use is_approved()?
         return not self.is_approved() 
 
-    def get_absolute_url(self,
-                    no_slug=False,
-                    question_post=None,
-                    language=None,
-                    thread=None
-                ):
+    def get_absolute_url(self, no_slug=False, question_post=None, language=None, thread=None):
         from askbot.utils.slug import slugify
         # TODO: the url generation function is pretty bad -
         # the trailing slash is entered in three places here + in urls.py
@@ -1039,11 +943,8 @@ class Post(models.Model):
             # TODO: potentially a circular import
             from askbot.models.user import Activity
             comment_content_type = ContentType.objects.get_for_model(self)
-            activities = Activity.objects.filter(
-                                content_type = comment_content_type,
-                                object_id = self.id,
-                                # activity_type__in = activity_types
-                            )
+            activities = Activity.objects.filter(content_type=comment_content_type, object_id=self.id)
+            # for upper queryset : activity_type__in = activity_types
 
             recipients = set()
             for activity in activities:
@@ -1128,10 +1029,7 @@ class Post(models.Model):
 
             # load group memberships for the candidates
             from askbot.models.user import GroupMembership
-            memberships = GroupMembership.objects.filter(
-                                            user__in=candidates,
-                                            group__in=groups
-                                        )
+            memberships = GroupMembership.objects.filter(user__in=candidates, group__in=groups)
             user_ids = set(memberships.values_list('user__id', flat=True))
 
             # scan through the user ids and see which are group members
@@ -1142,25 +1040,18 @@ class Post(models.Model):
 
             return filtered_candidates
 
-    def format_for_email(
-        self, quote_level=0, is_leaf_post=False, format=None,
-        recipient=None
-    ):
+    def format_for_email(self, quote_level=0, is_leaf_post=False, format=None, recipient=None):
         """format post for the output in email,
         if quote_level > 0, the post will be indented that number of times
         TODO: move to views?
         """
-        from django.template import Context
-        from django.template.loader import get_template
-        template = get_template('email/quoted_post.html')
-        data = {
+        return render_to_string('email/quoted_post.html', {  # TODO: set lang
             'post': self,
             'recipient': recipient,
             'quote_level': quote_level,
             'is_leaf_post': is_leaf_post,
-            'format': format
-        }
-        return template.render(Context(data))  # TODO: set lang
+            'format': format,
+        }, HttpRequest())
 
     def format_for_email_as_parent_thread_summary(self, recipient=None):
         """format for email as summary of parent posts
@@ -1185,14 +1076,10 @@ class Post(models.Model):
         """outputs question or answer and all it's comments
         returns empty string for all other post types
         """
-        from django.template import Context
-        from django.template.loader import get_template
-        template = get_template('email/post_as_subthread.html')
-        data = {
+        return render_to_string('email/post_as_subthread.html', {  # TODO: set lang
             'post': self,
-            'recipient': recipient
-        }
-        return template.render(Context(data))  # TODO: set lang
+            'recipient': recipient,
+        }, HttpRequest())
 
     def set_cached_comments(self, comments):
         """caches comments in the lifetime of the object
@@ -1215,30 +1102,14 @@ class Post(models.Model):
     def reverse_cached_comments(self):
         self.get_cached_comments().reverse()
 
-    def add_comment(
-                self,
-                comment=None,
-                user=None,
-                added_at=None,
-                by_email=False,
-                ip_addr=None,
-            ):
-
+    def add_comment(self, comment=None, user=None, added_at=None, by_email=False, ip_addr=None):
         if added_at is None:
             added_at = datetime.datetime.now()
         if None in (comment, user):
             raise Exception('arguments comment and user are required')
 
         comment_post = self.__class__.objects.create_new(
-                                                self.thread,
-                                                user,
-                                                added_at,
-                                                comment,
-                                                parent=self,
-                                                post_type='comment',
-                                                by_email=by_email,
-                                                ip_addr=ip_addr,
-                                            )
+            self.thread, user, added_at, comment, parent=self, post_type='comment', by_email=by_email, ip_addr=ip_addr)
         if comment_post.is_approved():
             self.comment_count = self.comment_count + 1
             self.save()
@@ -1275,10 +1146,10 @@ class Post(models.Model):
             tag__name__in=tag_names,
             tag__language_code=get_language(),
             reason=tag_mark_reason)
-        subscribers = set(
-            user_set_getter(tag_selections__in=tag_selections).\
-                filter(email_tag_filter_strategy=email_tag_filter_strategy,
-                    notification_subscriptions__in=subscription_records))
+        qs = user_set_getter(tag_selections__in=tag_selections).\
+            filter(email_tag_filter_strategy=email_tag_filter_strategy,
+                   notification_subscriptions__in=subscription_records)
+        subscribers = set(qs)
 
         # part 2 - find users who follow or not ignore tags via wildcard selections
         # inside there is a potentially time consuming loop
@@ -1300,13 +1171,11 @@ class Post(models.Model):
                 wildcard_tags_attribute = 'subscribed_tags'
                 update_subscribers = lambda the_set, item: the_set.add(item)
 
-            potential_wildcard_subscribers = User.objects.filter(
-                notification_subscriptions__in = subscription_records
-            ).filter(
-                email_tag_filter_strategy = email_tag_filter_strategy
-            ).exclude(
-                **empty_wildcard_filter # need this to limit size of the loop
-            )
+            potential_wildcard_subscribers = User.objects.\
+                filter(notification_subscriptions__in=subscription_records).\
+                filter(email_tag_filter_strategy=email_tag_filter_strategy).\
+                exclude(**empty_wildcard_filter)  # need this to limit size of the loop
+
             for potential_subscriber in potential_wildcard_subscribers:
                 wildcard_tags = getattr(
                     potential_subscriber,
@@ -1331,10 +1200,7 @@ class Post(models.Model):
         subscriber_set = set()
 
         from askbot.models.user import EmailFeedSetting
-        global_subscriptions = EmailFeedSetting.objects.filter(
-            feed_type = 'q_all',
-            frequency = 'i'
-        )
+        global_subscriptions = EmailFeedSetting.objects.filter(feed_type='q_all', frequency='i')
 
         # segment of users who have tag filter turned off
         global_subscribers = User.objects.filter(
@@ -1351,29 +1217,16 @@ class Post(models.Model):
             good_mark_reason = 'subscribed'
         else:
             good_mark_reason = 'good'
-        subscriber_set.update(
-            self.get_global_tag_based_subscribers(
-                subscription_records = global_subscriptions,
-                tag_mark_reason = good_mark_reason
-            )
-        )
+        subscriber_set.update(self.get_global_tag_based_subscribers(subscription_records=global_subscriptions,
+                                                                    tag_mark_reason=good_mark_reason))
 
         # segment of users who want to exclude ignored tags
-        subscriber_set.update(
-            self.get_global_tag_based_subscribers(
-                subscription_records = global_subscriptions,
-                tag_mark_reason = 'bad'
-            )
-        )
+        subscriber_set.update(self.get_global_tag_based_subscribers(subscription_records=global_subscriptions,
+                                                                    tag_mark_reason='bad'))
         return subscriber_set
 
-
-    def _qa__get_instant_notification_subscribers(
-            self,
-            potential_subscribers = None,
-            mentioned_users = None,
-            exclude_list = None,
-            ):
+    def _qa__get_instant_notification_subscribers(self, potential_subscribers=None, mentioned_users=None,
+                                                  exclude_list=None):
         """get list of users who have subscribed to
         receive instant notifications for a given post
 
@@ -1411,10 +1264,7 @@ class Post(models.Model):
         from askbot.models.user import EmailFeedSetting
         if mentioned_users:
             mention_subscribers = EmailFeedSetting.objects.filter_subscribers(
-                potential_subscribers = mentioned_users,
-                feed_type = 'm_and_c',
-                frequency = 'i'
-            )
+                potential_subscribers=mentioned_users, feed_type='m_and_c', frequency='i')
             subscriber_set.update(mention_subscribers)
 
         origin_post = self.get_origin_post()
@@ -1428,10 +1278,7 @@ class Post(models.Model):
         # print('question followers are ', [s for s in selective_subscribers])
         if selective_subscribers:
             selective_subscribers = EmailFeedSetting.objects.filter_subscribers(
-                potential_subscribers = selective_subscribers,
-                feed_type = 'q_sel',
-                frequency = 'i'
-            )
+                potential_subscribers=selective_subscribers, feed_type='q_sel', frequency='i')
             subscriber_set.update(selective_subscribers)
             # print('selective subscribers: ', selective_subscribers)
 
@@ -1441,11 +1288,7 @@ class Post(models.Model):
 
         # 4) question asked by me (TODO: not "edited_by_me" ???)
         question_author = origin_post.author
-        if EmailFeedSetting.objects.filter(
-            subscriber = question_author,
-            frequency = 'i',
-            feed_type = 'q_ask'
-        ).exists():
+        if EmailFeedSetting.objects.filter(subscriber=question_author, frequency='i', feed_type='q_ask').exists():
             subscriber_set.add(question_author)
 
         # 4) questions answered by me -make sure is that people
@@ -1458,22 +1301,14 @@ class Post(models.Model):
 
         if answer_authors:
             answer_subscribers = EmailFeedSetting.objects.filter_subscribers(
-                potential_subscribers = answer_authors,
-                frequency = 'i',
-                feed_type = 'q_ans',
-            )
+                potential_subscribers=answer_authors, frequency='i', feed_type='q_ans')
             subscriber_set.update(answer_subscribers)
             # print('answer subscribers: ', answer_subscribers)
 
         # print('exclude_list is ', exclude_list)
         return subscriber_set - set(exclude_list)
 
-    def _comment__get_instant_notification_subscribers(
-                                    self,
-                                    potential_subscribers = None,
-                                    mentioned_users = None,
-                                    exclude_list = None
-                                ):
+    def _comment__get_instant_notification_subscribers(self, potential_subscribers=None, mentioned_users=None, exclude_list=None):
         """get list of users who want instant notifications about comments
 
         argument potential_subscribers is required as it saves on db hits
@@ -1505,10 +1340,7 @@ class Post(models.Model):
         from askbot.models.user import EmailFeedSetting
         if potential_subscribers:
             comment_subscribers = EmailFeedSetting.objects.filter_subscribers(
-                                        potential_subscribers = potential_subscribers,
-                                        feed_type = 'm_and_c',
-                                        frequency = 'i'
-                                    )
+                potential_subscribers=potential_subscribers, feed_type='m_and_c', frequency='i')
             subscriber_set.update(comment_subscribers)
             # print('comment subscribers: ', comment_subscribers)
 
@@ -1517,10 +1349,7 @@ class Post(models.Model):
         selective_subscribers = origin_post.thread.followed_by.all()
         if selective_subscribers:
             selective_subscribers = EmailFeedSetting.objects.filter_subscribers(
-                                    potential_subscribers = selective_subscribers,
-                                    feed_type = 'q_sel',
-                                    frequency = 'i'
-                                )
+                potential_subscribers=selective_subscribers, feed_type='q_sel', frequency='i')
             for subscriber in selective_subscribers:
                 if origin_post.passes_tag_filter_for_user(subscriber):
                     subscriber_set.add(subscriber)
@@ -1535,10 +1364,7 @@ class Post(models.Model):
 
         return subscriber_set - set(exclude_list)
 
-    def get_instant_notification_subscribers(
-        self, potential_subscribers = None,
-        mentioned_users = None, exclude_list = None
-    ):
+    def get_instant_notification_subscribers(self, potential_subscribers=None, mentioned_users=None, exclude_list=None):
         if self.is_question() or self.is_answer():
             subscribers = self._qa__get_instant_notification_subscribers(
                 potential_subscribers=potential_subscribers,
@@ -1584,10 +1410,9 @@ class Post(models.Model):
             # TODO: debug these calls and then uncomment in the repo
             # argument to this call
             result['for_email'] = self.get_instant_notification_subscribers(
-                                            potential_subscribers=result['for_inbox'],
-                                            mentioned_users=result['for_mentions'],
-                                            exclude_list=exclude_list
-                                        )
+                potential_subscribers=result['for_inbox'],
+                mentioned_users=result['for_mentions'],
+                exclude_list=exclude_list)
         return result
 
     def cache_latest_revision(self, rev):
@@ -1624,11 +1449,7 @@ class Post(models.Model):
         else:
             return self.added_at
 
-    def get_author_list(
-            self,
-            include_comments = False,
-            recursive = False,
-            exclude_list = None):
+    def get_author_list(self, include_comments=False, recursive=False, exclude_list=None):
 
         # TODO: there may be a better way to do these queries
         authors = set()
@@ -1636,10 +1457,10 @@ class Post(models.Model):
         if include_comments:
             authors.update([c.author for c in self.comments.all()])
         if recursive:
-            if self.is_question(): # hasattr(self, 'answers'):
+            if self.is_question():  # hasattr(self, 'answers'):
                 # for a in self.answers.exclude(deleted = True):
-                for a in self.thread.posts.get_answers().exclude(deleted = True):
-                    authors.update(a.get_author_list( include_comments = include_comments ) )
+                for a in self.thread.posts.get_answers().exclude(deleted=True):
+                    authors.update(a.get_author_list(include_comments=include_comments))
         if exclude_list:
             authors -= set(exclude_list)
         return list(authors)
@@ -1649,24 +1470,15 @@ class Post(models.Model):
         question = self.get_origin_post()
         if user.email_tag_filter_strategy == const.INCLUDE_INTERESTING:
             # at least some of the tags must be marked interesting
-            return user.has_affinity_to_question(
-                question,
-                affinity_type = 'like'
-            )
+            return user.has_affinity_to_question(question, affinity_type='like')
         elif user.email_tag_filter_strategy == const.EXCLUDE_IGNORED:
-            return not user.has_affinity_to_question(
-                question,
-                affinity_type = 'dislike'
-            )
+            return not user.has_affinity_to_question(question, affinity_type='dislike')
         elif user.email_tag_filter_strategy == const.INCLUDE_ALL:
             return True
         elif user.email_tag_filter_strategy == const.INCLUDE_SUBSCRIBED:
             return user.has_affinity_to_question(question, affinity_type='like')
         else:
-            raise ValueError(
-                'unexpected User.email_tag_filter_strategy %s'\
-                % user.email_tag_filter_strategy
-            )
+            raise ValueError('unexpected User.email_tag_filter_strategy %s' % user.email_tag_filter_strategy)
 
     def post_get_last_update_info(self):  # TODO: rename this subroutine
         when = self.added_at
@@ -1703,7 +1515,7 @@ class Post(models.Model):
         else:
             return self.thread._question_post()
 
-    def _repost_as_question(self, new_title = None):
+    def _repost_as_question(self, new_title=None):
         """posts answer as question, together with all the comments
         while preserving time stamps and authors
         does not delete the answer itself though
@@ -1713,27 +1525,19 @@ class Post(models.Model):
         revisions = self.revisions.all().order_by('revised_at')
         rev0 = revisions[0]
         new_question = rev0.author.post_question(
-            title = new_title,
-            body_text = rev0.text,
-            tags = self.question.thread.tagnames,
-            wiki = self.question.wiki,
-            is_anonymous = self.question.is_anonymous,
-            timestamp = rev0.revised_at
-        )
+            title=new_title, body_text=rev0.text, tags=self.question.thread.tagnames, wiki=self.question.wiki,
+            is_anonymous=self.question.is_anonymous, timestamp=rev0.revised_at)
+
         if len(revisions) > 1:
             for rev in revisions[1:]:
-                rev.author.edit_question(
-                    question = new_question,
-                    body_text = rev.text,
-                    revision_comment = rev.summary,
-                    timestamp = rev.revised_at
-                )
+                rev.author.edit_question(question=new_question, body_text=rev.text, revision_comment=rev.summary,
+                                         timestamp=rev.revised_at)
         for comment in self.comments.all():
             comment.content_object = new_question
             comment.save()
         return new_question
 
-    def _repost_as_answer(self, question = None):
+    def _repost_as_answer(self, question=None):
         """posts question as answer to another question,
         but does not delete the question,
         but moves all the comments to the new answer"""
@@ -1741,27 +1545,18 @@ class Post(models.Model):
             raise NotImplementedError
         revisions = self.revisions.all().order_by('revised_at')
         rev0 = revisions[0]
-        new_answer = rev0.author.post_answer(
-            question = question,
-            body_text = rev0.text,
-            wiki = self.wiki,
-            timestamp = rev0.revised_at
-        )
+        new_answer = rev0.author.post_answer(question=question, body_text=rev0.text, wiki=self.wiki,
+                                             timestamp=rev0.revised_at)
         if len(revisions) > 1:
             for rev in revisions:
-                rev.author.edit_answer(
-                    answer = new_answer,
-                    body_text = rev.text,
-                    revision_comment = rev.summary,
-                    timestamp = rev.revised_at
-                )
+                rev.author.edit_answer(answer=new_answer, body_text=rev.text, revision_comment=rev.summary,
+                                       timestamp=rev.revised_at)
         for comment in self.comments.all():
             comment.content_object = new_answer
             comment.save()
         return new_answer
 
-
-    def swap_with_question(self, new_title = None):
+    def swap_with_question(self, new_title=None):
         """swaps answer with the question it belongs to and
         sets the title of question to ``new_title``
         """
@@ -1770,17 +1565,16 @@ class Post(models.Model):
             # 1) make new question by using new title, tags of old question
         #   and the answer body, as well as the authors of all revisions
         #   and repost all the comments
-        new_question = self._repost_as_question(new_title = new_title)
+        new_question = self._repost_as_question(new_title=new_title)
 
         # 2) post question (all revisions and comments) as answer
-        new_answer = self.question._repost_as_answer(question = new_question)
+        new_answer = self.question._repost_as_answer(question=new_question)
 
         # 3) assign all remaining answers to the new question
-        self.question.answers.update(question = new_question)
+        self.question.answers.update(question=new_question)
         self.question.delete()
         self.delete()
         return new_question
-
 
     def get_user_vote(self, user):
         if not self.is_answer():
@@ -1794,7 +1588,6 @@ class Post(models.Model):
             return votes[0]
         else:
             return None
-
 
     def _question__assert_is_visible_to(self, user):
         """raises QuestionHidden"""
@@ -1907,18 +1700,8 @@ class Post(models.Model):
     def get_tag_names(self):
         return self.thread.get_tag_names()
 
-    def __apply_edit(
-            self,
-            edited_at=None,
-            edited_by=None,
-            text=None,
-            comment=None,
-            wiki=False,
-            edit_anonymously=False,
-            is_private=False,
-            by_email=False,
-            suppress_email=False,
-            ip_addr=None):
+    def __apply_edit(self, edited_at=None, edited_by=None, text=None, comment=None, wiki=False, edit_anonymously=False,
+                     is_private=False, by_email=False, suppress_email=False, ip_addr=None):
 
         latest_rev = self.get_latest_revision()
 
@@ -1951,15 +1734,8 @@ class Post(models.Model):
             latest_rev.save()
         else:
             # otherwise we create a new revision
-            latest_rev = self.add_revision(
-                author=edited_by,
-                revised_at=edited_at,
-                text=text,
-                comment=comment,
-                by_email=by_email,
-                ip_addr=ip_addr,
-                is_anonymous=edit_anonymously
-            )
+            latest_rev = self.add_revision(author=edited_by, revised_at=edited_at, text=text, comment=comment,
+                                           by_email=by_email, ip_addr=ip_addr, is_anonymous=edit_anonymously)
 
         if latest_rev.revision > 0:
             parse_results = self.parse_and_save(author=edited_by, is_private=is_private)
@@ -1967,40 +1743,18 @@ class Post(models.Model):
             self.moderate_html()
 
             signals.post_updated.send(
-                post=self,
-                updated_by=edited_by,
-                newly_mentioned_users=parse_results['newly_mentioned_users'],
-                suppress_email=suppress_email,
-                timestamp=edited_at,
-                created=False,
-                diff=parse_results['diff'],
-                sender=self.__class__
-            )
+                post=self, updated_by=edited_by, newly_mentioned_users=parse_results['newly_mentioned_users'],
+                suppress_email=suppress_email, timestamp=edited_at, created=False, diff=parse_results['diff'],
+                sender=self.__class__)
 
         if self.is_comment() and askbot_settings.COMMENT_EDITING_BUMPS_THREAD:
-            self.thread.set_last_activity_info(
-                            last_activity_at=edited_at,
-                            last_activity_by=edited_by
-                        )
+            self.thread.set_last_activity_info(last_activity_at=edited_at, last_activity_by=edited_by)
 
         return latest_rev
 
-
-    def _answer__apply_edit(
-                        self,
-                        edited_at=None,
-                        edited_by=None,
-                        text=None,
-                        comment=None,
-                        wiki=False,
-                        is_private=False,
-                        edit_anonymously=False,
-                        by_email=False,
-                        suppress_email=False,
-                        ip_addr=None,
-                    ):
-
-        ## it is important to do this before __apply_edit b/c of signals!!!
+    def _answer__apply_edit(self, edited_at=None, edited_by=None, text=None, comment=None, wiki=False, is_private=False,
+                            edit_anonymously=False, by_email=False, suppress_email=False, ip_addr=None):
+        # it is important to do this before __apply_edit b/c of signals!!!
         if self.is_private() != is_private:
             if is_private:
                 self.make_private(self.author)
@@ -2010,46 +1764,20 @@ class Post(models.Model):
         if edited_at is None:
             edited_at = datetime.datetime.now()
 
-        revision = self.__apply_edit(
-            edited_at=edited_at,
-            edited_by=edited_by,
-            text=text,
-            comment=comment,
-            wiki=wiki,
-            by_email=by_email,
-            is_private=is_private,
-            suppress_email=suppress_email,
-            ip_addr=ip_addr,
-        )
+        revision = self.__apply_edit(edited_at=edited_at, edited_by=edited_by, text=text, comment=comment, wiki=wiki,
+                                     by_email=by_email, is_private=is_private, suppress_email=suppress_email,
+                                     ip_addr=ip_addr)
+
         return revision
 
-    def _question__apply_edit(
-                            self,
-                            edited_at=None,
-                            edited_by=None,
-                            title=None,
-                            text=None,
-                            comment=None,
-                            tags=None,
-                            wiki=False,
-                            edit_anonymously=False,
-                            is_private=False,
-                            by_email=False, suppress_email=False,
-                            ip_addr=None
-                        ):
+    def _question__apply_edit(self, edited_at=None, edited_by=None, title=None, text=None, comment=None, tags=None,
+                              wiki=False, edit_anonymously=False, is_private=False, by_email=False,
+                              suppress_email=False, ip_addr=None):
 
-        revision = self.__apply_edit(
-            edited_at=edited_at,
-            edited_by=edited_by,
-            text=text,
-            comment=comment,
-            wiki=wiki,
-            edit_anonymously=edit_anonymously,
-            is_private=is_private,
-            by_email=by_email,
-            suppress_email=suppress_email,
-            ip_addr=ip_addr
-        )
+        revision = self.__apply_edit(edited_at=edited_at, edited_by=edited_by, text=text, comment=comment, wiki=wiki,
+                                     edit_anonymously=edit_anonymously, is_private=is_private, by_email=by_email,
+                                     suppress_email=suppress_email, ip_addr=ip_addr)
+
         return revision
 
     def apply_edit(self, *args, **kwargs):
@@ -2070,34 +1798,18 @@ class Post(models.Model):
         # TODO: this may be identical to Question.add_revision
         if None in (author, revised_at, text):
             raise Exception('arguments author, revised_at and text are required')
-        return PostRevision.objects.create(
-            post=self,
-            author=author,
-            revised_at=revised_at,
-            text=text,
-            summary=comment,
-            by_email=by_email,
-            ip_addr=ip_addr,
-            is_anonymous=is_anonymous)
+        return PostRevision.objects.create(post=self, author=author, revised_at=revised_at, text=text, summary=comment,
+                                           by_email=by_email, ip_addr=ip_addr, is_anonymous=is_anonymous)
 
     def _question__add_revision(self, author=None, is_anonymous=False, text=None, comment=None, revised_at=None,
                                 by_email=False, email_address=None, ip_addr=None,):
         if None in (author, text):
             raise Exception('author, text and comment are required arguments')
 
-        return PostRevision.objects.create(
-            post=self,
-            title=self.thread.title,
-            author=author,
-            is_anonymous=is_anonymous,
-            revised_at=revised_at,
-            tagnames=self.thread.tagnames,
-            summary=force_text(comment),
-            text=text,
-            by_email=by_email,
-            email_address=email_address,
-            ip_addr=ip_addr
-        )
+        return PostRevision.objects.create(post=self, title=self.thread.title, author=author, is_anonymous=is_anonymous,
+                                           revised_at=revised_at, tagnames=self.thread.tagnames,
+                                           summary=force_text(comment), text=text, by_email=by_email,
+                                           email_address=email_address, ip_addr=ip_addr)
 
     def add_revision(self, *kargs, **kwargs):
         # TODO: unify these
@@ -2107,7 +1819,7 @@ class Post(models.Model):
             return self._question__add_revision(*kargs, **kwargs)
         raise NotImplementedError
 
-    def _answer__get_response_receivers(self, exclude_list = None):
+    def _answer__get_response_receivers(self, exclude_list=None):
         """get list of users interested in this response
         update based on their participation in the question
         activity
@@ -2118,23 +1830,15 @@ class Post(models.Model):
         """
         assert(exclude_list is not None)
         recipients = set()
-        recipients.update(
-            self.get_author_list(
-                include_comments = True
-            )
-        )
+        recipients.update(self.get_author_list(include_comments=True))
         question = self.thread._question_post()
-        recipients.update(
-            question.get_author_list(
-                include_comments = True
-            )
-        )
+        recipients.update(question.get_author_list(include_comments=True))
         for answer in question.thread.posts.get_answers().all():
             recipients.update(answer.get_author_list())
 
         return recipients - set(exclude_list)
 
-    def _question__get_response_receivers(self, exclude_list = None):
+    def _question__get_response_receivers(self, exclude_list=None):
         """returns list of users who might be interested
         in the question update based on their participation
         in the question activity
@@ -2151,21 +1855,17 @@ class Post(models.Model):
 
         return recipients - set(exclude_list)
 
-    def _comment__get_response_receivers(self, exclude_list = None):
+    def _comment__get_response_receivers(self, exclude_list=None):
         """Response receivers are commenters of the
         same post and the authors of the post itself.
         """
         assert(exclude_list is not None)
         users = set()
         # get authors of parent object and all associated comments
-        users.update(
-            self.parent.get_author_list(
-                    include_comments = True,
-                )
-        )
+        users.update(self.parent.get_author_list(include_comments=True))
         return users - set(exclude_list)
 
-    def get_response_receivers(self, exclude_list = None):
+    def get_response_receivers(self, exclude_list=None):
         """returns a list of response receiving users
         who see the on-screen notifications
         """
@@ -2176,7 +1876,7 @@ class Post(models.Model):
         elif self.is_comment():
             receivers = self._comment__get_response_receivers(exclude_list)
         elif self.is_tag_wiki() or self.is_reject_reason():
-            return set()# TODO: who should get these?
+            return set()  # TODO: who should get these?
         else:
             raise NotImplementedError
 
@@ -2334,11 +2034,11 @@ class PostRevision(models.Model):
     text = models.TextField(blank=True)
 
     approved = models.BooleanField(default=False, db_index=True)
-    approved_by = models.ForeignKey(User, null = True, blank = True)
-    approved_at = models.DateTimeField(null = True, blank = True)
+    approved_by = models.ForeignKey(User, null=True, blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
 
-    by_email = models.BooleanField(default = False)# true, if edited by email
-    email_address = models.EmailField(null = True, blank = True)
+    by_email = models.BooleanField(default=False)  # true, if edited by email
+    email_address = models.EmailField(null=True, blank=True)
 
     # Question-specific fields
     title = models.CharField(max_length=300, blank=True, default='')
@@ -2356,11 +2056,8 @@ class PostRevision(models.Model):
         ordering = ('-revision',)
         app_label = 'askbot'
 
-
     def place_on_moderation_queue(self):
-        """Creates moderation queue
-        Activity items with recipients
-        """
+        """Creates moderation queue Activity items with recipients"""
         if self.post.revisions.count() == 1:
             if self.revision == 0:
                 # call below hides post from the display to the
@@ -2375,18 +2072,10 @@ class PostRevision(models.Model):
         content_type = ContentType.objects.get_for_model(self)
         # try
         try:
-            activity = Activity.objects.get(
-                                        activity_type=activity_type,
-                                        object_id=self.id,
-                                        content_type=content_type
-                                    )
+            activity = Activity.objects.get(activity_type=activity_type, object_id=self.id, content_type=content_type)
         except Activity.DoesNotExist:
-            activity = Activity(
-                            user=self.author,
-                            content_object=self,
-                            activity_type=activity_type,
-                            question=self.get_origin_post()
-                        )
+            activity = Activity(user=self.author, content_object=self, activity_type=activity_type,
+                                question=self.get_origin_post())
             activity.save()
 
         activity.add_recipients(self.post.get_moderators())
@@ -2405,17 +2094,15 @@ class PostRevision(models.Model):
                     'It will be published after the moderators review.'
                 ) % email_context
                 send_mail(
-                    subject_line = _('your post to %(site)s') % email_context,
-                    body_text = body_text,
-                    recipient_list = [self.author.email,],
-                )
-
+                    subject_line=_('your post to %(site)s') % email_context,
+                    body_text=body_text,
+                    recipient_list=[self.author.email])
             else:
                 message = _(
                     'Your post was placed on the moderation queue '
                     'and will be published after the moderator approval.'
                 )
-                self.author.message_set.create(message = message)
+                self.author.message_set.create(message=message)  # FIXME: django.contrib.messages
 
     def should_notify_author_about_publishing(self, was_approved=False):
         """True if author should get email about making own post"""
@@ -2451,12 +2138,11 @@ class PostRevision(models.Model):
 
     def get_absolute_url(self):
         if self.post.is_question():
-            url = reverse('question_revisions', args = (self.post.id,))
+            url = reverse('question_revisions', args=(self.post.id,))
         elif self.post.is_answer():
-            url = reverse('answer_revisions', kwargs = {'id':self.post.id})
+            url = reverse('answer_revisions', kwargs={'id': self.post.id})
         else:
             url = self.post.get_absolute_url()
-
         return url
 
     def get_question_title(self):
@@ -2480,7 +2166,7 @@ class PostRevision(models.Model):
         else:
             return sanitized_html
 
-    def get_snippet(self, max_length = 120):
+    def get_snippet(self, max_length=120):
         """a little simpler than as Post.get_snippet"""
         return html_utils.strip_tags(self.html)[:max_length] + '...'
 
@@ -2489,7 +2175,8 @@ class PostFlagReason(models.Model):
     added_at = models.DateTimeField()
     author = models.ForeignKey('auth.User')
     title = models.CharField(max_length=128)
-    details = models.ForeignKey(Post, related_name = 'post_reject_reasons')
+    details = models.ForeignKey(Post, related_name='post_reject_reasons')
+
     class Meta:
         app_label = 'askbot'
 
@@ -2516,31 +2203,17 @@ class AnonymousAnswer(DraftContent):
         try:
             user.assert_can_post_text(self.text)
 
-        except django_exceptions.PermissionDenied as e:
+        except django_exceptions.PermissionDenied:
             # delete previous draft questions (only one is allowed anyway)
             thread = self.question.thread
-            prev_drafts = DraftAnswer.objects.filter(
-                                                author=user,
-                                                thread=thread
-                                            )
+            prev_drafts = DraftAnswer.objects.filter(author=user, thread=thread)
             prev_drafts.delete()
             # convert this question to draft
-            DraftAnswer.objects.create(
-                            thread=thread,
-                            author=user,
-                            text=self.text
-                        )
-
+            DraftAnswer.objects.create(thread=thread, author=user, text=self.text)
         else:
-            Post.objects.create_new_answer(
-                thread=self.question.thread,
-                author=user,
-                added_at=added_at,
-                wiki=self.wiki,
-                text=self.text,
-                ip_addr=self.ip_addr,
-            )
+            Post.objects.create_new_answer(thread=self.question.thread, author=user, added_at=added_at,
+                                           wiki=self.wiki, text=self.text, ip_addr=self.ip_addr)
             self.question.thread.reset_cached_data()
-
         finally:
             self.delete()
+

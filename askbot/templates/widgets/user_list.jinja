@@ -1,8 +1,10 @@
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
+
 {% if users %}
-<ul class="user-list">
-    {% for user in users %}
-    <li>{{ macros.user_card(user) }}</li>
-    {% endfor %}
-</ul>
+    <ul class="user-list">
+        {% for user in users %}
+        <li>{{ macros.user_card(user) }}</li>
+        {% endfor %}
+    </ul>
 {% endif %}
+

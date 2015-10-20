@@ -20,14 +20,11 @@ from django.conf import settings as django_settings
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import six
+from django.utils.six.moves.urllib.parse import urlparse, quote_plus
 from datetime import datetime
 from askbot.utils.loading import load_module
 from askbot.utils.functions import enumerate_string_list
-try:
-    from urllib.parse import urlparse, quote_plus
-except ImportError:
-    from urllib import quote_plus
-    from urlparse import urlparse
+
 
 PREAMBLE = """\n
 ************************

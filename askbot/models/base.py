@@ -2,6 +2,7 @@ import datetime
 from django.db import models
 from django.contrib.auth.models import User
 
+
 class BaseQuerySetManager(models.Manager):
     """a base class that allows chainable qustom filters
     on the query sets
@@ -20,7 +21,7 @@ class BaseQuerySetManager(models.Manager):
     >>>    # add more custom filters here
     >>>
     >>>class SomeManager(askbot.models.base.BaseQuerySetManager)
-    >>>    def get_query_set(self):
+    >>>    def get_queryset(self):
     >>>        return SomeQuerySet(self.model)
     >>>
     >>>class SomeModel(django.db.models.Model)
@@ -28,17 +29,17 @@ class BaseQuerySetManager(models.Manager):
     >>>    objects = SomeManager()
     """
     def __getattr__(self, attr, *args):
-        ## The following two lines fix the problem from this ticket:
-        ## https://code.djangoproject.com/ticket/15062# comment:6
-        ## https://code.djangoproject.com/changeset/15220
-        ## Queryset.only() seems to suffer from that on some occasions
+        # The following two lines fix the problem from this ticket:
+        # https://code.djangoproject.com/ticket/15062# comment:6
+        # https://code.djangoproject.com/changeset/15220
+        # Queryset.only() seems to suffer from that on some occasions
         if attr.startswith('_'):
             raise AttributeError
         ##
         try:
             return getattr(self.__class__, attr, *args)
         except AttributeError:
-            return getattr(self.get_query_set(), attr, *args)
+            return getattr(self.get_queryset(), attr, *args)
 
 
 class DraftContent(models.Model):
@@ -46,10 +47,11 @@ class DraftContent(models.Model):
     session_key = models.CharField(max_length=40)  # session id for anonymous questions
     wiki = models.BooleanField(default=False)
     added_at = models.DateTimeField(default=datetime.datetime.now)
-    ip_addr = models.GenericIPAddressField(max_length=45) # allow high port numbers
-    author = models.ForeignKey(User,null=True)
+    ip_addr = models.GenericIPAddressField(max_length=45)  # allow high port numbers
+    author = models.ForeignKey(User, null=True)
     text = models.TextField()
 
     class Meta:
         abstract = True
         app_label = 'askbot'
+

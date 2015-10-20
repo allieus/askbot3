@@ -2,17 +2,15 @@
 
 from __future__ import unicode_literals
 import logging
-try:
-    from urllib.parse import quote
-except ImportError:
-    from urllib import quote
 from copy import copy
 from django.conf import settings as django_settings
 from django.core.urlresolvers import reverse
+from django.http import HttpRequest
 from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.html import mark_safe
+from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _
 from askbot import const
 from askbot.conf import settings as askbot_settings
@@ -96,10 +94,10 @@ class BaseEmail(object):
         for key in context:
             if isinstance(context[key], six.string_types):
                 context[key] = mark_safe(context[key])
-        return ' '.join(render_to_string(self.template_path + '/subject.txt', context).split())
+        return ' '.join(render_to_string(self.template_path + '/subject.txt', context, request=HttpRequest()).split())
 
     def render_body(self):
-        body = render_to_string(self.template_path + '/body.html', self.get_context())
+        body = render_to_string(self.template_path + '/body.jinja', self.get_context(), request=HttpRequest())
         return absolutize_urls(body)
 
     def send(self, recipient_list, raise_on_failure=False, headers=None, attachments=None):

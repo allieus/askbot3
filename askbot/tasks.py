@@ -45,18 +45,17 @@ from askbot.models import (
 )
 from askbot.models.badges import award_badges_signal
 from askbot import exceptions as askbot_exceptions
-from askbot.utils.twitter import Twitter
 
 
 logger = get_task_logger(__name__)
 
 
+'''
 # TODO: Make exceptions raised inside record_post_update_celery_task() ...
 #       ... propagate upwards to test runner, if only CELERY_ALWAYS_EAGER = True
 #       (i.e. if Celery tasks are not deferred but executed straight away)
 @task(ignore_result=True)
 def tweet_new_post_task(post_id):
-
     try:
         twitter = Twitter()
     except:
@@ -81,6 +80,7 @@ def tweet_new_post_task(post_id):
     if post.author.social_sharing_mode != const.SHARE_NOTHING:
         token = json.loads(post.author.twitter_access_token)
         twitter.tweet(tweet_text, access_token=token)
+'''
 
 
 @task(ignore_result=True)

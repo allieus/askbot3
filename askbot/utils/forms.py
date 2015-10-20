@@ -7,6 +7,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import six
 from django.utils.encoding import force_text
+from django.utils.six.moves.urllib.parse import unquote
 from django.utils.translation import ugettext_lazy as _
 from askbot.conf import settings as askbot_settings
 from askbot.utils.slug import slugify
@@ -14,11 +15,6 @@ from askbot.utils.functions import split_list, mark_safe_lazy
 from askbot import const
 from longerusername import MAX_USERNAME_LENGTH
 import logging
-
-try:
-    from urllib.parse import unquote
-except ImportError:
-    from urllib import unquote
 
 
 def clean_next(next_url, default=None):
@@ -28,6 +24,7 @@ def clean_next(next_url, default=None):
         next_url = force_text(unquote(next_url), 'utf-8', 'replace')
     return next_url.strip()
 
+
 def get_error_list(form_instance):
     """return flat list of error values for the form"""
     lists = form_instance.errors.values()
@@ -36,8 +33,10 @@ def get_error_list(form_instance):
         errors.extend(list(error_list))
     return errors
 
+
 def get_next_url(request, default=None):
     return clean_next(request.REQUEST.get('next'), default)
+
 
 def get_db_object_or_404(params):
     """a utility function that returns an object
@@ -48,13 +47,14 @@ def get_db_object_or_404(params):
     from askbot import models
     try:
         model_name = params['model_name']
-        assert(model_name=='Group')
+        assert(model_name == 'Group')
         model = models.get_model(model_name)
         obj_id = forms.IntegerField().clean(params['object_id'])
         return get_object_or_404(model, id=obj_id)
     except Exception:
         # need catch-all b/c of the nature of the function
         raise Http404
+
 
 def format_errors(error_list):
     """If there is only one error - returns a string
@@ -68,6 +68,7 @@ def format_errors(error_list):
     else:
         return force_text(error_list)
 
+
 class StrippedNonEmptyCharField(forms.CharField):
     def clean(self, value):
         value = value.strip()
@@ -75,40 +76,29 @@ class StrippedNonEmptyCharField(forms.CharField):
             raise forms.ValidationError(_('this field is required'))
         return value
 
+
 class NextUrlField(forms.CharField):
     def __init__(self):
-        super(
-            NextUrlField,
-            self
-        ).__init__(
-            max_length = 255,
-            widget = forms.HiddenInput(),
-            required = False
-        )
-    def clean(self,value):
+        super(NextUrlField, self).__init__(max_length=255, widget=forms.HiddenInput(), required=False)
+
+    def clean(self, value):
         return clean_next(value)
 
-login_form_widget_attrs = { 'class': 'required login' }
+login_form_widget_attrs = {'class': 'required login'}
+
 
 class UserNameField(StrippedNonEmptyCharField):
     RESERVED_NAMES = ('fuck', 'shit', 'ass', 'sex', 'add',
-                       'edit', 'save', 'delete', 'manage', 'update', 'remove', 'new')
-    def __init__(
-        self,
-        db_model=User,
-        db_field='username',
-        must_exist=False,
-        skip_clean=False,
-        label=_('Choose a screen name'),
-        widget_attrs=None,
-        **kw
-    ):
+                      'edit', 'save', 'delete', 'manage', 'update', 'remove', 'new')
+
+    def __init__(self, db_model=User, db_field='username', must_exist=False, skip_clean=False,
+                 label=_('Choose a screen name'), widget_attrs=None, **kw):
         self.must_exist = must_exist
         self.skip_clean = skip_clean
         self.db_model = db_model
         self.db_field = db_field
         self.user_instance = None
-        error_messages={
+        error_messages = {
             'required': _('user name is required'),
             'taken': _('sorry, this name is taken, please choose another'),
             'forbidden': _('sorry, this name is not allowed, please choose another'),
@@ -128,15 +118,14 @@ class UserNameField(StrippedNonEmptyCharField):
             widget_attrs = login_form_widget_attrs
 
         max_length = MAX_USERNAME_LENGTH()
-        super(UserNameField,self).__init__(
-                max_length=max_length,
-                widget=forms.TextInput(attrs=widget_attrs),
-                label=label,
-                error_messages=error_messages,
-                **kw
-            )
+        super(UserNameField, self).__init__(
+            max_length=max_length,
+            widget=forms.TextInput(attrs=widget_attrs),
+            label=label,
+            error_messages=error_messages,
+            **kw)
 
-    def clean(self,username):
+    def clean(self, username):
         """ validate username """
         if self.skip_clean:
             logging.debug('username accepted with no validation')
@@ -172,9 +161,7 @@ class UserNameField(StrippedNonEmptyCharField):
         if slugify(username) == '':
             raise forms.ValidationError(self.error_messages['meaningless'])
         try:
-            user = self.db_model.objects.get(
-                    **{'%s' % self.db_field : username}
-            )
+            user = self.db_model.objects.get(**{self.db_field: username})
             if user:
                 if self.must_exist:
                     logging.debug('user exists and name accepted b/c here we validate existing user')
@@ -193,11 +180,8 @@ class UserNameField(StrippedNonEmptyCharField):
             raise forms.ValidationError(self.error_messages['multiple-taken'])
 
 
-def email_is_allowed(
-    email, allowed_emails='', allowed_email_domains=''
-):
-    """True, if email address is pre-approved or matches a allowed
-    domain"""
+def email_is_allowed(email, allowed_emails='', allowed_email_domains=''):
+    "True, if email address is pre-approved or matches a allowed domain"
     if allowed_emails:
         email_list = split_list(allowed_emails)
         allowed_emails = ' ' + ' '.join(email_list) + ' '
@@ -222,11 +206,7 @@ def moderated_email_validator(email):
     error_msg = _('this email address is not authorized')
 
     if allowed_emails or allowed_domains:
-        if not email_is_allowed(
-                email,
-                allowed_emails=allowed_emails,
-                allowed_email_domains=allowed_domains
-            ):
+        if not email_is_allowed(email, allowed_emails=allowed_emails, allowed_email_domains=allowed_domains):
             raise forms.ValidationError(error_msg)
     else:
         from askbot.utils.auth import email_is_blacklisted
@@ -245,18 +225,15 @@ class UserEmailField(forms.EmailField):
         else:
             widget_class = forms.TextInput
 
-        super(UserEmailField,self).__init__(
-            widget=widget_class(
-                    attrs=dict(login_form_widget_attrs, maxlength=200)
-                ),
+        super(UserEmailField, self).__init__(
+            widget=widget_class(attrs=dict(login_form_widget_attrs, maxlength=200)),
             label=mark_safe_lazy(_('Your email <i>(never shared)</i>')),
             error_messages={
-                'required':_('email address is required'),
-                'invalid':_('please enter a valid email address'),
-                'taken':_('this email is already used by someone else, please choose another'),
+                'required': _('email address is required'),
+                'invalid': _('please enter a valid email address'),
+                'taken': _('this email is already used by someone else, please choose another'),
             },
-            **kw
-        )
+            **kw)
 
     def clean(self, email):
         """ validate if email exist in database
@@ -268,12 +245,12 @@ class UserEmailField(forms.EmailField):
 
         moderated_email_validator(email)
 
-        email = super(UserEmailField,self).clean(email)
+        email = super(UserEmailField, self).clean(email)
         if self.skip_clean:
             return email
 
         try:
-            user = User.objects.get(email__iexact=email)
+            User.objects.get(email__iexact=email)
             logging.debug('email taken')
             raise forms.ValidationError(self.error_messages['taken'])
         except User.DoesNotExist:
@@ -283,24 +260,17 @@ class UserEmailField(forms.EmailField):
             logging.critical('email taken many times over')
             raise forms.ValidationError(self.error_messages['taken'])
 
+
 class SetPasswordForm(forms.Form):
     password1 = forms.CharField(
-                            widget=forms.PasswordInput(
-                                attrs=login_form_widget_attrs,
-                                render_value=True
-                            ),
-                            label=_('Password'),
-                            error_messages={'required':_('password is required')},
-                        )
+        widget=forms.PasswordInput(attrs=login_form_widget_attrs, render_value=True),
+        label=_('Password'),
+        error_messages={'required': _('password is required')})
     password2 = forms.CharField(
-                                widget=forms.PasswordInput(
-                                    attrs=login_form_widget_attrs,
-                                    render_value=True
-                                ),
-                                label=_('Password retyped'),
-                                error_messages={'required':_('please, retype your password'),
-                                                'nomatch':_('entered passwords did not match, please try again')},
-                            )
+        widget=forms.PasswordInput(attrs=login_form_widget_attrs, render_value=True),
+        label=_('Password retyped'),
+        error_messages={'required': _('please, retype your password'),
+                        'nomatch': _('entered passwords did not match, please try again')})
 
     def __init__(self, data=None, user=None, *args, **kwargs):
         super(SetPasswordForm, self).__init__(data, *args, **kwargs)
@@ -320,3 +290,4 @@ class SetPasswordForm(forms.Form):
                 raise forms.ValidationError(self.fields['password2'].error_messages['nomatch'])
         else:
             return self.cleaned_data['password2']
+

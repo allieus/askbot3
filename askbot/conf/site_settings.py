@@ -8,19 +8,13 @@ from askbot.conf.super_groups import CONTENT_AND_UI
 from askbot.deps import livesettings
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings as django_settings
-from django.core.validators import ValidationError, validate_email
-import re
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
+from django.utils.six.moves.urllib.parse import urlparse
 
 
 QA_SITE_SETTINGS = livesettings.ConfigurationGroup(
-                    'QA_SITE_SETTINGS',
-                    _('URLS, keywords & greetings'),
-                    super_group = CONTENT_AND_UI
-                )
+    'QA_SITE_SETTINGS',
+    _('URLS, keywords & greetings'),
+    super_group=CONTENT_AND_UI)
 
 settings.register(
     livesettings.StringValue(

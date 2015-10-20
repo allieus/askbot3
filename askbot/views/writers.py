@@ -11,6 +11,7 @@ import os
 import os.path
 import sys
 import tempfile
+from django.contrib import messages as django_messages
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.shortcuts import redirect
@@ -68,8 +69,9 @@ def upload(request):  # ajax upload file to a question or answer
             raise exceptions.PermissionDenied('invalid upload file name prefix')
 
         # TODO: check file type
-        uploaded_file = request.FILES['file-upload']# take first file
+        uploaded_file = request.FILES['file-upload']  # take first file
         orig_file_name = uploaded_file.name
+
         # TODO: extension checking should be replaced with mimetype checking
         # and this must be part of the form validation
         file_extension = os.path.splitext(orig_file_name)[1].lower()
@@ -79,16 +81,13 @@ def upload(request):  # ajax upload file to a question or answer
             raise exceptions.PermissionDenied(msg)
 
         # generate new file name and storage object
-        file_storage, new_file_name, file_url = store_file(
-                                            uploaded_file, file_name_prefix
-                                        )
+        file_storage, new_file_name, file_url = store_file(uploaded_file, file_name_prefix)
         # check file size
         # byte
         size = file_storage.size(new_file_name)
         if size > settings.ASKBOT_MAX_UPLOAD_FILE_SIZE:
             file_storage.delete(new_file_name)
-            msg = _("maximum upload file size is %(file_size)sK") % \
-                    {'file_size': settings.ASKBOT_MAX_UPLOAD_FILE_SIZE}
+            msg = _("maximum upload file size is %(file_size)sK") % {'file_size': settings.ASKBOT_MAX_UPLOAD_FILE_SIZE}
             raise exceptions.PermissionDenied(msg)
 
     except exceptions.PermissionDenied as e:
@@ -108,8 +107,12 @@ def upload(request):  # ajax upload file to a question or answer
     #    'error': error,
     #    'file_url': file_url
     # })
-    xml_template = "<result><msg><![CDATA[%s]]></msg><error><![CDATA[%s]]></error><file_url>%s</file_url><orig_file_name><![CDATA[%s]]></orig_file_name></result>"
-    xml = xml_template % (result, error, file_url, orig_file_name)
+    xml = """<result>
+    <msg><![CDATA[{}]]></msg>
+    <error><![CDATA[{}]]></error>
+    <file_url>{}</file_url>
+    <orig_file_name><![CDATA[{}]]></orig_file_name>
+</result>""".format(result, error, file_url, orig_file_name)
 
     return HttpResponse(xml, content_type="application/xml")
 
@@ -130,7 +133,7 @@ def __import_se_data(dump_file):
     real_stdout = sys.stdout
     sys.stdout = fake_stdout
 
-    importer = stackexchange.ImporterThread(dump_file = dump_file.name)
+    importer = stackexchange.ImporterThread(dump_file=dump_file.name)
     importer.start()
 
     # run a loop where we'll be reading output of the
@@ -138,7 +141,14 @@ def __import_se_data(dump_file):
     read_stdout = open(fake_stdout.name, 'r')
     file_pos = 0
     fd = read_stdout.fileno()
-    yield '<html><body><style>* {font-family: sans;} p {font-size: 12px; line-height: 16px; margin: 0; padding: 0;}</style><h1>Importing your data. This may take a few minutes...</h1>'
+    yield '''<html>
+    <body>
+        <style>
+            * {font-family: sans;}
+            p {font-size: 12px; line-height: 16px; margin: 0; padding: 0;}
+        </style>
+        <h1>Importing your data. This may take a few minutes...</h1>
+'''
     while importer.isAlive():
         c_size = os.fstat(fd).st_size
         if c_size > file_pos:
@@ -150,7 +160,7 @@ def __import_se_data(dump_file):
     read_stdout.close()
     dump_file.close()
     sys.stdout = real_stdout
-    yield '<p>Done. Please, <a href="%s">Visit Your Forum</a></p></body></html>' % reverse('index')
+    yield '<p>Done. Please, <a href="{}">Visit Your Forum</a></p></body></html>'.format(reverse('index'))
 
 
 @csrf_protect
@@ -204,7 +214,8 @@ def ask(request):  # view used to ask a new question
     if request.user.is_authenticated():
         if request.user.is_read_only():
             referer = request.META.get("HTTP_REFERER", reverse('questions'))
-            request.user.message_set.create(message=_('Sorry, but you have only read access'))
+            # request.user.message_set.create(message=_('Sorry, but you have only read access'))
+            django_messages.info(request, _('Sorry, but you have only read access'))
             return redirect(referer)
 
     if askbot_settings.READ_ONLY_MODE_ENABLED:
@@ -247,19 +258,19 @@ def ask(request):  # view used to ask a new question
                         language=language,
                         ip_addr=request.META.get('REMOTE_ADDR')
                     )
-                    signals.new_question_posted.send(None,
+                    signals.new_question_posted.send(
+                        None,
                         question=question,
                         user=user,
-                        form_data=form.cleaned_data
-                    )
+                        form_data=form.cleaned_data)
                     return redirect(question)
                 except exceptions.PermissionDenied as e:
-                    request.user.message_set.create(message = force_text(e))
+                    # request.user.message_set.create(message=force_text(e))
+                    django_messages.info(request, force_text(e))
                     return redirect('index')
-
             else:
                 request.session.flush()
-                session_key=request.session.session_key
+                session_key = request.session.session_key
                 models.AnonymousQuestion.objects.create(
                     session_key=session_key,
                     title=title,
@@ -302,19 +313,20 @@ def ask(request):  # view used to ask a new question
         except Exception:
             pass
 
-    editor_is_folded = (askbot_settings.QUESTION_BODY_EDITOR_MODE=='folded' and \
-                        askbot_settings.MIN_QUESTION_BODY_LENGTH==0 and \
-                        form.initial['text'] == '')
+    editor_is_folded = \
+        askbot_settings.QUESTION_BODY_EDITOR_MODE == 'folded' and \
+        askbot_settings.MIN_QUESTION_BODY_LENGTH == 0 and \
+        form.initial['text'] == ''
 
     data = {
         'active_tab': 'ask',
         'page_class': 'ask-page',
-        'form' : form,
+        'form': form,
         'editor_is_folded': editor_is_folded,
         'mandatory_tags': models.tag.get_mandatory_tags(),
-        'email_validation_faq_url':reverse('faq') + '# validate',
+        'email_validation_faq_url': reverse('faq') + '# validate',
         'category_tree_data': askbot_settings.CATEGORY_TREE,
-        'tag_names': list()# need to keep context in sync with edit_question for tag editor
+        'tag_names': list(),  # need to keep context in sync with edit_question for tag editor
     }
     data.update(context.get_for_tag_editor())
     return render(request, 'ask.jinja', data)
@@ -370,7 +382,8 @@ def retag_question(request, id):
                 'success': False,
             })
         else:
-            request.user.message_set.create(message=force_text(e))
+            # request.user.message_set.create(message=force_text(e))
+            django_messages.info(request, force_text(e))
             return redirect(question)
 
 
@@ -465,12 +478,7 @@ def edit_question(request, id):
                 'post_privately': question.is_private(),
                 'wiki': question.wiki
             }
-            form = forms.EditQuestionForm(
-                                    question=question,
-                                    revision=revision,
-                                    user=request.user,
-                                    initial=initial
-                                )
+            form = forms.EditQuestionForm(question=question, revision=revision, user=request.user, initial=initial)
 
         data = {
             'page_class': 'edit-question-page',
@@ -479,7 +487,7 @@ def edit_question(request, id):
             'revision': revision,
             'revision_form': revision_form,
             'mandatory_tags': models.tag.get_mandatory_tags(),
-            'form' : form,
+            'form': form,
             'tag_names': question.thread.get_tag_names(),
             'category_tree_data': askbot_settings.CATEGORY_TREE
         }
@@ -487,7 +495,8 @@ def edit_question(request, id):
         return render(request, 'question_edit.jinja', data)
 
     except exceptions.PermissionDenied as e:
-        request.user.message_set.create(message = force_text(e))
+        # request.user.message_set.create(message=force_text(e))
+        django_messages.info(request, force_text(e))
         return redirect(question)
 
 
@@ -587,7 +596,8 @@ def edit_answer(request, id):
         return render(request, 'answer_edit.jinja', data)
 
     except exceptions.PermissionDenied as e:
-        request.user.message_set.create(message = force_text(e))
+        # request.user.message_set.create(message=force_text(e))
+        django_messages.info(request, force_text(e))
         return redirect(answer)
 
 
@@ -608,7 +618,6 @@ def answer(request, id, form_class=forms.AnswerForm):# process a new answer
         return redirect(question)
 
     if request.method == "POST":
-
         # this check prevents backward compatilibility
         if form_class == forms.AnswerForm:
             custom_class_path = getattr(settings, 'ASKBOT_NEW_ANSWER_FORM', None)
@@ -621,32 +630,21 @@ def answer(request, id, form_class=forms.AnswerForm):# process a new answer
 
         if form.is_valid():
             if request.user.is_authenticated():
-                drafts = models.DraftAnswer.objects.filter(
-                                                author=request.user,
-                                                thread=question.thread
-                                            )
+                drafts = models.DraftAnswer.objects.filter(author=request.user, thread=question.thread)
                 drafts.delete()
                 user = form.get_post_user(request.user)
                 try:
-                    answer = form.save(
-                                    question,
-                                    user,
-                                    ip_addr=request.META.get('REMOTE_ADDR')
-                                )
-
-                    signals.new_answer_posted.send(None,
-                        answer=answer,
-                        user=user,
-                        form_data=form.cleaned_data
-                    )
-
+                    answer = form.save(question, user, ip_addr=request.META.get('REMOTE_ADDR'))
+                    signals.new_answer_posted.send(None, answer=answer, user=user, form_data=form.cleaned_data)
                     return redirect(answer)
                 except askbot_exceptions.AnswerAlreadyGiven as e:
-                    request.user.message_set.create(message = force_text(e))
+                    # request.user.message_set.create(message=force_text(e))
+                    django_messages.info(request, force_text(e))
                     answer = question.thread.get_answers_by_user(user)[0]
                     return redirect(answer)
                 except exceptions.PermissionDenied as e:
-                    request.user.message_set.create(message = force_text(e))
+                    # request.user.message_set.create(message=force_text(e))
+                    django_messages.info(request, force_text(e))
             else:
                 request.session.flush()
                 models.AnonymousAnswer.objects.create(
@@ -734,19 +732,14 @@ def post_comments(request):# generic ajax handler to load comments to an object
         form = forms.GetCommentDataForPostForm(request.GET)
 
     if not form.is_valid():
-        return HttpResponseBadRequest(
-            _('This content is forbidden'),
-            mimetype='application/json'
-        )
+        return HttpResponseBadRequest(_('This content is forbidden'), content_type='application/json')
 
     post_id = form.cleaned_data['post_id']
     avatar_size = form.cleaned_data['avatar_size']
     try:
         post = models.Post.objects.get(id=post_id)
     except models.Post.DoesNotExist:
-        return HttpResponseBadRequest(
-            _('Post not found'), mimetype='application/json'
-        )
+        return HttpResponseBadRequest(_('Post not found'), content_type='application/json')
 
     if request.method == "GET":
         response = __generate_comments_json(post, user, avatar_size)
@@ -870,7 +863,7 @@ def delete_comment(request):
 
         raise exceptions.PermissionDenied(_('sorry, we seem to have some technical difficulties'))
     except exceptions.PermissionDenied as e:
-        return HttpResponseForbidden(force_text(e), mimetype='application/json')
+        return HttpResponseForbidden(force_text(e), content_type='application/json')
 
 
 @login_required
@@ -926,7 +919,8 @@ def repost_answer_as_comment(request, destination=None):
 
         if destination_post is None:
             message = _('Error - could not find the destination post')
-            request.user.message_set.create(message=message)
+            # request.user.message_set.create(message=message)
+            django_messages.info(request, message)
             return redirect(answer)
 
         if len(answer.text) <= askbot_settings.MAX_COMMENT_LENGTH:
@@ -952,8 +946,10 @@ def repost_answer_as_comment(request, destination=None):
                 'Cannot convert, because text has more characters than '
                 '%(max_chars)s - maximum allowed for comments'
             ) % {'max_chars': askbot_settings.MAX_COMMENT_LENGTH}
-            request.user.message_set.create(message=message)
+            # request.user.message_set.create(message=message)
+            django_messages.info(request, message)
 
         return redirect(answer)
     else:
         raise Http404
+

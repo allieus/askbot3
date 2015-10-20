@@ -1,8 +1,10 @@
-{% import "macros.jinja" as macros %}
-{# 
+{% import "macros.jinja" as macros with context %}
+
+{#
     thumbnail for the user - shown on the users listings
     and elsewhere
 #}
+
 <div class="user-card">
     {{ macros.gravatar(user, 32) }}
     <div class="user-info">
@@ -31,3 +33,4 @@
         {{ macros.user_website_link(user) }}
     </div>
 </div>
+

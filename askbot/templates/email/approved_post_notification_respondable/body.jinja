@@ -1,5 +1,7 @@
-{% extends "email/base_mail.jinja"%}
-{% import "email/macros.jinja" as macros %}
+{% extends "email/base_mail.jinja" %}
+
+{% import "email/macros.jinja" as macros with context %}
+
 {#
     parameters:
     * recipient_user - for the footer

@@ -1,4 +1,4 @@
-{% from "email/macros.jinja" import quoted_post %}
+{% from "email/macros.jinja" import quoted_post with context %}
 
 {% if post.post_type in ('question', 'answer') %}
     {{ quoted_post(post, recipient=recipient) }}

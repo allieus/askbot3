@@ -1,5 +1,7 @@
 {% extends "email/base_mail.jinja"%}
-{% from "email/macros.jinja" import start_quote, end_quote %}
+
+{% from "email/macros.jinja" import start_quote, end_quote with context %}
+
 {% block content %}
     {% set level = 0 %}
     {% for message in messages %}
@@ -13,6 +15,8 @@
         {% set level = level + 1 %}
     {% endfor %}
 {% endblock %}
+
 {% block footer %}
-{% include "email/footer.jinja" %}
+    {% include "email/footer.jinja" %}
 {% endblock %}
+

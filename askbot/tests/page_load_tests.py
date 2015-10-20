@@ -102,7 +102,7 @@ class PageLoadTestCase(AskbotTestCase):
         else:
             url_info = 'getting url %s' % url
         if data:
-            url_info += '?' + '&'.join(['%s=%s' % (k, v) for k, v in data.iteritems()])
+            url_info += '?' + '&'.join(['%s=%s' % (k, v) for k, v in data.items()])
         print(url_info)
 
         # if redirect expected, but we wont' follow
@@ -155,16 +155,12 @@ class PageLoadTestCase(AskbotTestCase):
         else:
             raise NotImplementedError()
         self.assertTrue(isinstance(templates, list))
-        self.assertIn('main_page.html', [t.name for t in templates])
+        self.assertIn('main_page.jinja', [t.name for t in templates])
 
     def proto_test_ask_page(self, allow_anonymous, status_code):
         prev_setting = askbot_settings.ALLOW_POSTING_BEFORE_LOGGING_IN
         askbot_settings.update('ALLOW_POSTING_BEFORE_LOGGING_IN', allow_anonymous)
-        self.try_url(
-            'ask',
-            status_code = status_code,
-            template = 'ask.html'
-        )
+        self.try_url('ask', status_code=status_code, template='ask.jinja')
         askbot_settings.update('ALLOW_POSTING_BEFORE_LOGGING_IN', prev_setting)
 
     def test_ask_page_allowed_anonymous(self):
@@ -206,259 +202,75 @@ class PageLoadTestCase(AskbotTestCase):
         on non-crashiness (no correcteness tests here)
         """
         self.try_url('sitemap')
-        self.try_url(
-            'get_groups_list',
-            status_code=status_code
-        )
+        self.try_url('get_groups_list', status_code=status_code)
         # self.try_url(
         #        'individual_question_feed',
         #        kwargs={'pk':'one-tag'},
         #        status_code=status_code)
-        self.try_url(
-                'latest_questions_feed',
-                status_code=status_code)
-        self.try_url(
-                'latest_questions_feed',
-                data={'tags':'one-tag'},
-                status_code=status_code)
-        self.try_url(
-                'about',
-                status_code=status_code,
-                template='static_page.html')
-        self.try_url(
-                'privacy',
-                status_code=status_code,
-                template='static_page.html')
-        self.try_url('logout', template='authopenid/logout.html')
+        self.try_url('latest_questions_feed', status_code=status_code)
+        self.try_url('latest_questions_feed', data={'tags': 'one-tag'}, status_code=status_code)
+        self.try_url('about', status_code=status_code, template='static_page.jinja')
+        self.try_url('privacy', status_code=status_code, template='static_page.jinja')
+        self.try_url('logout', template='authopenid/logout.jinja')
         # TODO: test different tabs
-        self.try_url(
-                'tags',
-                status_code=status_code,
-                template='tags.html')
-        self.try_url(
-                'tags',
-                status_code=status_code,
-                data={'sort':'name'}, template='tags.html')
-        self.try_url(
-                'tags',
-                status_code=status_code,
-                data={'sort':'used'}, template='tags.html')
-        self.try_url(
-                'badges',
-                status_code=status_code,
-                template='badges.html')
-        self.try_url(
-                'answer_revisions',
-                status_code=status_code,
-                template='revisions.html',
-                kwargs={'id': models.Post.objects.get_answers().order_by('id')[0].id}
-            )
+        self.try_url('tags', status_code=status_code, template='tags.jinja')
+        self.try_url('tags', status_code=status_code, data={'sort': 'name'}, template='tags.jinja')
+        self.try_url('tags', status_code=status_code, data={'sort': 'used'}, template='tags.jinja')
+        self.try_url('badges', status_code=status_code, template='badges.jinja')
+        self.try_url('answer_revisions', status_code=status_code, template='revisions.jinja',
+                     kwargs={'id': models.Post.objects.get_answers().order_by('id')[0].id})
+
         # TODO: test different sort methods and scopes
-        self.try_url(
-            'questions',
-            status_code=status_code,
-            template='main_page.html'
-        )
-        self.try_url(
-            url_name=reverse('questions') + SearchState.get_empty().change_scope('unanswered').query_string(),
-            plain_url_passed=True,
+        self.try_url('questions', status_code=status_code, template='main_page.jinja')
+        self.try_url(url_name=reverse('questions') + SearchState.get_empty().change_scope('unanswered').query_string(),
+                     plain_url_passed=True, status_code=status_code, template='main_page.jinja')
+        self.try_url(url_name=reverse('questions') + SearchState.get_empty().change_scope('followed').query_string(),
+                     plain_url_passed=True, status_code=status_code, template='main_page.jinja')
+        self.try_url(url_name=reverse('questions') + SearchState.get_empty().change_scope('unanswered').change_sort('age-desc').query_string(),
+                     plain_url_passed=True, status_code=status_code, template='main_page.jinja')
+        self.try_url(url_name=reverse('questions') + SearchState.get_empty().change_scope('unanswered').change_sort('age-asc').query_string(),
+                     plain_url_passed=True, status_code=status_code, template='main_page.jinja')
+        self.try_url(url_name=reverse('questions') + SearchState.get_empty().change_scope('unanswered').change_sort('activity-desc').query_string(),
+                     plain_url_passed=True, status_code=status_code, template='main_page.jinja')
+        self.try_url(url_name=reverse('questions') + SearchState.get_empty().change_scope('unanswered').change_sort('activity-asc').query_string(),
+                     plain_url_passed=True, status_code=status_code, template='main_page.jinja')
+        self.try_url(url_name=reverse('questions') + SearchState.get_empty().change_sort('answers-desc').query_string(),
+                     plain_url_passed=True, status_code=status_code, template='main_page.jinja')
+        self.try_url(url_name=reverse('questions') + SearchState.get_empty().change_sort('answers-asc').query_string(),
+                     plain_url_passed=True, status_code=status_code, template='main_page.jinja')
+        self.try_url(url_name=reverse('questions') + SearchState.get_empty().change_sort('votes-desc').query_string(),
+                     plain_url_passed=True, status_code=status_code, template='main_page.jinja')
+        self.try_url(url_name=reverse('questions') + SearchState.get_empty().change_sort('votes-asc').query_string(),
+                     plain_url_passed=True, status_code=status_code, template='main_page.jinja')
 
-            status_code=status_code,
-            template='main_page.html',
-        )
-        self.try_url(
-            url_name=reverse('questions') + SearchState.get_empty().change_scope('followed').query_string(),
-            plain_url_passed=True,
-
-            status_code=status_code,
-            template='main_page.html'
-        )
-        self.try_url(
-            url_name=reverse('questions') + SearchState.get_empty().change_scope('unanswered').change_sort('age-desc').query_string(),
-            plain_url_passed=True,
-
-            status_code=status_code,
-            template='main_page.html'
-        )
-        self.try_url(
-            url_name=reverse('questions') + SearchState.get_empty().change_scope('unanswered').change_sort('age-asc').query_string(),
-            plain_url_passed=True,
-
-            status_code=status_code,
-            template='main_page.html'
-        )
-        self.try_url(
-            url_name=reverse('questions') + SearchState.get_empty().change_scope('unanswered').change_sort('activity-desc').query_string(),
-            plain_url_passed=True,
-
-            status_code=status_code,
-            template='main_page.html'
-        )
-        self.try_url(
-            url_name=reverse('questions') + SearchState.get_empty().change_scope('unanswered').change_sort('activity-asc').query_string(),
-            plain_url_passed=True,
-
-            status_code=status_code,
-            template='main_page.html'
-        )
-        self.try_url(
-            url_name=reverse('questions') + SearchState.get_empty().change_sort('answers-desc').query_string(),
-            plain_url_passed=True,
-
-            status_code=status_code,
-            template='main_page.html'
-        )
-        self.try_url(
-            url_name=reverse('questions') + SearchState.get_empty().change_sort('answers-asc').query_string(),
-            plain_url_passed=True,
-
-            status_code=status_code,
-            template='main_page.html'
-        )
-        self.try_url(
-            url_name=reverse('questions') + SearchState.get_empty().change_sort('votes-desc').query_string(),
-            plain_url_passed=True,
-
-            status_code=status_code,
-            template='main_page.html'
-        )
-        self.try_url(
-            url_name=reverse('questions') + SearchState.get_empty().change_sort('votes-asc').query_string(),
-            plain_url_passed=True,
-
-            status_code=status_code,
-            template='main_page.html'
-        )
-
-        self.try_url(
-                'question',
-                status_code=status_code,
-                kwargs={'id':1},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-                follow=True,
-                template='question.html'
-            )
-        self.try_url(
-                'question',
-                status_code=status_code,
-                kwargs={'id':2},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-                follow=True,
-                template='question.html'
-            )
-        self.try_url(
-                'question',
-                status_code=status_code,
-                kwargs={'id':3},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-                follow=True,
-                template='question.html'
-            )
-        self.try_url(
-                'question_revisions',
-                status_code=status_code,
-                kwargs={'id':40},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-                template='revisions.html'
-            )
-        self.try_url('users',
-                status_code=status_code,
-                template='users.html'
-            )
-        # self.try_url(
-        #        'widget_questions',
-        #        status_code = status_code,
-        #        data={'tags': 'tag-1-0'},
-        #        template='question_widget.html',
-        #    )
+        # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
+        self.try_url('question', status_code=status_code, kwargs={'id': 1}, follow=True, template='question.jinja')
+        self.try_url('question', status_code=status_code, kwargs={'id': 2}, follow=True, template='question.jinja')
+        self.try_url('question', status_code=status_code, kwargs={'id': 3}, follow=True, template='question.jinja')
+        self.try_url('question_revisions', status_code=status_code, kwargs={'id': 40}, template='revisions.jinja')
+        self.try_url('users', status_code=status_code, template='users.jinja')
+        # self.try_url('widget_questions', status_code=status_code, data={'tags': 'tag-1-0'},
+        #              template='question_widget.jinja')
         # TODO: really odd naming conventions for sort methods
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'reputation'},
-            )
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'newest'},
-            )
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'last'},
-            )
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'user'},
-            )
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'reputation', 'page':2},
-            )
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'newest', 'page':2},
-            )
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'last', 'page':2},
-            )
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'user', 'page':2},
-            )
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'reputation', 'page':1},
-            )
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'newest', 'page':1},
-            )
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'last', 'page':1},
-            )
-        self.try_url(
-                'users',
-                status_code=status_code,
-                template='users.html',
-                data={'sort':'user', 'page':1},
-            )
-        self.try_url(
-                'edit_user',
-                template='authopenid/signin.html',
-                kwargs={'id':4},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-                status_code=status_code,
-                follow=True,
-            )
-        self.try_url(
-                'faq',
-                template='faq_static.html',
-                status_code=status_code,
-            )
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'reputation'})
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'newest'})
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'last'})
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'user'})
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'reputation', 'page': 2})
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'newest', 'page': 2})
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'last', 'page': 2})
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'user', 'page': 2})
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'reputation', 'page': 1})
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'newest', 'page': 1})
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'last', 'page': 1})
+        self.try_url('users', status_code=status_code, template='users.jinja', data={'sort': 'user', 'page': 1})
+        self.try_url('edit_user', template='authopenid/signin.jinja', kwargs={'id': 4}, status_code=status_code, follow=True)
+        self.try_url('faq', template='faq_static.jinja', status_code=status_code)
 
     def test_non_user_urls(self):
         self.proto_test_non_user_urls(status_code=200)
 
-    @skipIf('askbot.middleware.forum_mode.ForumModeMiddleware' \
-        not in settings.MIDDLEWARE_CLASSES,
-        'no ForumModeMiddleware set')
+    @skipIf('askbot.middleware.forum_mode.ForumModeMiddleware' not in settings.MIDDLEWARE_CLASSES, 'no ForumModeMiddleware set')
     @with_settings(ASKBOT_CLOSED_FORUM_MODE=True)
     def test_non_user_urls_in_closed_forum_mode(self):
         self.proto_test_non_user_urls(status_code=302)
@@ -468,109 +280,48 @@ class PageLoadTestCase(AskbotTestCase):
         # somehow login this user
         # self.proto_test_non_user_urls()
 
-
     def proto_test_user_urls(self, status_code):
-        user = models.User.objects.get(id=2)   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
+        # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
+        user = models.User.objects.get(id=2)
         name_slug = slugify(user.username)
-        self.try_url(
-            'user_profile',
-            kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            status_code=status_code,
-            data={'sort':'stats'},
-            template='user_profile/user_stats.html'
-        )
-        self.try_url(
-            'user_profile',
-            kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            status_code=status_code,
-            data={'sort':'recent'},
-            template='user_profile/user_recent.html'
-        )
-        self.try_url(
-            'user_profile',
-            kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            status_code=status_code,
-            data={'sort':'inbox'},
-            template='authopenid/signin.html',
-            follow=True
-        )
-        self.try_url(
-            'user_profile',
-            kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            status_code=status_code,
-            data={'sort':'reputation'},
-            template='user_profile/user_reputation.html'
-        )
-        self.try_url(
-            'user_profile',
-            kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            status_code=status_code,
-            data={'sort':'votes'},
-            template='authopenid/signin.html',
-            follow = True
-        )
-        self.try_url(
-            'user_profile',
-            kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            status_code=status_code,
-            data={'sort':'favorites'},
-            template='user_profile/user_favorites.html'
-        )
-        self.try_url(
-            'user_profile',
-            kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            status_code=status_code,
-            data={'sort':'email_subscriptions'},
-            template='authopenid/signin.html',
-            follow = True
-        )
+        self.try_url('user_profile', kwargs={'id': 2, 'slug': name_slug}, status_code=status_code, data={'sort': 'stats'}, template='user_profile/user_stats.jinja')
+        self.try_url('user_profile', kwargs={'id': 2, 'slug': name_slug}, status_code=status_code, data={'sort': 'recent'}, template='user_profile/user_recent.jinja')
+        self.try_url('user_profile', kwargs={'id': 2, 'slug': name_slug}, status_code=status_code, data={'sort': 'inbox'}, template='authopenid/signin.jinja', follow=True)
+        self.try_url('user_profile', kwargs={'id': 2, 'slug': name_slug}, status_code=status_code, data={'sort': 'reputation'}, template='user_profile/user_reputation.jinja')
+        self.try_url('user_profile', kwargs={'id': 2, 'slug': name_slug}, status_code=status_code, data={'sort': 'votes'}, template='authopenid/signin.jinja', follow=True)
+        self.try_url('user_profile', kwargs={'id': 2, 'slug': name_slug}, status_code=status_code, data={'sort': 'favorites'}, template='user_profile/user_favorites.jinja')
+        self.try_url('user_profile', kwargs={'id': 2, 'slug': name_slug}, status_code=status_code, data={'sort': 'email_subscriptions'}, template='authopenid/signin.jinja', follow=True)
 
     def test_user_urls(self):
         self.proto_test_user_urls(status_code=200)
 
-    @skipIf('askbot.middleware.forum_mode.ForumModeMiddleware' \
-        not in settings.MIDDLEWARE_CLASSES,
-        'no ForumModeMiddleware set')
+    @skipIf('askbot.middleware.forum_mode.ForumModeMiddleware' not in settings.MIDDLEWARE_CLASSES, 'no ForumModeMiddleware set')
     @with_settings(ASKBOT_CLOSED_FORUM_MODE=True)
     def test_user_urls_in_closed_forum_mode(self):
         self.proto_test_user_urls(status_code=302)
 
     def test_user_urls_logged_in(self):
-        user = models.User.objects.get(id=2)   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
+        # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
+        user = models.User.objects.get(id=2)
         name_slug = slugify(user.username)
         # works only with builtin django_authopenid
-        self.client.login(method = 'force', user_id = 2)   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-        self.try_url(
-            'user_subscriptions',
-            kwargs = {'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            template = 'user_profile/user_email_subscriptions.html'
-        )
-        self.try_url(
-            'edit_user',
-            kwargs = {'id': 2},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            template = 'user_profile/user_edit.html'
-        )
+        self.client.login(method='force', user_id=2)
+        self.try_url('user_subscriptions', kwargs={'id': 2, 'slug': name_slug}, template='user_profile/user_email_subscriptions.jinja')
+        self.try_url('edit_user', kwargs={'id': 2}, template='user_profile/user_edit.jinja')
         self.client.logout()
 
     def test_inbox_page(self):
-        asker = models.User.objects.get(id = 2)   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
+        # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
+        asker = models.User.objects.get(id=2)
         question = asker.post_question(
-            title = 'How can this happen?',
-            body_text = 'This is the body of my question',
-            tags = 'question answer test',
+            title='How can this happen?',
+            body_text='This is the body of my question',
+            tags='question answer test',
         )
-        responder = models.User.objects.get(id = 3)   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-        responder.post_answer(
-            question = question,
-            body_text = 'this is the answer text'
-        )
-        self.client.login(method = 'force', user_id = asker.id)
-        self.try_url(
-            'user_profile',
-            kwargs={'id': asker.id, 'slug': slugify(asker.username)},
-            data={'sort':'inbox'},
-            template='user_inbox/responses.html',
-        )
+        responder = models.User.objects.get(id=3)
+        responder.post_answer(question=question, body_text='this is the answer text')
+        self.client.login(method='force', user_id=asker.id)
+        self.try_url('user_profile', kwargs={'id': asker.id, 'slug': slugify(asker.username)}, data={'sort': 'inbox'}, template='user_inbox/responses.jinja')
 
     @with_settings(GROUPS_ENABLED=True)
     def test_user_page_with_groups_enabled(self):
@@ -580,14 +331,12 @@ class PageLoadTestCase(AskbotTestCase):
     def test_user_page_with_groups_disabled(self):
         self.try_url('users', status_code=200)
 
+
 class AvatarTests(AskbotTestCase):
 
     def test_avatar_for_two_word_user_works(self):
         self.user = self.create_user('john doe')
-        response = self.client.get(
-                            'avatar_render_primary',
-                            kwargs = {'user': 'john doe', 'size': 48}
-                        )
+        response = self.client.get('avatar_render_primary', kwargs={'user': 'john doe', 'size': 48})
 
 
 class QuestionViewTests(AskbotTestCase):
@@ -817,8 +566,9 @@ class UserProfilePageTests(AskbotTestCase):
         user2.follow_user(self.user)
         self.user.follow_user(user2)
         name_slug = slugify(self.user.username)
-        kwargs={'id': self.user.id, 'slug': name_slug}
+        kwargs = {'id': self.user.id, 'slug': name_slug}
         url = reverse('user_profile', kwargs=kwargs)
-        response = self.client.get(url, data={'sort':'network'})
+        response = self.client.get(url, data={'sort': 'network'})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.templates[0].name, 'user_profile/user_network.html')
+        self.assertEqual(response.templates[0].name, 'user_profile/user_network.jinja')
+

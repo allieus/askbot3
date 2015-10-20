@@ -1,4 +1,6 @@
-{% extends "two_column_body.jinja" %}
+{% extends "two_column_body.jinja" with context %}
+
+{% from "macros.jinja" import comment_widget, tag_widget with context %}
 
 <!-- question.jinja -->
 {% block title %}{% filter trim %}{{ question.get_question_title()|escape }}{% endfilter %}{% endblock %}
@@ -25,34 +27,28 @@
             askbot['settings']['readOnlyModeEnabled'] = true;
         {% endif %}
         (function(){
-
             var hasClass = function(node, selector) {
                 var classes = (" " + node.className + " ").split(' ');
                 for (var i = 0; i < classes.length; i++) {
-                    if (classes[i] === selector) {
+                    if (classes[i] === selector)
                         return true;
-                    }
                 }
                 return false;
             }
 
             var findClosestParentByClassName = function(node, className) {
-                if (hasClass(node, className)) {
+                if (hasClass(node, className))
                     return node;
-                }
-                if (node.nodeName === 'BODY') {
+                if (node.nodeName === 'BODY')
                     return false;
-                } else {
-                    return findClosestParentByClassName(node.parentNode, className);
-                }
+                return findClosestParentByClassName(node.parentNode, className);
             };
 
             var findChildrenByClassName = function(node, className) {
                 var nodes = [];
                 var walk = function(node) {
-                    if (hasClass(node, className)) {
+                    if (hasClass(node, className))
                         nodes.push(node);
-                    }
                     if (node.childNodes) {
                         for (var i=0; i < node.childNodes.length; i++) {
                             walk(node.childNodes[i]);
@@ -65,19 +61,15 @@
 
             var getTextContent = function(node) {
                 var text = node.innerText || node.textContent;
-                if (text === undefined) {
+                if (text === undefined)
                     return '';
-                } else {
-                    return text;
-                }
+                return text;
             };
 
             var hasAttribute = function(node, attrName) {
-                if (node.hasAttribute) {
+                if (node.hasAttribute)
                     return node.hasAttribute(attrName);
-                } else {
-                    return (!(!(node.getAttribute(attrName))));
-                }
+                return (!(!(node.getAttribute(attrName))));
             };
 
             var findChildByAttribute = function(node, attrName, attrVal) {
@@ -92,18 +84,16 @@
             };
 
             var postIsComment = function(postId) {
-                if (document.getElementById('comment-' + postId)) {
+                if (document.getElementById('comment-' + postId))
                     return true;
-                }
                 return false;
             };
 
             var postIsQuestion = function(postId) {
                 var content = document.getElementById('post-id-' + postId);
                 if (content) {
-                    if (findClosestParentByClassName(content, 'question')) {
+                    if (findClosestParentByClassName(content, 'question'))
                         return true;
-                    }
                 }
                 return false;
             };
@@ -383,8 +373,6 @@
 {% block sidebar %}
     {% include "question/sidebar.jinja" %}
 {% endblock %}
-
-{% from "macros.jinja" import comment_widget, tag_widget %}
 
 {% block js_templates %}
     {{ comment_widget(blank_comment) }}

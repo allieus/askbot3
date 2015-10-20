@@ -1,7 +1,11 @@
-{% extends "email/base_mail.jinja"%}
-{% import "email/macros.jinja" as macros %}
+{% extends "email/base_mail.jinja" %}
+
+{% import "email/macros.jinja" as macros with context %}
+
 {% block title %}{% trans %}Welcome to {{ site_name }}!{% endtrans %}{% endblock %}
+
 {% block headline %}{% trans %}Welcome to {{ site_name }}!{% endtrans %}{% endblock %}
+
 {% block content %}
     {# site_name - is short name of the site, email_code - address portion
     of the reply email used for this message, we scan to the last appearance
@@ -13,7 +17,9 @@
     {% trans %}Until we receive the response from you, you will not be able to post content on {{ site_name }} by email.{% endtrans %}
     </p>
 {% endblock %}
+
 {% block footer %}
     {% include "email/footer.jinja" %}
     <p style="{{ macros.fine_print_style() }}">{{ email_code }}</p>{# important #}
 {% endblock %}
+

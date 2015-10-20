@@ -1,29 +1,25 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 """Utilities for working with HTML."""
+
+from __future__ import unicode_literals
 from bs4 import BeautifulSoup
-from bs4 import NavigableString
 import html5lib
 from html5lib import sanitizer, serializer, tokenizer, treebuilders, treewalkers
 import re
-try:
-    from html.entities import name2codepoint
-except ImportError:
-    from htmlentitydefs import name2codepoint
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
 from django.core.urlresolvers import reverse
 from django.template.loader import get_template
 from django.utils.encoding import force_text
 from django.utils.html import strip_tags as strip_all_tags
 from django.utils.html import urlize
+from django.utils.six.moves.html_entities import name2codepoint
+from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
 
+
 class HTMLSanitizerMixin(sanitizer.HTMLSanitizerMixin):
-    acceptable_elements = ('a', 'abbr', 'acronym', 'address', 'b', 'big',
+    acceptable_elements = (
+        'a', 'abbr', 'acronym', 'address', 'b', 'big',
         'blockquote', 'br', 'caption', 'center', 'cite', 'code', 'col',
         'colgroup', 'dd', 'del', 'dfn', 'dir', 'div', 'dl', 'dt', 'em', 'font',
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'img', 'ins', 'kbd',
@@ -31,7 +27,8 @@ class HTMLSanitizerMixin(sanitizer.HTMLSanitizerMixin):
         'strong', 'sub', 'sup', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead',
         'tr', 'tt', 'u', 'ul', 'var', 'object', 'param')
 
-    acceptable_attributes = ('abbr', 'align', 'alt', 'axis', 'border',
+    acceptable_attributes = (
+        'abbr', 'align', 'alt', 'axis', 'border',
         'cellpadding', 'cellspacing', 'char', 'charoff', 'charset', 'cite',
         'cols', 'colspan', 'data', 'datetime', 'dir', 'frame', 'headers', 'height',
         'href', 'hreflang', 'hspace', 'lang', 'longdesc', 'name', 'nohref',
@@ -66,7 +63,7 @@ def absolutize_urls(html):
     url_re2 = re.compile(r"(?P<prefix><img[^<]+src=)'(?P<url>/[^']+)'", re.I)
     url_re3 = re.compile(r'(?P<prefix><a[^<]+href=)"(?P<url>/[^"]+)"', re.I)
     url_re4 = re.compile(r"(?P<prefix><a[^<]+href=)'(?P<url>/[^']+)'", re.I)
-    base_url = site_url('')# important to have this without the slash
+    base_url = site_url('')  # important to have this without the slash
     img_replacement = '\g<prefix>"%s/\g<url>"' % base_url
     replacement = '\g<prefix>"%s\g<url>"' % base_url
     html = url_re1.sub(img_replacement, html)
@@ -75,8 +72,10 @@ def absolutize_urls(html):
     # temporal fix for bad regex with wysiwyg editor
     return url_re4.sub(replacement, html).replace('%s//' % base_url, '%s/' % base_url)
 
+
 def get_word_count(html):
     return len(strip_all_tags(html).split())
+
 
 def format_url_replacement(url, text):
     url = url.strip()
@@ -85,6 +84,7 @@ def format_url_replacement(url, text):
     if url and text and url_domain != text and url != text:
         return '%s (%s)' % (url, text)
     return url or text or ''
+
 
 def urlize_html(html, trim_url_limit=40):
     """will urlize html, while ignoring link
@@ -110,7 +110,7 @@ def urlize_html(html, trim_url_limit=40):
         for i in range(num_items):
             # there is strange thing in bs4, can't iterate
             # as the tag seemingly can't belong to >1 soup object
-            child = contents[0] # always take first element
+            child = contents[0]  # always take first element
             # insure that text nodes are sandwiched by space
             have_string = (not hasattr(child, 'name'))
             if have_string:
@@ -129,6 +129,7 @@ def urlize_html(html, trim_url_limit=40):
     if html.endswith('\n') and not result.endswith('\n'):
         result += '\n'
     return result
+
 
 def replace_links_with_text(html):
     """any absolute links will be replaced with the
@@ -149,12 +150,13 @@ def replace_links_with_text(html):
         url = link.get('href', '')
         text = ''.join(link.text) or ''
 
-        if text == '':# this is due to an issue with url inlining in comments
+        if text == '':  # this is due to an issue with url inlining in comments
             link.replaceWith('')
         elif url == '' or re.match(abs_url_re, url):
             link.replaceWith(format_url_replacement(url, text))
 
     return force_text(soup.find('body').renderContents(), 'utf-8')
+
 
 def get_text_from_html(html_text):
     """Returns the content part from an HTML document
@@ -185,6 +187,7 @@ def get_text_from_html(html_text):
     )
     return '\n\n'.join(phrases)
 
+
 def strip_tags(html, tags=None):
     """strips tags from given html output"""
     # a corner case
@@ -199,6 +202,7 @@ def strip_tags(html, tags=None):
         map(lambda v: v.replaceWith(''), tag_matches)
     return force_text(soup.find('body').renderContents(), 'utf-8')
 
+
 def sanitize_html(html):
     """Sanitizes an HTML fragment.
     from forbidden markup
@@ -212,6 +216,7 @@ def sanitize_html(html):
                                   quote_attr_values=True)
     output_generator = s.serialize(stream)
     return ''.join(output_generator)
+
 
 def has_moderated_tags(html):
     """True, if html contains tags subject to moderation
@@ -230,6 +235,7 @@ def has_moderated_tags(html):
 
     return False
 
+
 def moderate_tags(html):
     """replaces instances of <a> and <img>
     with "item in moderation" alerts
@@ -240,7 +246,7 @@ def moderate_tags(html):
     if settings.MODERATE_LINKS:
         links = soup.find_all('a')
         if links:
-            template = get_template('widgets/moderated_link.html')
+            template = get_template('widgets/moderated_link.jinja')
             aviso = BeautifulSoup(template.render(), 'html5lib').find('body')
             map(lambda v: v.replaceWith(aviso), links)
             replaced = True
@@ -248,7 +254,7 @@ def moderate_tags(html):
     if settings.MODERATE_IMAGES:
         images = soup.find_all('img')
         if images:
-            template = get_template('widgets/moderated_link.html')
+            template = get_template('widgets/moderated_link.jinja')
             aviso = BeautifulSoup(template.render(), 'html5lib').find('body')
             map(lambda v: v.replaceWith(aviso), images)
             replaced = True
@@ -258,10 +264,12 @@ def moderate_tags(html):
 
     return html
 
+
 def site_url(url):
     from askbot.conf import settings
     base_url = urlparse(settings.APP_URL)
     return base_url.scheme + '://' + base_url.netloc + url
+
 
 def internal_link(url_name, title, kwargs=None, anchor=None, absolute=False):
     """returns html for the link to the given url
@@ -277,16 +285,17 @@ def internal_link(url_name, title, kwargs=None, anchor=None, absolute=False):
         url = site_url(url)
     return '<a href="%s">%s</a>' % (url, title)
 
+
 def site_link(url_name, title, kwargs=None, anchor=None):
     """same as internal_link, but with the site domain"""
-    return internal_link(
-        url_name, title, kwargs=kwargs, anchor=anchor, absolute=True
-    )
+    return internal_link(url_name, title, kwargs=kwargs, anchor=anchor, absolute=True)
+
 
 def get_login_link(text=None):
     from askbot.utils.url_utils import get_login_url
     text = text or _('please login')
     return '<a href="%s">%s</a>' % (get_login_url(), text)
+
 
 def get_visible_text(html):
     """returns visible text from html
@@ -295,6 +304,7 @@ def get_visible_text(html):
     soup = BeautifulSoup(html, 'html5lib')
     [s.extract() for s in soup(['style', 'script', '[document]', 'head', 'title'])]
     return soup.get_text()
+
 
 def unescape(text):
     """source: http://effbot.org/zone/re-sub.htm# unescape-html
@@ -319,5 +329,6 @@ def unescape(text):
                 text = unichr(name2codepoint[text[1:-1]])
             except KeyError:
                 pass
-        return text # leave as is
+        return text  # leave as is
     return re.sub("&#?\w+;", fixup, text)
+

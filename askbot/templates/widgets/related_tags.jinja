@@ -1,4 +1,5 @@
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
+
 {% cache 0 "tags" tags tag_list_type query_string language_code %}
     <div class="js-related-tags">
     {% if tag_list_type == 'list' %}

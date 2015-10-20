@@ -1,9 +1,11 @@
 {% extends "user_profile/user.jinja" %}
-{% import "macros.jinja" as macros %}
-<!-- user_network.jinja -->
+
+{% import "macros.jinja" as macros with context %}
+
 {% block profilesection %}
     {% trans %}network{% endtrans %}
 {% endblock %}
+
 {% block usercontent %}
     {% if followed_users or followers %}
         {% if followers %}
@@ -22,4 +24,4 @@
         {% endif %}
     {% endif %}
 {% endblock %}
-<!-- end user_network.jinja -->
+

@@ -1,8 +1,11 @@
 {% extends "user_inbox/base.jinja" %}
-{% import "macros.jinja" as macros %}
+
+{% import "macros.jinja" as macros with context %}
+
 {% block profilesection %}
     {% trans %}inbox - group join requests{% endtrans %}
 {% endblock %}
+
 {% block inbox_content %}
     <table>
     {% for join_request in join_requests %}
@@ -46,3 +49,4 @@
     {% endfor %}
     </table>
 {% endblock %}
+

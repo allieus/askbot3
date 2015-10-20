@@ -229,16 +229,14 @@ Here is a simple example of the content generator
 implemented as part of the fictional application called ``myapp``::
 
     from myapp.models import Thing#definition not shown here
-    from django.template.loader import get_template
-    from django.template import Context
+    from django.template.loader import render_to_string
 
     def somefunc(request, profile_owner):
         """loads things for the ``profile_owner``
         and returns output rendered as html string
         """
-        template = get_template('mytemplate.html')
         things = Thing.objects.filter(user = profile_owner)
-        return template.render(Context({'things': things}))
+        return render_to_string('mytemplate.html', {'things': things})
 
 The function is very similar to the regular
 Django view, but returns a string instead of the ``HttpResponse``

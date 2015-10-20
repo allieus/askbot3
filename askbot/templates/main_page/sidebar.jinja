@@ -1,9 +1,9 @@
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
 
 {% if 'SIDEBAR_MAIN_HEADER'|show_block_to(request.user) %}
-<div class="box">
-    {{ settings.SIDEBAR_MAIN_HEADER }}
-</div>
+    <div class="box">
+        {{ settings.SIDEBAR_MAIN_HEADER }}
+    </div>
 {% endif %}
 
 {% if contributors and settings.SIDEBAR_MAIN_SHOW_AVATARS %}
@@ -19,14 +19,15 @@
 {% endif %}
 
 {% if tags and settings.SIDEBAR_MAIN_SHOW_TAGS %}
-<div class="box">
-    <h2>{% trans %}Tags{% endtrans %}</h2>
-    {% include "widgets/related_tags.jinja" %}
-</div>
+    <div class="box">
+        <h2>{% trans %}Tags{% endtrans %}</h2>
+        {% include "widgets/related_tags.jinja" %}
+    </div>
 {% endif %}
 
 {% if 'SIDEBAR_MAIN_FOOTER'|show_block_to(request.user) %}
-<div class="box">
-    {{ settings.SIDEBAR_MAIN_FOOTER }}
-</div>
+    <div class="box">
+        {{ settings.SIDEBAR_MAIN_FOOTER }}
+    </div>
 {% endif %}
+

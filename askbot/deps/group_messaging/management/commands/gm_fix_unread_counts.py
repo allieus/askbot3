@@ -1,7 +1,7 @@
 from django.core.management.base import NoArgsCommand
 from askbot.models import User
 from askbot.utils.console import ProgressBar
-from group_messaging.models import get_unread_inbox_counter
+from group_messaging.models import UnreadInboxCounter
 from django.db import transaction
 from askbot.utils.db import commit_manually
 
@@ -13,7 +13,7 @@ class Command(NoArgsCommand):
         count = users.count()
         message = 'Fixing inbox counts for the users'
         for user in ProgressBar(users.iterator(), count, message):
-            counter = get_unread_inbox_counter(user)
+            counter = UnreadInboxCounter.get_for_user(user)
             counter.recalculate()
             counter.save()
             transaction.commit()

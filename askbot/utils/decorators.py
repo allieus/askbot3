@@ -13,6 +13,7 @@ import functools
 import inspect
 import logging
 from django.conf import settings
+from django.contrib import messages as django_messages
 from django.core import exceptions as django_exceptions
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ImproperlyConfigured
@@ -111,7 +112,8 @@ def check_authorization_to_post(func_or_message):
             if request.user.is_anonymous():
                 # TODO: expand for handling ajax responses
                 if not askbot_settings.ALLOW_POSTING_BEFORE_LOGGING_IN:
-                    request.user.message_set.create(message=force_text(message))
+                    # request.user.message_set.create(message=message)
+                    django_messages.info(request, message)
                     params = 'next=%s' % request.path
                     return redirect(url_utils.get_login_url() + '?' + params)
             return view_func(request, *args, **kwargs)
@@ -203,7 +205,8 @@ def check_spam(field):
                     if request.is_ajax():
                         return HttpResponseForbidden(spam_message, mimetype="application/json")
                     else:
-                        request.user.message_set.create(message=spam_message)
+                        # request.user.message_set.create(message=spam_message)
+                        django_messages.info(request, spam_message)
                         return redirect('index')
 
             return view_func(request, *args, **kwargs)

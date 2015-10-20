@@ -106,10 +106,10 @@ At any time, e.g. during resolving conflicts you can always check which files st
     #   modified:   askbot/models/user.py
     #   modified:   askbot/skins/default/media/js/com.cnprog.i18n.js
     #   modified:   askbot/skins/default/media/js/org.askbot.output-words.js
-    #   modified:   askbot/skins/default/templates/email_base.html
-    #   modified:   askbot/skins/default/templates/question.html
-    #   modified:   askbot/skins/default/templates/question_list.html
-    #   modified:   askbot/skins/default/templates/user_edit.html
+    #   modified:   askbot/skins/default/templates/email_base.jinja
+    #   modified:   askbot/skins/default/templates/question.jinja
+    #   modified:   askbot/skins/default/templates/question_list.jinja
+    #   modified:   askbot/skins/default/templates/user_edit.jinja
     #   modified:   askbot/utils/decorators.py
     #   deleted:    askbot/utils/time.py
     #   modified:   askbot/views/readers.py

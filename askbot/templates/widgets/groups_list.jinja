@@ -1,4 +1,5 @@
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
+
 {% for group in groups %}
     <p>{{ macros.user_group(group) }}</p>
 {% endfor %}

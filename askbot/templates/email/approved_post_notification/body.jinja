@@ -1,6 +1,8 @@
-{% extends "email/base_mail.jinja"%}
-{% import "email/macros.jinja" as macros %}
-{# 
+{% extends "email/base_mail.jinja" %}
+
+{% import "email/macros.jinja" as macros with context %}
+
+{#
     parameters:
     * post
     * recipient_user - goes into footer
@@ -12,6 +14,8 @@
     {% endif %}
     {{ post.jinja }}
 {% endblock %}
-{%  block footer %}
+
+{% block footer %}
     {% include "email/footer.jinja" %}
 {% endblock %}
+

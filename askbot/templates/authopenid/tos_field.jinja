@@ -1,4 +1,5 @@
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
+
 {% if tos_field %}
     <div class="tos">
         <label>{% trans %}Terms of service:{% endtrans %}</label>
@@ -6,3 +7,4 @@
     </div>
     {{ macros.checkbox_in_div(tos_field) }}
 {% endif %}
+

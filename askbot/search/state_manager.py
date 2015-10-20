@@ -1,15 +1,10 @@
 """Search state manager object"""
 import re
-try:
-    from urllib.parse import quote
-except ImportError:
-    from urllib import quote
 import copy
-
 from django.core import urlresolvers
 from django.utils.http import urlencode
 from django.utils.encoding import smart_str
-
+from django.utils.six.moves.urllib.parse import quote
 import askbot
 import askbot.conf
 from askbot.conf import settings as askbot_settings

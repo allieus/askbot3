@@ -5,7 +5,7 @@ from askbot.utils.url_utils import urls_equal
 from askbot.utils.html import absolutize_urls
 from askbot.utils.html import replace_links_with_text
 from askbot.utils.html import get_text_from_html
-from askbot.conf import settings as askbot_settings
+
 
 class UrlUtilsTests(TestCase):
 

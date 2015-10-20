@@ -1,23 +1,18 @@
-"""file utilities for askbot"""
+"file utilities for askbot"
+
 import os
 import random
 import time
-try:
-    from urllib.parse import urlparse, urlunparse, ParseResult
-except ImportError:
-    from urlparse import urlparse, urlunparse, ParseResult
 from django.core.files.storage import get_storage_class
-from django.conf import settings as django_settings
+from django.utils.six.moves.urllib.parse import urlparse, urlunparse, ParseResult
+
 
 def make_file_name(ext, prefix=''):
-    name = str(
-            time.time()
-        ).replace(
-            '.', str(random.randint(0,100000))
-        )
+    name = str(time.time()).replace('.', str(random.randint(0, 100000)))
     return prefix + name + ext
 
-def store_file(file_object, file_name_prefix = ''):
+
+def store_file(file_object, file_name_prefix=''):
     """Creates an instance of django's file storage
     object based on the file-like object,
     returns the storage object, file name, file url
@@ -40,3 +35,4 @@ def store_file(file_object, file_name_prefix = ''):
     )
 
     return file_storage, file_name, file_url
+

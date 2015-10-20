@@ -5,6 +5,10 @@
                   {% if message %}<p class="notification">{{ message }}</p>{% endif %}
             {% endfor %}
         {% endif %}
+        {# django.contrib.messages #}}
+        {% for message in messages %}
+              {% if message %}<p class="notification">{{ message }}</p>{% endif %}
+        {% endfor %}
         <a id="closeNotify" onclick="notify.close(true)"></a>
     </div>
 </div>

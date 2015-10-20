@@ -9,6 +9,7 @@ import datetime
 import json
 import logging
 from bs4 import BeautifulSoup
+from django.contrib import messages as django_messages
 from django.core import exceptions
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
@@ -331,7 +332,7 @@ def get_tag_list(request):
     tag_names = tags.values_list('name', flat=True)
 
     output = '\n'.join(map(escape, tag_names))
-    return HttpResponse(output, mimetype='text/plain')
+    return HttpResponse(output, content_type='text/plain')
 
 
 @require_GET
@@ -339,7 +340,7 @@ def load_object_description(request):
     """returns text of the object description in text"""
     obj = get_db_object_or_404(request.GET)  # askbot forms utility
     text = getattr(obj.description, 'text', '').strip()
-    return HttpResponse(text, mimetype='text/plain')
+    return HttpResponse(text, content_type='text/plain')
 
 
 @csrf_protect
@@ -454,7 +455,7 @@ def get_groups_list(request):
     groups = models.Group.objects.exclude_personal()
     group_names = groups.exclude(name=global_group.name).values_list('name', flat=True)
     output = '\n'.join(group_names)
-    return HttpResponse(output, mimetype='text/plain')
+    return HttpResponse(output, content_type='text/plain')
 
 
 @csrf_protect
@@ -467,14 +468,14 @@ def subscribe_for_tags(request):
         if request.method == 'POST':
             if 'ok' in request.POST:
                 request.user.mark_tags(pure_tag_names, wildcards, reason='good', action='add')
-                request.user.message_set.create(
-                    message=_('Your tag subscription was saved, thanks!')
-                )
+                # request.user.message_set.create(message=_('Your tag subscription was saved, thanks!'))
+                django_messages.info(request, _('Your tag subscription was saved, thanks!'))
             else:
                 message = _(
                     'Tag subscription was canceled (<a href="%(url)s">undo</a>).'
                 ) % {'url': escape(request.path) + '?tags=' + request.REQUEST['tags']}
-                request.user.message_set.create(message=message)
+                # request.user.message_set.create(message=message)
+                django_messages.info(request, message)
             return redirect('index')
         else:
             data = {'tags': tag_names}
@@ -482,7 +483,8 @@ def subscribe_for_tags(request):
     else:
         all_tag_names = pure_tag_names + wildcards
         message = _('Please sign in to subscribe for: %(tags)s') % {'tags': ', '.join(all_tag_names)}
-        request.user.message_set.create(message=message)
+        # request.user.message_set.create(message=message)
+        django_messages.info(request, message)
         request.session['subscribe_for_tags'] = (pure_tag_names, wildcards)
         return redirect(url_utils.get_login_url())
 
@@ -669,12 +671,12 @@ def set_tag_filter_strategy(request):
         assert(filter_value in allowed_values_dict)
         request.user.email_tag_filter_strategy = filter_value
     request.user.save()
-    return HttpResponse('', mimetype="application/json")
+    return HttpResponse('', content_type="application/json")
 
 
 @login_required
 @csrf_protect
-def close(request, id):# close question
+def close(request, id):  # close question
     """view to initiate and process
     question close
     """
@@ -692,13 +694,14 @@ def close(request, id):# close question
             data = {'question': question, 'form': form}
             return render(request, 'close.jinja', data)
     except exceptions.PermissionDenied as e:
-        request.user.message_set.create(message=force_text(e))
+        # request.user.message_set.create(message=force_text(e))
+        django_messages.info(request, force_text(e))
         return redirect(question)
 
 
 @login_required
 @csrf_protect
-def reopen(request, id):# re-open question
+def reopen(request, id):  # re-open question
     """view to initiate and process
     question close
 
@@ -708,7 +711,7 @@ def reopen(request, id):# re-open question
     question = get_object_or_404(models.Post, post_type='question', id=id)
     # open question
     try:
-        if request.method == 'POST' :
+        if request.method == 'POST':
             request.user.reopen_question(question)
             return redirect(question)
         else:
@@ -716,14 +719,15 @@ def reopen(request, id):# re-open question
             closed_by_profile_url = question.thread.closed_by.get_profile_url()
             closed_by_username = question.thread.closed_by.username
             data = {
-                'question' : question,
+                'question': question,
                 'closed_by_profile_url': closed_by_profile_url,
                 'closed_by_username': closed_by_username,
             }
             return render(request, 'reopen.jinja', data)
 
     except exceptions.PermissionDenied as e:
-        request.user.message_set.create(message = force_text(e))
+        # request.user.message_set.create(message=force_text(e))
+        django_messages.info(request, force_text(e))
         return redirect(question)
 
 
@@ -737,13 +741,9 @@ def swap_question_with_answer(request):
     """
     if request.user.is_authenticated():
         if request.user.is_administrator() or request.user.is_moderator():
-            answer = models.Post.objects.get_answers(
-                                                request.user
-                                            ).get(
-                                                id=request.POST['answer_id']
-                                            )
-            new_question = answer.swap_with_question(new_title = request.POST['new_title'])
-            return {'question_url': new_question.get_absolute_url() }
+            answer = models.Post.objects.get_answers(request.user).get(id=request.POST['answer_id'])
+            new_question = answer.swap_with_question(new_title=request.POST['new_title'])
+            return {'question_url': new_question.get_absolute_url()}
     raise Http404
 
 
@@ -778,11 +778,7 @@ def delete_post(request):
     form = forms.VoteForm(request.POST)
     if form.is_valid():
         post_id = form.cleaned_data['post_id']
-        post = get_object_or_404(
-            models.Post,
-            post_type__in = ('question', 'answer'),
-            id = post_id
-        )
+        post = get_object_or_404(models.Post, post_type__in=('question', 'answer'), id=post_id)
         if form.cleaned_data['cancel_vote']:
             request.user.restore_post(post)
         else:
@@ -841,7 +837,7 @@ def edit_group_membership(request):
 
         elif action == 'remove':
             try:
-                group = models.Group.objects.get(name = group_name)
+                group = models.Group.objects.get(name=group_name)
                 request.user.edit_group_membership(user, group, 'remove')
             except models.Group.DoesNotExist:
                 raise exceptions.PermissionDenied()
@@ -862,7 +858,7 @@ def save_group_logo_url(request):
     if form.is_valid():
         group_id = form.cleaned_data['group_id']
         image_url = form.cleaned_data['image_url']
-        group = models.Group.objects.get(id = group_id)
+        group = models.Group.objects.get(id=group_id)
         group.logo_url = image_url
         group.save()
     else:
@@ -876,16 +872,9 @@ def save_group_logo_url(request):
 def add_group(request):
     group_name = request.POST.get('group')
     if group_name:
-        group = models.Group.objects.get_or_create(
-                            name=group_name,
-                            openness=models.Group.OPEN,
-                            user=request.user,
-                        )
-
-        url = reverse('users_by_group', kwargs={'group_id': group.id,
-                   'group_slug': slugify(group_name)})
-        response_dict = dict(group_name = group_name,
-                             url = url )
+        group = models.Group.objects.get_or_create(name=group_name, openness=models.Group.OPEN, user=request.user)
+        url = reverse('users_by_group', kwargs={'group_id': group.id, 'group_slug': slugify(group_name)})
+        response_dict = dict(group_name=group_name, url=url)
         return response_dict
 
 
@@ -895,7 +884,7 @@ def add_group(request):
 @moderators_only
 def delete_group_logo(request):
     group_id = IntegerField().clean(int(request.POST['group_id']))
-    group = models.Group.objects.get(id = group_id)
+    group = models.Group.objects.get(id=group_id)
     group.logo_url = None
     group.save()
 
@@ -906,7 +895,7 @@ def delete_group_logo(request):
 @moderators_only
 def delete_post_reject_reason(request):
     reason_id = IntegerField().clean(int(request.POST['reason_id']))
-    reason = models.PostFlagReason.objects.get(id = reason_id)
+    reason = models.PostFlagReason.objects.get(id=reason_id)
     reason.delete()
 
 
@@ -918,13 +907,8 @@ def toggle_group_profile_property(request):
     # TODO: this might be changed to more general "toggle object property"
     group_id = IntegerField().clean(int(request.POST['group_id']))
     property_name = CharField().clean(request.POST['property_name'])
-    assert property_name in (
-                        'moderate_email',
-                        'moderate_answers_to_enquirers',
-                        'is_vip',
-                        'read_only'
-                    )
-    group = models.Group.objects.get(id = group_id)
+    assert property_name in ('moderate_email', 'moderate_answers_to_enquirers', 'is_vip', 'read_only')
+    group = models.Group.objects.get(id=group_id)
     new_value = not getattr(group, property_name)
     setattr(group, property_name, new_value)
     group.save()
@@ -1014,15 +998,11 @@ def save_post_reject_reason(request):
         title = form.cleaned_data['title']
         details = form.cleaned_data['details']
         if form.cleaned_data['reason_id'] is None:
-            reason = request.user.create_post_reject_reason(
-                title = title, details = details
-            )
+            reason = request.user.create_post_reject_reason(title=title, details=details)
         else:
             reason_id = form.cleaned_data['reason_id']
-            reason = models.PostFlagReason.objects.get(id = reason_id)
-            request.user.edit_post_reject_reason(
-                reason, title = title, details = details
-            )
+            reason = models.PostFlagReason.objects.get(id=reason_id)
+            request.user.edit_post_reject_reason(reason, title=title, details=details)
         return {
             'reason_id': reason.id,
             'title': title,
@@ -1050,18 +1030,12 @@ def moderate_suggested_tag(request):
         lang = translation.get_language()
 
         try:
-            tag = models.Tag.objects.get(
-                                    id=tag_id,
-                                    language_code=lang
-                                )# can tag not exist?
+            tag = models.Tag.objects.get(id=tag_id, language_code=lang)  # can tag not exist?
         except models.Tag.DoesNotExist:
             return
 
         if thread_id:
-            threads = models.Thread.objects.filter(
-                                            id=thread_id,
-                                            language_code=lang
-                                        )
+            threads = models.Thread.objects.filter(id=thread_id, language_code=lang)
         else:
             threads = tag.threads.none()
 
@@ -1072,12 +1046,8 @@ def moderate_suggested_tag(request):
             tag.status = models.Tag.STATUS_ACCEPTED
             tag.save()
             for thread in threads:
-                thread.add_tag(
-                    tag_name = tag.name,
-                    user = tag.created_by,
-                    timestamp = datetime.datetime.now(),
-                    silent = True
-                )
+                thread.add_tag(tag_name=tag.name, user=tag.created_by, timestamp=datetime.datetime.now(),
+                               silent=True)
         else:
             if tag.threads.count() > len(threads):
                 for thread in threads:
@@ -1175,7 +1145,7 @@ def get_users_info(request):
         user_info_list = user_info_list.values_list('username')
 
     result_list = ['|'.join(info) for info in user_info_list[:limit]]
-    return HttpResponse('\n'.join(result_list), mimetype='text/plain')
+    return HttpResponse('\n'.join(result_list), content_type='text/plain')
 
 
 @csrf_protect
@@ -1191,10 +1161,7 @@ def share_question_with_group(request):
             question_post = thread._question_post()
 
             # get notif set before
-            sets1 = question_post.get_notify_sets(
-                                    mentioned_users=list(),
-                                    exclude_list=[request.user,]
-                                )
+            sets1 = question_post.get_notify_sets(mentioned_users=list(), exclude_list=[request.user])
 
             # share the post
             if group_name == askbot_settings.GLOBAL_GROUP_NAME:
@@ -1204,10 +1171,7 @@ def share_question_with_group(request):
                 thread.add_to_groups((group,), recursive=True)
 
             # get notif sets after
-            sets2 = question_post.get_notify_sets(
-                                    mentioned_users=list(),
-                                    exclude_list=[request.user,]
-                                )
+            sets2 = question_post.get_notify_sets(mentioned_users=list(), exclude_list=[request.user])
 
             notify_sets = {
                 'for_mentions': sets2['for_mentions'] - sets1['for_mentions'],
@@ -1225,12 +1189,16 @@ def share_question_with_group(request):
             return redirect(thread)
     except Exception:
         error_message = _('Sorry, looks like sharing request was invalid')
-        request.user.message_set.create(message=error_message)
+        # request.user.message_set.create(message=error_message)
+        django_messages.info(request, error_message)
         return redirect(thread)
+
 
 @csrf_protect
 def share_question_with_user(request):
     form = forms.ShareQuestionForm(request.POST)
+    thread = None
+
     try:
         if form.is_valid():
 
@@ -1254,12 +1222,12 @@ def share_question_with_user(request):
                 activity_type=const.TYPE_ACTIVITY_POST_SHARED,
                 timestamp=datetime.datetime.now()
             )
-
-            return redirect(thread)
     except Exception:
         error_message = _('Sorry, looks like sharing request was invalid')
-        request.user.message_set.create(message=error_message)
-        return redirect(thread)
+        # request.user.message_set.create(message=error_message)
+        django_messages.info(request, error_message)
+
+    return redirect(thread)
 
 
 @csrf_protect
@@ -1280,7 +1248,8 @@ def moderate_group_join_request(request):
             group_membership.save()
             msg_data = {'user': applicant.username, 'group': group.name}
             message = _('%(user)s, welcome to group %(group)s!') % msg_data
-            applicant.message_set.create(message=message)
+            # applicant.message_set.create(message=message)
+            django_messages.info(request, message)
         else:
             group_membership.delete()
 
@@ -1361,7 +1330,8 @@ def publish_answer(request):
         answer.add_to_groups([enquirer_group])
         message = _('The answer is now published')
         # TODO: notify enquirer by email about the post
-    request.user.message_set.create(message=message)
+    # request.user.message_set.create(message=message)
+    django_messages.info(request, message)
     return {'redirect_url': answer.get_absolute_url()}
 
 
@@ -1389,7 +1359,7 @@ def translate_url(request):
     form = forms.TranslateUrlForm(request.GET)
     match = None
     if form.is_valid():
-        from django.core.urlresolvers import resolve, Resolver404, NoReverseMatch
+        from django.core.urlresolvers import resolve, Resolver404
         try:
             match = resolve(form.cleaned_data['url'])
         except Resolver404:

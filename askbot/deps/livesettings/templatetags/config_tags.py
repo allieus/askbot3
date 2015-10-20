@@ -84,4 +84,5 @@ def admin_site_views(view):
 
     return {'links': links}
 
-register.inclusion_tag('askbot.deps.livesettings/_admin_site_views.html')(admin_site_views)
+register.inclusion_tag('askbot.deps.livesettings/_admin_site_views.jinja')(admin_site_views)
+

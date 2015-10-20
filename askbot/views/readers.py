@@ -12,11 +12,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import logging
 import operator
-try:
-    from urllib.parse import urlencode
-except ImportError:
-    from urllib import urlencode
 from django.conf import settings as django_settings
+from django.contrib import messages as django_messages
 from django.contrib.humanize.templatetags import humanize
 from django.core import exceptions as django_exceptions
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
@@ -32,11 +29,11 @@ from django.template import RequestContext
 from django.template.loader import get_template
 from django.utils import translation
 from django.utils.encoding import force_text
+from django.utils.six.moves.urllib.parse import urlencode
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext
 from django.views.decorators import csrf
 from django.views.decorators.http import require_GET
-
 from askbot import conf, const, exceptions, models, signals
 from askbot.conf import settings as askbot_settings
 from askbot.forms import AnswerForm
@@ -57,7 +54,7 @@ from askbot.views import context
 
 # used in index page
 # TODO: - take these out of const or settings
-from askbot.models import Post, Vote
+from askbot.models import Vote
 
 # refactor? - we have these
 # views that generate a listing of questions in one way or another:
@@ -221,7 +218,7 @@ def questions(request, **kwargs):
 
         template_data = {
             'active_tab': 'questions',
-            'author_name': meta_data.get('author_name',None),
+            'author_name': meta_data.get('author_name', None),
             'contributors': contributors,
             'context': paginator_context,
             'is_unanswered': False,  # remove this from template
@@ -251,11 +248,7 @@ def questions(request, **kwargs):
             'feed_url': context_feed_url
         }
 
-        extra_context = context.get_extra(
-                                    'ASKBOT_QUESTIONS_PAGE_EXTRA_CONTEXT',
-                                    request,
-                                    template_data
-                                )
+        extra_context = context.get_extra('ASKBOT_QUESTIONS_PAGE_EXTRA_CONTEXT', request, template_data)
 
         template_data.update(extra_context)
         template_data.update(context.get_for_tag_editor())
@@ -270,7 +263,8 @@ def questions(request, **kwargs):
                     'Please go to Settings -> %s '
                     'and set the base url for your site to function properly'
                 ) % url
-                request.user.message_set.create(message=msg)
+                # request.user.message_set.create(message=msg)
+                django_messages.info(request, msg)
 
         return render(request, 'main_page.jinja', template_data)
         # print(datetime.datetime.now() - before)
@@ -422,7 +416,8 @@ def question(request, id):  # refactor - long subroutine. display question body,
     try:
         question_post.assert_is_visible_to(request.user)
     except exceptions.QuestionHidden as error:
-        request.user.message_set.create(message=force_text(error))
+        # request.user.message_set.create(message=force_text(error))
+        django_messages.info(request, force_text(error))
         return redirect('index')
 
     # redirect if slug in the url is wrong
@@ -457,7 +452,8 @@ def question(request, id):  # refactor - long subroutine. display question body,
                 'Sorry, the comment you are looking for has been '
                 'deleted and is no longer accessible'
             )
-            request.user.message_set.create(message=error_message)
+            # request.user.message_set.create(message=error_message)
+            django_messages.info(request, error_message)
             return redirect(question_post.thread)
 
         if str(show_comment.thread._question_post().id) != str(id):
@@ -467,11 +463,13 @@ def question(request, id):  # refactor - long subroutine. display question body,
         try:
             show_comment.assert_is_visible_to(request.user)
         except exceptions.AnswerHidden as error:
-            request.user.message_set.create(message=force_text(error))
+            # request.user.message_set.create(message=force_text(error))
+            django_messages.info(request, force_text(error))
             # use reverse function here because question is not yet loaded
             return redirect('question', id=id)
         except exceptions.QuestionHidden as error:
-            request.user.message_set.create(message=force_text(error))
+            # request.user.message_set.create(message=force_text(error))
+            django_messages.info(request, force_text(error))
             return redirect('index')
 
     elif show_answer:
@@ -486,7 +484,8 @@ def question(request, id):  # refactor - long subroutine. display question body,
         try:
             show_post.assert_is_visible_to(request.user)
         except django_exceptions.PermissionDenied as error:
-            request.user.message_set.create(message=force_text(error))
+            # request.user.message_set.create(message=force_text(error))
+            django_messages.info(request, force_text(error))
             return redirect('question', id=id)
 
     thread = question_post.thread
@@ -503,10 +502,9 @@ def question(request, id):  # refactor - long subroutine. display question body,
 
     # TODO: cache this query set, but again takes only 3ms!
     if request.user.is_authenticated():
-        user_votes = Vote.objects.filter(
-                            user=request.user,
-                            voted_post__id__in = post_to_author.keys()
-                        ).values_list('voted_post_id', 'vote')
+        user_votes = Vote.objects.\
+            filter(user=request.user, voted_post__id__in=post_to_author.keys()).\
+            values_list('voted_post_id', 'vote')
         user_votes = dict(user_votes)
         # we can avoid making this query by iterating through
         # already loaded posts
@@ -743,9 +741,11 @@ def get_perms_data(request):
 
     return {'html': html}
 
+
 @ajax_only
 @require_GET
 def get_post_html(request):
     post = models.Post.objects.get(id=request.GET['post_id'])
     post.assert_is_visible_to(request.user)
     return {'post_html': post.html}
+

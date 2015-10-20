@@ -1,4 +1,4 @@
-{% import "macros.jinja" as macros%}
+{% import "macros.jinja" as macros with context %}
 
 <a id="navTags" href="{{ url("tags") }}" class="{% if active_tab == 'tags' %}on{% endif %}">
     {% trans %}tags{% endtrans %}

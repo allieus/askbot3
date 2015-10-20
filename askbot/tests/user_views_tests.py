@@ -1,15 +1,11 @@
-from askbot.tests.utils import AskbotTestCase
-from askbot.views.users import owner_or_moderator_required
 from django.contrib.auth.models import AnonymousUser
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
+from django.utils.six.moves.urllib.parse import urlparse, parse_qsl, unquote
+from askbot.tests.utils import AskbotTestCase
+from askbot.views.users import owner_or_moderator_required
 from mock import Mock
 
-try:
-    from urllib.parse import urlparse, parse_qsl, unquote
-except ImportError:
-    from urllib import unquote
-    from urlparse import urlparse, parse_qsl
 
 class UserViewsTests(AskbotTestCase):
 

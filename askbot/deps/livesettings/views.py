@@ -1,6 +1,6 @@
-from django.shortcuts import redirect, render_to_response
-from django.template import RequestContext
+from django.shortcuts import render, redirect
 from django.views.decorators.cache import never_cache
+from django.utils import six
 from askbot.deps.livesettings import ConfigurationSettings, forms
 from askbot.deps.livesettings import ImageValue
 from askbot.deps.livesettings.overrides import get_overrides
@@ -12,7 +12,7 @@ log = logging.getLogger('configuration.views')
 
 @never_cache
 @admins_only
-def group_settings(request, group, template='livesettings/group_settings.html'):
+def group_settings(request, group, template='livesettings/group_settings.jinja'):
     # Determine what set of settings this editor is used for
 
     use_db, overrides = get_overrides()
@@ -47,7 +47,8 @@ def group_settings(request, group, template='livesettings/group_settings.html'):
                         # messages.success(request, message)
                         # the else if for the settings that are not updated.
                     except Exception as e:
-                        request.user.message_set.create(message=e.message)
+                        print(e)
+                        request.user.message_set.create(message=six.text_type(e))
 
                 return redirect(request.path)
         else:
@@ -57,13 +58,13 @@ def group_settings(request, group, template='livesettings/group_settings.html'):
     else:
         form = None
 
-    return render_to_response(template, {
+    return render(request, template, {
         'all_super_groups': mgr.get_super_groups(),
         'title': title,
         'settings_group': settings,
         'form': form,
         'use_db': use_db
-    }, context_instance=RequestContext(request))
+    })
 
 
 # Site-wide setting editor is identical, but without a group
@@ -72,7 +73,7 @@ def site_settings(request):
     mgr = ConfigurationSettings()
     default_group = mgr.groups()[0].key
     return redirect('group_settings', default_group)
-    # return group_settings(request, group=None, template='livesettings/site_settings.html')
+    # return group_settings(request, group=None, template='livesettings/site_settings.jinja')
 
 
 @never_cache
@@ -101,5 +102,7 @@ def export_as_python(request):
     pp = pprint.PrettyPrinter(indent=4)
     pretty = pp.pformat(work)
 
-    return render_to_response('livesettings/text.txt', {'text': pretty}, mimetype='text/plain')
+    return render(request, 'livesettings/text.txt', {
+        'text': pretty,
+    }, content_type='text/plain')
 

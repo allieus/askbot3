@@ -1,9 +1,11 @@
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
+
 {% if 'SIDEBAR_QUESTION_HEADER'|show_block_to(request.user) %}
-<div class="box">
-    {{ settings.SIDEBAR_QUESTION_HEADER }}
-</div>
+    <div class="box">
+        {{ settings.SIDEBAR_QUESTION_HEADER }}
+    </div>
 {% endif %}
+
 <div class="box vote-buttons">
   <h2>{{ settings.WORDS_QUESTION_TOOLS|escape }}</h2>
     <button class="js-follow-question button large"

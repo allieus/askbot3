@@ -1,5 +1,7 @@
-{% import "macros.jinja" as macros %}
-<form id="fmask" action="{{ url("ask") }}" method="post" >{% csrf_token %}
+{% import "macros.jinja" as macros with context %}
+
+<form id="fmask" action="{{ url("ask") }}" method="post">
+    {% csrf_token %}
     <div class="form-item form-group ask-form-bar">
         <label for="id_title">{{ form.title.help_text }}</label>
         {% if form.title.errors %}
@@ -7,7 +9,7 @@
         {% endif %}
         <div id="askFormBar" class="search-bar">
             <input id="id_title" class="questionTitleInput" name="title" autocomplete="off"
-                value="{% if form.initial.title %}{{form.initial.title|escape}}{% endif %}"/>
+                value="{% if form.initial.title %}{{form.initial.title|escape}}{% endif %}" />
         </div>
     </div>
 
@@ -33,10 +35,7 @@
         {% if settings.ALLOW_ASK_ANONYMOUSLY %}
             {{ macros.checkbox_in_div(form.ask_anonymously) }}
         {% endif %}
-        {% if settings.GROUPS_ENABLED and
-            request.user.is_authenticated() and
-            request.user.can_make_group_private_posts()
-        %}
+        {% if settings.GROUPS_ENABLED and request.user.is_authenticated() and request.user.can_make_group_private_posts() %}
             {{ macros.checkbox_in_div(form.post_privately) }}
         {% endif %}
         {% if settings.MULTILINGUAL %}
@@ -57,3 +56,4 @@
     {% endif %}
     <div class="clean"></div>
 </form>
+

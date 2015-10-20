@@ -43,6 +43,8 @@ def enumerate_string_list(strings):
 
 
 def format_setting_name(token):
+    if not token:
+        return ''
     token = token.replace(' ', '_')
     token = token.replace('-', '_')
     bits = token.split('_')

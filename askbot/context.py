@@ -1,11 +1,10 @@
 """Askbot template context processor that makes some parameters
 from the django settings, all parameters from the askbot livesettings
-and the application available for the templates
-"""
+and the application available for the templates"""
 
 import sys
 import json
-from django.conf import settings
+from django.conf import settings as django_settings
 from django.core.urlresolvers import reverse
 
 import askbot
@@ -33,28 +32,30 @@ def application_settings(request):
     #    # add settings to the context per page
     #    return {}
     my_settings = askbot_settings.as_dict()
-    my_settings['LANGUAGE_CODE'] = getattr(request, 'LANGUAGE_CODE', settings.LANGUAGE_CODE)
-    my_settings['MULTILINGUAL'] = False  # FIXME: REMOVE ME
-    my_settings['LANGUAGES_DICT'] = dict(getattr(settings, 'LANGUAGES', []))
-    my_settings['ALLOWED_UPLOAD_FILE_TYPES'] = settings.ASKBOT_ALLOWED_UPLOAD_FILE_TYPES
-    my_settings['ASKBOT_URL'] = settings.ASKBOT_URL
-    my_settings['STATIC_URL'] = settings.STATIC_URL
-    my_settings['IP_MODERATION_ENABLED'] = getattr(settings, 'ASKBOT_IP_MODERATION_ENABLED', False)
-    my_settings['USE_LOCAL_FONTS'] = getattr(settings, 'ASKBOT_USE_LOCAL_FONTS', False)
-    my_settings['CSRF_COOKIE_NAME'] = settings.CSRF_COOKIE_NAME
-    my_settings['DEBUG'] = settings.DEBUG
-    my_settings['USING_RUNSERVER'] = 'runserver' in sys.argv or 'runserver_plus' in sys.argv
-    my_settings['ASKBOT_VERSION'] = askbot.get_version()
-    my_settings['LOGIN_URL'] = url_utils.get_login_url()
-    my_settings['LOGOUT_URL'] = url_utils.get_logout_url()
+
+    my_settings.update({
+        'USE_ASKBOT_LOGIN_SYSTEM': False,  # FIXME: not using askbot.deps.django_authopenid
+        'LANGUAGE_CODE': getattr(request, 'LANGUAGE_CODE', django_settings.LANGUAGE_CODE),
+        'MULTILINGUAL': False,  # FIXME: REMOVE ME
+        'LANGUAGES_DICT': dict(getattr(django_settings, 'LANGUAGES', [])),
+        'ALLOWED_UPLOAD_FILE_TYPES': django_settings.ASKBOT_ALLOWED_UPLOAD_FILE_TYPES,
+        'ASKBOT_URL': django_settings.ASKBOT_URL,
+        'STATIC_URL': django_settings.STATIC_URL,
+        'IP_MODERATION_ENABLED': getattr(django_settings, 'ASKBOT_IP_MODERATION_ENABLED', False),
+        'USE_LOCAL_FONTS': getattr(django_settings, 'ASKBOT_USE_LOCAL_FONTS', False),
+        'CSRF_COOKIE_NAME': django_settings.CSRF_COOKIE_NAME,
+        'DEBUG': django_settings.DEBUG,
+        'USING_RUNSERVER': 'runserver' in sys.argv or 'runserver_plus' in sys.argv,
+        'ASKBOT_VERSION': askbot.get_version(),
+        'LOGIN_URL': url_utils.get_login_url(),
+        'LOGOUT_URL': url_utils.get_logout_url(),
+        'LOGOUT_REDIRECT_URL': url_utils.get_logout_redirect_url(),
+        'TINYMCE_PLUGINS': [],
+    })
 
     if my_settings['EDITOR_TYPE'] == 'tinymce':
-        tinymce_plugins = settings.TINYMCE_DEFAULT_CONFIG.get('plugins', '').split(',')
-        my_settings['TINYMCE_PLUGINS'] = map(lambda v: v.strip(), tinymce_plugins)
-    else:
-        my_settings['TINYMCE_PLUGINS'] = []
-
-    my_settings['LOGOUT_REDIRECT_URL'] = url_utils.get_logout_redirect_url()
+        tinymce_plugins = django_settings.TINYMCE_DEFAULT_CONFIG.get('plugins', '').split(',')
+        my_settings['TINYMCE_PLUGINS'] = list(map(lambda v: v.strip(), tinymce_plugins))
 
     current_language = get_language()
 
@@ -76,12 +77,14 @@ def application_settings(request):
         'min_search_word_length': min_search_word_length,
         'current_language_code': current_language,
         'settings': my_settings,
-        'moderation_items': api.get_info_on_moderation_items(request.user),
         'need_scope_links': need_scope_links,
         'noscript_url': const.DEPENDENCY_URLS['noscript'],
     }
 
-    my_settings['USE_ASKBOT_LOGIN_SYSTEM'] = False  # not using askbot.deps.django_authopenid
+    if hasattr(request, 'user'):
+        context['moderation_items'] = api.get_info_on_moderation_items(request.user)
+
+    group_list = list()
 
     if askbot_settings.GROUPS_ENABLED:
         # calculate context needed to list all the groups
@@ -105,12 +108,11 @@ def application_settings(request):
         # insert data for the global group at the first position
         groups_data.insert(0, {'id': global_group.id, 'name': global_group.name})
 
-        # build group_list for the context
-        group_list = list()
         for group in groups_data:
             link = _get_group_url(group)
             group_list.append({'name': group['name'], 'link': link})
-        context['group_list'] = json.dumps(group_list)
+
+    context['group_list'] = json.dumps(group_list)
 
     return context
 

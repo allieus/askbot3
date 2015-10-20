@@ -1,10 +1,12 @@
 <!-- user_info.jinja -->
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
+
 {% if show_moderation_warning %}
-<div class="user-memo">
-    {% trans %}Note: the homepage link and the about section won't be shown to other users until your profile is approved by the moderators.{% endtrans %}
-</div>
+    <div class="user-memo">
+        {% trans %}Note: the homepage link and the about section won't be shown to other users until your profile is approved by the moderators.{% endtrans %}
+    </div>
 {% endif %}
+
 <div class="user-info-table">
     <div class="col1">
         <div class='avatar'>
@@ -62,7 +64,7 @@
                         </a>
                     {% endif %}
                 </td>
-            </tr>  
+            </tr>
             {% endif %}
             <tr>
                 <th colspan="2" align="left">

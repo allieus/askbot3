@@ -1,9 +1,7 @@
 <!-- template header.jinja -->
-{% import "macros.jinja" as macros %}
-<div 
-    id="header"
-    class="{% if settings.SHOW_LOGO %}with-logo{% else %}without-logo{% endif %}"
->
+{% import "macros.jinja" as macros with context %}
+
+<div id="header" class="{% if settings.SHOW_LOGO %}with-logo{% else %}without-logo{% endif %}">
     <div class="content-wrapper">
         <div id="userToolsNav">
             {% include "widgets/user_navigation.jinja" %}

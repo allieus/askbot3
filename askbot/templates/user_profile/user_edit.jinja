@@ -1,7 +1,10 @@
 {% extends "one_column_body.jinja" %}
-{% import "macros.jinja" as macros %}
+
+{% import "macros.jinja" as macros with context %}
+
 <!-- user_edit.jinja -->
 {% block title %}{% filter trim %}{% trans %}Edit user profile{% endtrans %}{% endfilter %}{% endblock %}
+
 {% block content %}
 <h1 class="section-title">
     {{ request.user.username|escape }} - {% trans %}edit profile{% endtrans %}
@@ -106,14 +109,15 @@
     </form>
 </div>
 {% endblock %}
+
 {% block endjs %}
-        <script type="text/javascript">
-            $().ready(function(){
-                $("#nav_profile").attr('className',"on");
-                $("#cancel").bind('click', function(){history.go(-1);})
-            });
-        </script>
-        {% block userjs %}
-        {% endblock %}
+    <script type="text/javascript">
+        $(function () {
+            $("#nav_profile").attr('className',"on");
+            $("#cancel").bind('click', function(){history.go(-1);})
+        });
+    </script>
+    {% block userjs %}
+    {% endblock %}
 {% endblock %}
-<!-- end user_edit.jinja -->
+

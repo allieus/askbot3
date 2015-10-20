@@ -9,6 +9,7 @@ from django.utils.encoding import force_text, python_2_unicode_compatible
 from askbot.user_messages import get_and_delete_messages
 
 
+# FIXME: django.contrib.messages 가 대체하나 ???
 def user_messages(request):
     """
     Returns session messages for the current session.
@@ -26,8 +27,8 @@ def user_messages(request):
     # the Askbot's session messages hack will fail, so we have
     # an extra if statement here.
     if hasattr(request.user, 'get_and_delete_messages'):
-        messages = request.user.get_and_delete_messages()
-        return {'user_messages': messages}
+        user_messages = request.user.get_and_delete_messages()
+        return {'user_messages': user_messages}
     return {}
 
 

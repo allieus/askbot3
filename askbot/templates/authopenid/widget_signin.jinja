@@ -1,6 +1,8 @@
 {% extends "widget_base.jinja" %}
-{% import "authopenid/authopenid_macros.jinja" as login_macros %}
-{% from "macros.jinja" import timeago %}
+
+{% import "authopenid/authopenid_macros.jinja" as login_macros with context %}
+{% import "macros.jinja" as macros with context %}
+
 <!-- signin.jinja -->
 {% block title %}{% filter trim %}{% trans %}User login{% endtrans %}{% endfilter %}{% endblock %}
 {% block forestyle %}
@@ -159,7 +161,7 @@
                 </td>
                 <td>
                     {% if login_method.last_used_timestamp %}
-                        {{ timeago(login_method.last_used_timestamp) }}
+                        {{ macros.timeago(login_method.last_used_timestamp) }}
                     {% endif %}
                 </td>
                 <td>

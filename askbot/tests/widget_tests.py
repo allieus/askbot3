@@ -18,8 +18,10 @@ class WidgetViewsTests(AskbotTestCase):
         self.user = self.create_user('user1')
         self.user.set_password('sample')
         self.user.save()
-        self.good_data = {'title': 'This is a title question',
-                          'ask_anonymously': False}
+        self.good_data = {
+            'title': 'This is a title question',
+            'ask_anonymously': False,
+        }
 
     def test_post_with_auth(self):
         self.client.login(username='user1', password='sample')
@@ -36,14 +38,15 @@ class WidgetViewsTests(AskbotTestCase):
                           self.good_data['title'])
 
     def test_post_after_login(self):
-        widget_question_data = { 'title': 'testing post after login, does it?',
-                                 'author': self.user,
-                                 'added_at': datetime.now(),
-                                 'wiki': False,
-                                 'text': ' ',
-                                 'tagnames': '',
-                                 'is_anonymous': False
-                               }
+        widget_question_data = {
+            'title': 'testing post after login, does it?',
+            'author': self.user,
+            'added_at': datetime.now(),
+            'wiki': False,
+            'text': ' ',
+            'tagnames': '',
+            'is_anonymous': False
+        }
 
         self.client.login(username='user1', password='sample')
 
@@ -70,9 +73,10 @@ class WidgetLoginViewTest(AskbotTestCase):
     def test_correct_template_loading(self):
         client = Client()
         response = client.get(reverse('widget_signin'))
-        template_name = 'authopenid/widget_signin.html'
+        template_name = 'authopenid/widget_signin.jinja'
         templates = [template.name for template in response.templates]
         self.assertTrue(template_name in templates)
+
 
 class WidgetCreatorViewsTests(AskbotTestCase):
 
@@ -105,32 +109,28 @@ class WidgetCreatorViewsTests(AskbotTestCase):
 
     def test_edit_ask_widget_get(self):
         self.client.login(username='user1', password='testpass')
-        response = self.client.get(reverse('edit_widget',
-            args=('ask', self.widget.id, )))
+        response = self.client.get(reverse('edit_widget', args=('ask', self.widget.id, )))
         self.assertEquals(response.status_code, 200)
         self.assertTrue('form' in response.context)
 
     def test_edit_ask_widget_post(self):
         self.client.login(username='user1', password='testpass')
         post_data = {'title': 'Test lalalla'}
-        response = self.client.post(reverse('edit_widget',
-            args=('ask', self.widget.id, )), post_data)
+        response = self.client.post(reverse('edit_widget', args=('ask', self.widget.id, )), post_data)
         self.assertEquals(response.status_code, 302)
 
     def test_delete_ask_widget_get(self):
         self.client.login(username='user1', password='testpass')
-        response = self.client.get(reverse('delete_widget',
-            args=('ask', self.widget.id, )))
+        response = self.client.get(reverse('delete_widget', args=('ask', self.widget.id, )))
         self.assertEquals(response.status_code, 200)
         self.assertTrue('widget' in response.context)
 
     def test_delete_ask_widget_post(self):
         self.client.login(username='user1', password='testpass')
-        response = self.client.post(reverse('delete_widget',
-            args=('ask', self.widget.id, )))
+        response = self.client.post(reverse('delete_widget', args=('ask', self.widget.id, )))
         self.assertEquals(response.status_code, 302)
 
-    # this test complains about 404.html template but it's correct
+    # this test complains about 404.jinja template but it's correct
     # def test_bad_url(self):
     #    self.client.login(username='user1', password='testpass')
     #    response = self.client.get('/widgets/foo/create/')
@@ -143,9 +143,7 @@ class QuestionWidgetViewsTests(AskbotTestCase):
         translation.activate(django_settings.LANGUAGE_CODE)
         self.user = self.create_user('testuser')
         self.client = Client()
-        self.widget =  models.QuestionWidget.objects.create(title="foo",
-                                   question_number=5, search_query='test',
-                                   tagnames='test')
+        self.widget = models.QuestionWidget.objects.create(title="foo", question_number=5, search_query='test', tagnames='test')
 
         # we post 6 questions!
         titles = (
@@ -172,3 +170,4 @@ class QuestionWidgetViewsTests(AskbotTestCase):
 
         self.assertQuerysetEqual(threads, response.context['threads'])
         self.assertEquals(self.widget, response.context['widget'])
+

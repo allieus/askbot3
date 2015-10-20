@@ -1,5 +1,7 @@
 from __future__ import print_function
 from __future__ import unicode_literals
+
+from collections import OrderedDict
 import datetime
 import traceback
 
@@ -9,7 +11,6 @@ from django.contrib.sites.models import Site
 from django.core.management.base import NoArgsCommand
 from django.db import connection
 from django.db.models import Q, F
-from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext as _
 from django.utils.translation import activate as activate_language
 
@@ -256,7 +257,7 @@ class Command(NoArgsCommand):
                     q_all_B.cutoff_time = cutoff_time
 
         # build ordered list questions for the email report
-        q_list = SortedDict()
+        q_list = OrderedDict()
 
         # TODO: refactor q_list into a separate class?
         extend_question_list(q_sel_A, q_list, languages=languages)

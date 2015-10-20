@@ -1,10 +1,13 @@
 {% extends "two_column_body.jinja" %}
-{% import "macros.jinja" as macros %}
-<!-- question_edit.jinja -->
+
+{% import "macros.jinja" as macros with context %}
+
 {% block title %}{% filter trim %}{{ settings.WORDS_EDIT_QUESTION|escape }}{% endfilter %}{% endblock %}
+
 {% block forestyle %}
     <link rel="stylesheet" type="text/css" href="{{"/wmd/wmd.css"|media}}" />
 {% endblock %}
+
 {% block content %}
 <div class="section-title">{{ settings.WORDS_EDIT_QUESTION|escape }} [<a href="{{ question.get_absolute_url() }}">{% trans %}back{% endtrans %}</a>]</div>
 <form id="fmedit" action="{{ url("edit_question", question.id) }}" method="post" >{% csrf_token %}
@@ -60,13 +63,13 @@
 {% endblock %}
 
 {% block sidebar %}
-<div id ="tips" class="box">
-    <h2>{% trans %}Tips{% endtrans %}</h2>
-    {% include "widgets/question_edit_tips.jinja" %}
-</div>
-{% if settings.EDITOR_TYPE == 'markdown' %}
-    {% include "/widgets/markdown_help.jinja" %}
-{% endif %}
+    <div id ="tips" class="box">
+        <h2>{% trans %}Tips{% endtrans %}</h2>
+        {% include "widgets/question_edit_tips.jinja" %}
+    </div>
+    {% if settings.EDITOR_TYPE == 'markdown' %}
+        {% include "/widgets/markdown_help.jinja" %}
+    {% endif %}
 {% endblock %}
 
 {% block endjs %}
@@ -127,4 +130,3 @@
         {% include "meta/category_tree_js.jinja" %}
     {% endif %}
 {% endblock %}
-<!-- end question_edit.jinja -->

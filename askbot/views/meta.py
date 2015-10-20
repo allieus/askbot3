@@ -3,11 +3,11 @@
 
 This module contains a collection of views displaying all sorts of secondary and mostly static content.
 """
-from django.shortcuts import render_to_response, get_object_or_404
+import re
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
-from django.shortcuts import render
-from django.template import Context
+from django.contrib import messages as django_messages
+from django.shortcuts import render, render_to_response, get_object_or_404
 from django.http import Http404
 from django.http import HttpResponse
 from django.http import HttpResponseForbidden
@@ -28,7 +28,6 @@ from askbot.models import badges as badge_data
 from askbot.utils.decorators import moderators_only
 from askbot.utils import functions
 from askbot.utils.markup import markdown_input_converter
-import re
 
 
 def generic_view(request, template=None, page_class=None, context=None):
@@ -37,7 +36,7 @@ def generic_view(request, template=None, page_class=None, context=None):
         return render_to_response('django_error.jinja')
     context = context or {}
     context['page_class'] = page_class
-    return render(request, template, Context(context))
+    return render(request, template, context)
 
 
 def markdown_flatpage(request, page_class=None, setting_name=None):
@@ -63,7 +62,7 @@ def config_variable(request, variable_name=None, mimetype=None):
     if variable_name in PUBLIC_VARIABLES:
         # TODO add http header-based caching here!!!
         output = getattr(askbot_settings, variable_name, '')
-        return HttpResponse(output, mimetype=mimetype)
+        return HttpResponse(output, content_type=mimetype)
     else:
         return HttpResponseForbidden()
 
@@ -128,7 +127,8 @@ def feedback(request):
     if askbot_settings.FEEDBACK_MODE == 'auth-only':
         if request.user.is_anonymous():
             message = _('Please sign in or register to send your feedback')
-            request.user.message_set.create(message=message)
+            # request.user.message_set.create(message=message)
+            django_messages.info(request, message)
             redirect_url = get_login_url() + '?next=' + request.path
             return redirect(redirect_url)
     elif askbot_settings.FEEDBACK_MODE == 'disabled':
@@ -162,17 +162,17 @@ def feedback(request):
                 email.send(get_moderators())
 
             message = _('Thanks for the feedback!')
-            request.user.message_set.create(message=message)
+            # request.user.message_set.create(message=message)
+            django_messages.info(request, message)
             return redirect(get_next_url(request))
     else:
-        form = FeedbackForm(
-                    user=request.user,
-                    initial={'next':get_next_url(request)}
-                )
+        form = FeedbackForm(user=request.user, initial={'next': get_next_url(request)})
 
     data['form'] = form
     return render(request, 'feedback.jinja', data)
-feedback.CANCEL_MESSAGE=ugettext_lazy('We look forward to hearing your feedback! Please, give it next time :)')
+
+feedback.CANCEL_MESSAGE = ugettext_lazy('We look forward to hearing your feedback! Please, give it next time :)')
+
 
 def privacy(request):
     data = {
@@ -182,7 +182,8 @@ def privacy(request):
     }
     return render(request, 'static_page.jinja', data)
 
-def badges(request):# user status/reputation system
+
+def badges(request):  # user status/reputation system
     # TODO: supplement database data with the stuff from badges.py,
     if askbot_settings.BADGES_MODE != 'public':
         raise Http404
@@ -193,40 +194,34 @@ def badges(request):# user status/reputation system
 
     my_badge_ids = list()
     if request.user.is_authenticated():
-        my_badge_ids = Award.objects.filter(
-                                user=request.user
-                            ).values_list(
-                                'badge_id', flat=True
-                            ).distinct()
+        my_badge_ids = Award.objects.filter(user=request.user).values_list('badge_id', flat=True).distinct()
 
     data = {
         'active_tab': 'badges',
-        'badges' : badges,
+        'badges': badges,
         'page_class': 'meta',
-        'my_badge_ids' : my_badge_ids
+        'my_badge_ids': my_badge_ids,
     }
     return render(request, 'badges.jinja', data)
+
 
 def badge(request, id):
     # TODO: supplement database data with the stuff from badges.py
     badge = get_object_or_404(BadgeData, id=id)
 
-    badge_recipients = User.objects.filter(
-                            award_user__badge = badge
-                        ).annotate(
-                            last_awarded_at = Max('award_user__awarded_at'),
-                            award_count = Count('award_user')
-                        ).order_by(
-                            '-last_awarded_at'
-                        )
+    badge_recipients = User.objects.\
+        filter(award_user__badge=badge).\
+        annotate(last_awarded_at=Max('award_user__awarded_at'), award_count=Count('award_user')).\
+        order_by('-last_awarded_at')
 
     data = {
         'active_tab': 'badges',
-        'badge_recipients' : badge_recipients,
-        'badge' : badge,
+        'badge_recipients': badge_recipients,
+        'badge': badge,
         'page_class': 'meta',
     }
     return render(request, 'badge.jinja', data)
+
 
 @moderators_only
 def list_suggested_tags(request):
@@ -252,7 +247,7 @@ def list_suggested_tags(request):
         'pages': paginator.num_pages,
         'current_page_number': page_no,
         'page_object': page,
-        'base_url': request.path
+        'base_url': request.path,
     })
 
     data = {

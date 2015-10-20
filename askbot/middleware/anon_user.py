@@ -9,8 +9,10 @@ added to the :class:`AnonymousUser` so that user could be pickled.
 Secondly, it sends greeting message to anonymous users.
 """
 from django.conf import settings as django_settings
+from django.contrib import messages as django_messages
 from askbot.user_messages import create_message, get_and_delete_messages
 from askbot.conf import settings as askbot_settings
+
 
 class AnonymousMessageManager(object):
     """message manager for the anonymous user"""
@@ -27,11 +29,13 @@ class AnonymousMessageManager(object):
         messages = get_and_delete_messages(self.request)
         return messages
 
+
 def dummy_deepcopy(*arg):
     """this is necessary to prevent deepcopy() on anonymous user object
     that now contains reference to request, which cannot be deepcopied
     """
     return None
+
 
 class ConnectToSessionMessagesMiddleware(object):
     """Middleware that attaches messages to anonymous users, and
@@ -61,7 +65,8 @@ class ConnectToSessionMessagesMiddleware(object):
                     askbot_settings.ENABLE_GREETING_FOR_ANON_USER:
                 request.session['greeting_set'] = True
                 msg = askbot_settings.GREETING_FOR_ANONYMOUS_USER
-                request.user.message_set.create(message=msg)
+                # request.user.message_set.create(message=msg)
+                django_messages.info(request, msg)
 
     def process_response(self, request, response):
         """Adds the ``'askbot_visitor'``key to cookie if user ever

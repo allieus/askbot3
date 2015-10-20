@@ -1,7 +1,9 @@
-{% extends "email/base_mail.jinja"%}
-{% import "email/macros.jinja" as macros %}
+{% extends "email/base_mail.jinja" %}
+
+{% import "email/macros.jinja" as macros with context %}
+
 {% block headline %}
-{% trans user=username|escape %}{{ user }}, please reply to this message.{% endtrans %}
+    {% trans user=username|escape %}{{ user }}, please reply to this message.{% endtrans %}
 {% endblock %}
 
 {% block content %}

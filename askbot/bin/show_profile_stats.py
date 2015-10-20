@@ -13,6 +13,6 @@ except ImportError:
     from hotshot import stats
 
 _stats = stats.load(sys.argv[1])
-#_stats.strip_dirs()
+# _stats.strip_dirs()
 _stats.sort_stats('time', 'calls')
 _stats.print_stats(20)

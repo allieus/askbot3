@@ -4,7 +4,6 @@ from askbot.mail.messages import BaseEmail
 from askbot.utils.decorators import moderators_only
 from django.http import Http404
 from django.shortcuts import render
-from django.template import Context
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 import logging
@@ -31,7 +30,7 @@ def list_emails(request):
     # list only enabled emails
     enabled = dict((k, v) for k, v in REGISTRY.items() if v().is_enabled())
     data = {'emails': enabled}  # REGISTRY}
-    return render(request, 'email/list_emails.jinja', Context(data))
+    return render(request, 'email/list_emails.jinja', data)
 
 
 DEFAULT_PREVIEW_ERROR_MESSAGE = _(
@@ -48,7 +47,7 @@ def preview_email(request, slug):
     data = {
         'subject': None,
         'body': None,
-        'error_message': None
+        'error_message': None,
     }
 
     email = REGISTRY[slug]()
@@ -61,13 +60,9 @@ def preview_email(request, slug):
     except Exception as e:
         tech_error = force_text(e)
         LOG.critical(tech_error)
-        error_message = getattr(
-                    email,
-                    'preview_error_message',
-                    DEFAULT_PREVIEW_ERROR_MESSAGE
-                )
+        error_message = getattr(email, 'preview_error_message', DEFAULT_PREVIEW_ERROR_MESSAGE)
         error_message += '</br> %s' % tech_error
         data['error_message'] = error_message
 
     data['email'] = email
-    return render(request, 'email/preview_email.jinja', Context(data))
+    return render(request, 'email/preview_email.jinja', data)

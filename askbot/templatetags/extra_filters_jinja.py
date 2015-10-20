@@ -4,10 +4,6 @@ import json
 import pytz
 import re
 import time
-try:
-    from urllib.parse import quote, quote_plus
-except ImportError:
-    from urllib import quote, quote_plus
 from bs4 import BeautifulSoup
 from django.core import exceptions as django_exceptions
 from django.utils.translation import ugettext as _
@@ -17,6 +13,7 @@ from django.template import defaultfilters
 from django.core.urlresolvers import reverse, resolve
 from django.http import Http404
 from django.utils.encoding import force_text
+from django.utils.six.moves.urllib.parse import quote, quote_plus
 from django.utils.text import Truncator
 from django_countries import countries
 from django_countries import settings as countries_settings

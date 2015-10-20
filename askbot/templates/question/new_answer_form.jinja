@@ -1,8 +1,7 @@
-<form
-        id="fmanswer"
-        action="{{ url("answer", question.id) }}"
-        method="post"
-        >{% csrf_token %}
+{% import "macros.jinja" as macros with context %}
+
+<form id="fmanswer" action="{{ url("answer", question.id) }}" method="post">
+    {% csrf_token %}
     <div style="clear:both"></div>
     {% if request.user.is_anonymous() and not settings.ALLOW_POSTING_BEFORE_LOGGING_IN %}
         {% if not thread.closed %}

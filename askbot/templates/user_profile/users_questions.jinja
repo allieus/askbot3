@@ -1,5 +1,6 @@
 <!-- users_questions.jinja -->
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
+
 <div class="user-stats-table">
     <div class="users-questions">
     {% for question in questions %}

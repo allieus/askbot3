@@ -1,28 +1,32 @@
 {% extends "user_profile/user.jinja" %}
-{% from "macros.jinja" import timeago %}
+
+{% import "macros.jinja" as macros with context %}
+
 <!-- user_reputation.jinja -->
 {% block profilesection %}{% trans %}karma{% endtrans %}{% endblock %}
+
 {% block usercontent %}
-<div class="karma-summary">
-    <div id="diagram" class="karma-diagram"></div>
-    <div class="karma-details">
-        {% if view_user.id == user.id %}
-        <h2>{% trans %}Your karma change log.{% endtrans %}</h2>
-        {% else %}
-        <h2>{% trans user_name=view_user.username|escape %}{{user_name}}'s karma change log{% endtrans %}</h2>
-        {% endif %}
-        {% for rep in reputation %}
-        <p>
-            <span class="karma-gained">{{ rep.positive }}</span>
-            <span class="karma-lost">{{ rep.negative }}</span>
-            {{ rep.get_explanation_snippet() }}
-            <span class="small">({{ timeago(rep.reputed_at) }})</span>
-            <div class="clean"></div>
-        </p>
-        {% endfor %}
+    <div class="karma-summary">
+        <div id="diagram" class="karma-diagram"></div>
+        <div class="karma-details">
+            {% if view_user.id == user.id %}
+            <h2>{% trans %}Your karma change log.{% endtrans %}</h2>
+            {% else %}
+            <h2>{% trans user_name=view_user.username|escape %}{{user_name}}'s karma change log{% endtrans %}</h2>
+            {% endif %}
+            {% for rep in reputation %}
+            <p>
+                <span class="karma-gained">{{ rep.positive }}</span>
+                <span class="karma-lost">{{ rep.negative }}</span>
+                {{ rep.get_explanation_snippet() }}
+                <span class="small">({{ macros.timeago(rep.reputed_at) }})</span>
+                <div class="clean"></div>
+            </p>
+            {% endfor %}
+        </div>
     </div>
-</div>
 {% endblock %}
+
 {% block userjs %}
     {% compress js %}
         <script type="text/javascript" src="{{ '/jslib/excanvas.min.js'|media }}"></script>
@@ -32,7 +36,7 @@
 
     {% endcompress %}
     <script type="text/javascript">
-        $().ready(function(){
+        $(function(){
             var d = {{ reps }};
             var placeholder = $("#diagram");
             var plot = $.plot(placeholder, [d], {
@@ -45,4 +49,6 @@
             });
         });
     </script>
-{% endblock %}<!-- end user_reputation.jinja -->
+{% endblock %}
+<!-- end user_reputation.jinja -->
+

@@ -1,9 +1,10 @@
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
+
 {% if threads.object_list|length == 0 %}
     {% include "main_page/nothing_found.jinja" %}
 {% else %}
     {% for thread in threads.object_list %}
-        {{ thread.get_summary_html(search_state=search_state, visitor = request.user) }}
+        {{ thread.get_summary_html(search_state=search_state, visitor=request.user) }}
     {% endfor %}
     {#<div class="evenMore">
         {% trans %}Did not find what you were looking for?{% endtrans %} 

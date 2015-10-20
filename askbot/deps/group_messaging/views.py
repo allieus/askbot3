@@ -11,7 +11,6 @@ and turns them into complete views
 
 import copy
 import datetime
-from django.template import Context
 from django.contrib.auth.models import User
 from django.db import models
 from django.forms import IntegerField
@@ -22,7 +21,7 @@ from .models import MessageMemo
 from .models import SenderList
 from .models import LastVisitTime
 from .models import get_personal_groups_for_users
-from .models import get_unread_inbox_counter
+from .models import UnreadInboxCounter
 
 
 class NewThread(PjaxView):
@@ -74,14 +73,14 @@ class PostReply(PjaxView):
         last_visit.at = datetime.datetime.now()
         last_visit.save()
         return self.render_to_response(
-            Context({'post': message, 'user': request.user}),
-            template_name='group_messaging/stored_message.html'
+            {'post': message, 'user': request.user},
+            template_name='group_messaging/stored_message.jinja'
         )
 
 
 class ThreadsList(PjaxView):
     """shows list of threads for a given user"""
-    template_name = 'group_messaging/threads_list.html'
+    template_name = 'group_messaging/threads_list.jinja'
     http_method_list = ('GET',)
 
     def get_context(self, request, *args):
@@ -182,7 +181,7 @@ class DeleteOrRestoreThread(ThreadsList):
 
         if created and action == 'archive':
             # unfortunately we lose "unseen" status when archiving
-            counter = get_unread_inbox_counter(request.user)
+            counter = UnreadInboxCounter.get_for_user(request.user)
             counter.decrement()
             counter.save()
 
@@ -195,12 +194,12 @@ class DeleteOrRestoreThread(ThreadsList):
         memo.save()
 
         context = self.get_context(request)
-        return self.render_to_response(Context(context))
+        return self.render_to_response(context)
 
 
 class SendersList(PjaxView):
     """shows list of senders for a user"""
-    template_name = 'group_messaging/senders_list.html'
+    template_name = 'group_messaging/senders_list.jinja'
     http_method_names = ('GET',)
 
     def get_context(self, request):
@@ -212,7 +211,7 @@ class SendersList(PjaxView):
 
 class ThreadDetails(PjaxView):
     """shows entire thread in the unfolded form"""
-    template_name = 'group_messaging/thread_details.html'
+    template_name = 'group_messaging/thread_details.jinja'
     http_method_names = ('GET',)
 
     def get_context(self, request, thread_id=None):

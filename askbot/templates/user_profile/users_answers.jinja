@@ -1,4 +1,5 @@
-{% import "macros.jinja" as macros %}
+{% import "macros.jinja" as macros with context %}
+
 <div class="user-stats-table">
     <div class="users-answers">
         {% include "user_profile/user_answers_list.jinja" %}
