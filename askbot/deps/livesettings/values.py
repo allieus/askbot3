@@ -11,11 +11,12 @@ from decimal import Decimal
 from collections import OrderedDict
 import logging
 import traceback
+from uuid import uuid4
 from django import forms
 from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.cache import cache
-from django.utils import six
+from django.utils import six, timezone
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
@@ -765,9 +766,12 @@ class ImageValue(StringValue):
 
         file_storage = file_storage_class(**storage_settings)
 
+        dir_path = timezone.now().strftime('livesettings/imagevalue/%Y/%m/%d')
+        file_path = uuid4().hex + os.path.splitext(uploaded_file.name)[-1]
+
         # 1) come up with a file name
         # TODO: need better function here to calc name
-        file_name = file_storage.get_available_name(uploaded_file.name)
+        file_name = file_storage.get_available_name(dir_path + '/' + file_path)
         file_storage.save(file_name, uploaded_file)
         url = file_storage.url(file_name)
 
