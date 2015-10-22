@@ -3,12 +3,12 @@ Q&A website settings - title, desctiption, basic urls
 keywords
 """
 from __future__ import unicode_literals
-from askbot.conf.settings_wrapper import settings
-from askbot.conf.super_groups import CONTENT_AND_UI
-from askbot.deps import livesettings
-from django.utils.translation import ugettext_lazy as _
 from django.conf import settings as django_settings
 from django.utils.six.moves.urllib.parse import urlparse
+from django.utils.translation import ugettext_lazy as _
+from askbot.conf.settings_wrapper import settings
+from askbot.conf.super_groups import CONTENT_AND_UI
+import livesettings
 
 
 QA_SITE_SETTINGS = livesettings.ConfigurationGroup(

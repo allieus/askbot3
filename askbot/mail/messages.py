@@ -739,7 +739,7 @@ class GroupMessagingEmailAlert(BaseEmail):
             and askbot_settings.GROUP_MESSAGING_EMAIL_ALERT_ENABLED
 
     def get_mock_context(self):
-        from askbot.deps.group_messaging.models import Message
+        from group_messaging.models import Message
         message = Message.objects.all().order_by('-id')[0]
         return {
             'messages': message.get_timeline(),

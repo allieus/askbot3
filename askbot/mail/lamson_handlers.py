@@ -166,11 +166,9 @@ def process_reply(func):
             error = _("You were replying to an email address\
              unknown to the system or you were replying from a different address from the one where you\
              received the notification.")
-        except Exception as e:
-            import sys
-            print('{}'.format(e), file=sys.stderr)
+        except Exception:
             import traceback
-            print(traceback.format_exc(), file=sys.stderr)
+            traceback.print_exc()
 
         if error is not None:
             from askbot.mail.messages import ReplyByEmailError

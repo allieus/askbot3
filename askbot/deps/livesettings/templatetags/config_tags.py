@@ -1,8 +1,8 @@
 from django import template
 from django.contrib.sites.models import Site
 from django.core import urlresolvers
-from askbot.deps.livesettings import config_value
-from askbot.deps.livesettings.utils import url_join
+from livesettings import config_value
+from livesettings.utils import url_join
 import logging
 
 log = logging.getLogger('configuration.config_tags')
@@ -84,5 +84,5 @@ def admin_site_views(view):
 
     return {'links': links}
 
-register.inclusion_tag('askbot.deps.livesettings/_admin_site_views.jinja')(admin_site_views)
+register.inclusion_tag('livesettings/_admin_site_views.jinja')(admin_site_views)
 

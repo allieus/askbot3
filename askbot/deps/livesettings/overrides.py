@@ -1,8 +1,8 @@
-"""Allows askbot.deps.livesettings to be "locked down" and no longer use the settings page or the database
+"""Allows livesettings to be "locked down" and no longer use the settings page or the database
 for settings retrieval.
 """
 
-from django.conf import settings as djangosettings
+from django.conf import settings as django_settings
 from django.contrib.sites.models import Site
 
 __all__ = ['get_overrides']
@@ -13,13 +13,13 @@ def _safe_get_siteid(site):
             site = Site.objects.get_current()
             siteid = site.id
         except:
-            siteid = djangosettings.SITE_ID
+            siteid = django_settings.SITE_ID
     else:
         siteid = site.id
     return siteid
 
 def get_overrides(siteid=-1):
-    """Check to see if askbot.deps.livesettings is allowed to use the database.  If not, then
+    """Check to see if livesettings is allowed to use the database.  If not, then
     it will only use the values in the dictionary, LIVESETTINGS_OPTIONS[SITEID]['SETTINGS'],
     this allows 'lockdown' of a live site.
 
@@ -42,13 +42,15 @@ def get_overrides(siteid=-1):
     Returns a tuple (DB_ALLOWED, SETTINGS)
     """
     overrides = (True, {})
-    if hasattr(djangosettings, 'LIVESETTINGS_OPTIONS'):
+
+    if hasattr(django_settings, 'LIVESETTINGS_OPTIONS'):
         if siteid == -1:
             siteid = _safe_get_siteid(None)
 
-        opts = djangosettings.LIVESETTINGS_OPTIONS
+        opts = django_settings.LIVESETTINGS_OPTIONS
         if siteid in opts:
             opts = opts[siteid]
             overrides = (opts.get('DB', True), opts['SETTINGS'])
 
     return overrides
+

@@ -10,6 +10,7 @@ from django.core import cache, urlresolvers
 from django.core.cache.backends.dummy import DummyCache
 from django.core.cache.backends.locmem import LocMemCache
 from django.template.loader import render_to_string
+from django.utils import timezone
 from askbot.tests.utils import AskbotTestCase
 from askbot.models import Post
 from askbot.models import PostRevision
@@ -18,6 +19,7 @@ from askbot.models import Tag
 from askbot.models import Group
 from askbot.search.state_manager import DummySearchState
 from askbot.tests.utils import skipIf
+from askbot.utils.date import get_current_tz
 from askbot.conf import settings as askbot_settings
 
 
@@ -39,7 +41,7 @@ class PostModelTests(AskbotTestCase):
             **{
                 'text': 'blah',
                 'author': self.u1,
-                'revised_at': datetime.datetime.now()
+                'revised_at': timezone.now()
             }
         )
 
@@ -47,7 +49,7 @@ class PostModelTests(AskbotTestCase):
         post_revision = PostRevision(
             text='blah',
             author=self.u1,
-            revised_at=datetime.datetime.now(),
+            revised_at=timezone.now(),
             revision=1,
         )
 
@@ -62,7 +64,7 @@ class PostModelTests(AskbotTestCase):
 
         rev2 = PostRevision(
             post=question, text='blah', author=self.u1,
-            revised_at=datetime.datetime.now(), revision=2
+            revised_at=timezone.now(), revision=2
         )
         rev2.save()
         self.assertFalse(rev2.id is None)
@@ -84,9 +86,12 @@ class PostModelTests(AskbotTestCase):
         self.user = self.u1
         q = self.post_question()
 
-        c1 = self.post_comment(parent_post=q, timestamp=datetime.datetime(2010, 10, 2, 14, 33, 20))
-        c2 = q.add_comment(user=self.user, comment='blah blah', added_at=datetime.datetime(2010, 10, 2, 14, 33, 21))
-        c3 = self.post_comment(parent_post=q, body_text='blah blah 2', timestamp=datetime.datetime(2010, 10, 2, 14, 33, 22))
+        c1 = self.post_comment(parent_post=q,
+                               timestamp=datetime.datetime(2010, 10, 2, 14, 33, 20, 0, get_current_tz()))
+        c2 = q.add_comment(user=self.user, comment='blah blah',
+                           added_at=datetime.datetime(2010, 10, 2, 14, 33, 21, 0, get_current_tz()))
+        c3 = self.post_comment(parent_post=q, body_text='blah blah 2',
+                               timestamp=datetime.datetime(2010, 10, 2, 14, 33, 22, 0, get_current_tz()))
 
         Post.objects.precache_comments(for_posts=[q], visitor=self.user)
         self.assertListEqual([c1, c2, c3], q._cached_comments)
@@ -108,9 +113,12 @@ class PostModelTests(AskbotTestCase):
         self.user = self.u1
         q = self.post_question()
 
-        c1 = self.post_comment(parent_post=q, timestamp=datetime.datetime(2010, 10, 2, 14, 33, 20))
-        c2 = q.add_comment(user=self.user, comment='blah blah', added_at=datetime.datetime(2010, 10, 2, 14, 33, 21))
-        c3 = self.post_comment(parent_post=q, timestamp=datetime.datetime(2010, 10, 2, 14, 33, 22))
+        c1 = self.post_comment(parent_post=q,
+                               timestamp=datetime.datetime(2010, 10, 2, 14, 33, 20, 0, get_current_tz()))
+        c2 = q.add_comment(user=self.user, comment='blah blah',
+                           added_at=datetime.datetime(2010, 10, 2, 14, 33, 21, 0, get_current_tz()))
+        c3 = self.post_comment(parent_post=q,
+                               timestamp=datetime.datetime(2010, 10, 2, 14, 33, 22, 0, get_current_tz()))
 
         Post.objects.precache_comments(for_posts=[q], visitor=self.user)
         self.assertListEqual([c1, c2, c3], q._cached_comments)
@@ -125,22 +133,20 @@ class PostModelTests(AskbotTestCase):
         del self.user
 
     def test_cached_get_absolute_url_1(self):
-        th = lambda:1
+        th = lambda: 1
         th.title = 'lala-x-lala'
         p = Post(id=3, post_type='question')
         p._thread_cache = th  # cannot assign non-Thread instance directly
-        expected_url = urlresolvers.reverse('question', kwargs={'id': 3}) \
-                                                                + th.title + '/'
+        expected_url = urlresolvers.reverse('question', kwargs={'id': 3}) + th.title + '/'
         self.assertEqual(expected_url, p.get_absolute_url(thread=th))
         self.assertTrue(p._thread_cache is th)
         self.assertEqual(expected_url, p.get_absolute_url(thread=th))
 
     def test_cached_get_absolute_url_2(self):
         p = Post(id=3, post_type='question')
-        th = lambda:1
+        th = lambda: 1
         th.title = 'lala-x-lala'
-        expected_url = urlresolvers.reverse('question', kwargs={'id': 3}) \
-                                                                + th.title + '/'
+        expected_url = urlresolvers.reverse('question', kwargs={'id': 3}) + th.title + '/'
         self.assertEqual(expected_url, p.get_absolute_url(thread=th))
         self.assertTrue(p._thread_cache is th)
         self.assertEqual(expected_url, p.get_absolute_url(thread=th))
@@ -482,7 +488,7 @@ class ThreadRenderCacheUpdateTests(AskbotTestCase):
         self.assertEqual(thread.last_activity_at, question.added_at)
         self.assertEqual(thread.last_activity_by, question.author)
 
-        time.sleep(1.5) # compensate for 1-sec time resolution in some databases
+        time.sleep(1.5)  # compensate for 1-sec time resolution in some databases
 
         response = self.client.post(
             urlresolvers.reverse('edit_question', kwargs={'id': question.id}),
@@ -542,13 +548,13 @@ class ThreadRenderCacheUpdateTests(AskbotTestCase):
 
         self.client.logout()
         self.client.login(username='user2', password='pswd')
-        time.sleep(1.5) # compensate for 1-sec time resolution in some databases
+        time.sleep(1.5)  # compensate for 1-sec time resolution in some databases
         response = self.client.post(urlresolvers.reverse('answer', kwargs={'id': question.id}), data={
             'text': 'answer longer than 10 chars',
         })
         self.assertEqual(2, Post.objects.count())
         answer = Post.objects.get_answers()[0]
-        expected_url=answer.get_absolute_url()
+        expected_url = answer.get_absolute_url()
         self.assertRedirects(response=response, expected_url=expected_url)
 
         thread = answer.thread

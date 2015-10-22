@@ -1,19 +1,17 @@
 """
 General skin settings
 """
-from askbot.conf.settings_wrapper import settings
-from askbot.deps.livesettings import ConfigurationGroup
-from askbot.deps.livesettings import values
 from django.utils.translation import ugettext_lazy as _
-from askbot.skins import utils as skin_utils
-from askbot import const
+from askbot.conf.settings_wrapper import settings
 from askbot.conf.super_groups import CONTENT_AND_UI
+from livesettings import ConfigurationGroup, values
+
 
 WORDS = ConfigurationGroup(
-                    'WORDS',
-                    _('Site terms vocabulary'),
-                    super_group = CONTENT_AND_UI
-                )
+    'WORDS',
+    _('Site terms vocabulary'),
+    super_group=CONTENT_AND_UI
+)
 
 settings.register(
     values.StringValue(
@@ -1000,8 +998,8 @@ settings.register(
     values.StringValue(
         WORDS,
         'WORDS_UNANSWERED',
-        default = _('UNANSWERED'),
-        description = _('UNANSWERED'),
+        default=_('UNANSWERED'),
+        description=_('UNANSWERED'),
         localized=True
     )
 )
@@ -1025,3 +1023,4 @@ settings.register(
         localized=True
     )
 )
+

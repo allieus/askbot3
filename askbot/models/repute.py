@@ -1,13 +1,15 @@
 from __future__ import unicode_literals
-import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Q, Sum
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext as _
 from django.utils.html import escape
 from askbot import const
+from askbot.utils.date import get_today_range
 from django.core.urlresolvers import reverse
 
 
@@ -15,21 +17,17 @@ class VoteManager(models.Manager):
     def get_up_vote_count_from_user(self, user):
         if user is not None:
             return self.filter(user=user, vote=1).count()
-        else:
-            return 0
+        return 0
 
     def get_down_vote_count_from_user(self, user):
         if user is not None:
             return self.filter(user=user, vote=-1).count()
-        else:
-            return 0
+        return 0
 
     def get_votes_count_today_from_user(self, user):
         if user is not None:
-            today = datetime.date.today()
-            return self.filter(user=user, voted_at__range=(today, today + datetime.timedelta(1))).count()
-        else:
-            return 0
+            return self.filter(user=user, voted_at__range=get_today_range()).count()
+        return 0
 
 
 @python_2_unicode_compatible
@@ -44,14 +42,12 @@ class Vote(models.Model):
     voted_post = models.ForeignKey('Post', related_name='votes')
 
     vote = models.SmallIntegerField(choices=VOTE_CHOICES)
-    voted_at = models.DateTimeField(default=datetime.datetime.now)
+    voted_at = models.DateTimeField(default=timezone.now)
 
     objects = VoteManager()
 
     class Meta:
         unique_together = ('user', 'voted_post')
-        app_label = 'askbot'
-        db_table = 'vote'
 
     def __str__(self):
         return '[%s] voted at %s: %s' % (self.user, self.voted_at, self.vote)
@@ -102,6 +98,9 @@ class BadgeData(models.Model):
     # and add setting ASKBOT_BADGE_ORDERING = 'custom'
     display_order = models.PositiveIntegerField(default=0)
 
+    class Meta:
+        ordering = ('display_order', 'slug')
+
     def _get_meta_data(self):
         """retrieves badge metadata stored
         in a file"""
@@ -130,10 +129,6 @@ class BadgeData(models.Model):
         # TODO - rename "type" -> "level" in this model
         return self._get_meta_data().get_level_display()
 
-    class Meta:
-        app_label = 'askbot'
-        ordering = ('display_order', 'slug')
-
     def __str__(self):
         return '%s: %s' % (self.get_type_display(), self.slug)
 
@@ -144,20 +139,17 @@ class BadgeData(models.Model):
 @python_2_unicode_compatible
 class Award(models.Model):
     """The awarding of a Badge to a User."""
-    user       = models.ForeignKey(User, related_name='award_user')
-    badge      = models.ForeignKey(BadgeData, related_name='award_badge')
-    content_type   = models.ForeignKey(ContentType)
-    object_id      = models.PositiveIntegerField()
+    user = models.ForeignKey(User, related_name='award_user')
+    badge = models.ForeignKey(BadgeData, related_name='award_badge')
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
-    awarded_at = models.DateTimeField(default=datetime.datetime.now)
-    notified   = models.BooleanField(default=False)
+    awarded_at = models.DateTimeField(default=timezone.now)
+    notified = models.BooleanField(default=False)
 
     def __str__(self):
         return '[%s] is awarded a badge [%s] at %s' % (self.user.username, self.badge.get_name(), self.awarded_at)
 
-    class Meta:
-        app_label = 'askbot'
-        db_table = 'award'
 
 class ReputeManager(models.Manager):
     def get_reputation_by_upvoted_today(self, user):
@@ -168,35 +160,31 @@ class ReputeManager(models.Manager):
         """
         if user is None:
             return 0
+
+        rep_types = (1, -8)
+        sums = self.filter(Q(reputation_type__in=rep_types), user=user, reputed_at__range=get_today_range()).\
+            aggregate(Sum('positive'), Sum('negative'))
+        if sums:
+            pos = sums['positive__sum']
+            neg = sums['negative__sum']
+            if pos is None:
+                pos = 0
+            if neg is None:
+                neg = 0
+            return pos + neg
         else:
-            today = datetime.date.today()
-            tomorrow = today + datetime.timedelta(1)
-            rep_types = (1,-8)
-            sums = self.filter(models.Q(reputation_type__in=rep_types),
-                                user=user,
-                                reputed_at__range=(today, tomorrow),
-                      ).aggregate(models.Sum('positive'), models.Sum('negative'))
-            if sums:
-                pos = sums['positive__sum']
-                neg = sums['negative__sum']
-                if pos is None:
-                    pos = 0
-                if neg is None:
-                    neg = 0
-                return pos + neg
-            else:
-                return 0
+            return 0
 
 
 @python_2_unicode_compatible
 class Repute(models.Model):
     """The reputation histories for user"""
-    user     = models.ForeignKey(User)
+    user = models.ForeignKey(User)
     # TODO: combine positive and negative to one value
     positive = models.SmallIntegerField(default=0)
     negative = models.SmallIntegerField(default=0)
     question = models.ForeignKey('Post', null=True, blank=True)
-    reputed_at = models.DateTimeField(default=datetime.datetime.now)
+    reputed_at = models.DateTimeField(default=timezone.now)
     reputation_type = models.SmallIntegerField(choices=const.TYPE_REPUTATION)
     reputation = models.IntegerField(default=1)
 
@@ -209,10 +197,6 @@ class Repute(models.Model):
 
     def __str__(self):
         return '[%s]\' reputation changed at %s' % (self.user.username, self.reputed_at)
-
-    class Meta:
-        app_label = 'askbot'
-        db_table = 'repute'
 
     def get_explanation_snippet(self):
         """returns HTML snippet with a link to related question

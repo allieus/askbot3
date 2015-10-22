@@ -10,18 +10,14 @@ and turns them into complete views
 """
 
 import copy
-import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.forms import IntegerField
 from django.http import JsonResponse
+from django.utils import timezone
 from askbot.utils.views import PjaxView
-from .models import Message
-from .models import MessageMemo
-from .models import SenderList
-from .models import LastVisitTime
-from .models import get_personal_groups_for_users
-from .models import UnreadInboxCounter
+from group_messaging.models import (
+    Message, MessageMemo, SenderList, LastVisitTime, UnreadInboxCounter, get_personal_groups_for_users)
 
 
 class NewThread(PjaxView):
@@ -70,7 +66,7 @@ class PostReply(PjaxView):
         parent = Message.objects.get(id=parent_id)
         message = Message.objects.create_response(sender=request.user, text=request.POST['text'], parent=parent)
         last_visit = LastVisitTime.objects.get(message=message.root, user=request.user)
-        last_visit.at = datetime.datetime.now()
+        last_visit.at = timezone.now()
         last_visit.save()
         return self.render_to_response(
             {'post': message, 'user': request.user},
@@ -223,7 +219,7 @@ class ThreadDetails(PjaxView):
         root.mark_as_seen(request.user)
 
         if not created:
-            last_visit.at = datetime.datetime.now()
+            last_visit.at = timezone.now()
             last_visit.save()
 
         return {

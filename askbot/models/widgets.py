@@ -18,9 +18,6 @@ class AskWidget(models.Model):
     inner_style = models.TextField(blank=True)
     outer_style = models.TextField(blank=True)
 
-    class Meta:
-        app_label = 'askbot'
-
     def __str__(self):
         return "Widget: %s" % self.title
 
@@ -30,11 +27,7 @@ class QuestionWidget(models.Model):
     question_number = models.PositiveIntegerField(default=7)
     tagnames = models.CharField(ugettext_lazy('tags'), max_length=50)
     group = models.ForeignKey(Group, null=True, blank=True)
-    search_query = models.CharField(
-        max_length=50, null=True, blank=True, default=''
-    )
+    search_query = models.CharField(max_length=50, null=True, blank=True, default='')
     order_by = models.CharField(max_length=18, choices=SEARCH_ORDER_BY, default='-added_at')
     style = models.TextField(ugettext_lazy('css for the widget'), default=DEFAULT_QUESTION_WIDGET_STYLE, blank=True)
 
-    class Meta:
-        app_label = 'askbot'

@@ -1,12 +1,12 @@
-import datetime
 from django.conf import settings as django_settings
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
-from django.utils import translation
+from django.utils import timezone, translation
 from optparse import make_option
 from askbot.utils.console import ProgressBar
 from askbot.models import Thread
 from askbot.models import User
+
 
 class Command(BaseCommand):
     help = """Adds tags to questions. Tags should be given via a file
@@ -15,15 +15,12 @@ class Command(BaseCommand):
     will be applied. This command respects the maximum number of tags
     allowed per question.
     """
+
     option_list = BaseCommand.option_list + (
-        make_option('--tags-file', '-t',
-            action = 'store',
-            type = 'str',
-            dest = 'tags_file',
-            default = None,
-            help = 'file containing tag names, one per line'
-        ),
+        make_option('--tags-file', '-t', action='store', type='str', dest='tags_file', default=None,
+                    help='file containing tag names, one per line'),
     )
+
     def handle(self, *args, **kwargs):
         """reads the tags file, parses it,
         then applies tags to questions by matching them
@@ -32,6 +29,7 @@ class Command(BaseCommand):
         translation.activate(django_settings.LANGUAGE_CODE)
         if kwargs['tags_file'] is None:
             raise CommandError('parameter --tags-file is required')
+
         try:
             tags_input = open(kwargs['tags_file']).read()
         except IOError:
@@ -53,9 +51,8 @@ class Command(BaseCommand):
         message = 'Applying tags to questions'
 
         user = User.objects.all().order_by('-id')[0]
-        now = datetime.datetime.now()
+        now = timezone.now()
 
         for thread in ProgressBar(threads.iterator(), count, message):
-            thread.apply_hinted_tags(
-                tags_list, user=user, timestamp=now, silent=True
-            )
+            thread.apply_hinted_tags(tags_list, user=user, timestamp=now, silent=True)
+

@@ -291,8 +291,6 @@ class Tag(models.Model):
     objects = TagManager()
 
     class Meta:
-        app_label = 'askbot'
-        db_table = 'tag'
         ordering = ('-used_count', 'name')
         unique_together = ('name', 'language_code')
 
@@ -310,9 +308,6 @@ class MarkedTag(models.Model):
     user = models.ForeignKey(User, related_name='tag_selections')
     reason = models.CharField(max_length=16, choices=TAG_MARK_REASONS)
 
-    class Meta:
-        app_label = 'askbot'
-
 
 @python_2_unicode_compatible
 class TagSynonym(models.Model):
@@ -328,8 +323,6 @@ class TagSynonym(models.Model):
         default=django_settings.LANGUAGE_CODE,
         max_length=16)
 
-    class Meta:
-        app_label = 'askbot'
-
     def __str__(self):
         return '%s -> %s' % (self.source_tag_name, self.target_tag_name)
+

@@ -1,8 +1,8 @@
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 from collections import OrderedDict
 import datetime
+import pytz
 import traceback
 
 from django.conf import settings as django_settings
@@ -11,6 +11,7 @@ from django.contrib.sites.models import Site
 from django.core.management.base import NoArgsCommand
 from django.db import connection
 from django.db.models import Q, F
+from django.utils import timezone
 from django.utils.translation import ugettext as _
 from django.utils.translation import activate as activate_language
 
@@ -37,20 +38,16 @@ def get_all_origin_posts(mentions):
 
 
 # TODO: refactor this as class
-def extend_question_list(
-                    src, dst, cutoff_time = None,
-                    limit=False, add_mention=False,
-                    add_comment = False,
-                    languages=None
-                ):
+def extend_question_list(src, dst, cutoff_time=None, limit=False, add_mention=False, add_comment=False, languages=None):
     """src is a query set with questions
     or None
     dst - is an ordered dictionary
     update reporting cutoff time for each question
     to the latest value to be more permissive about updates
     """
-    if src is None:# is not QuerySet
-        return # will not do anything if subscription of this type is not used
+
+    if src is None:  # is not QuerySet
+        return  # will not do anything if subscription of this type is not used
     if limit and len(dst.keys()) >= askbot_settings.MAX_ALERTS_PER_EMAIL:
         return
     if cutoff_time is None:
@@ -87,7 +84,7 @@ def extend_question_list(
 
 def format_action_count(string, number, output):
     if number > 0:
-        output.append(_(string) % {'num':number})
+        output.append(_(string) % {'num': number})
 
 
 class Command(NoArgsCommand):
@@ -96,8 +93,7 @@ class Command(NoArgsCommand):
             activate_language(django_settings.LANGUAGE_CODE)
             for user in User.objects.exclude(status='b').iterator():
                 try:
-                    if email_is_blacklisted(user.email) \
-                        and askbot_settings.BLACKLISTED_EMAIL_PATTERNS_MODE == 'strict':
+                    if email_is_blacklisted(user.email) and askbot_settings.BLACKLISTED_EMAIL_PATTERNS_MODE == 'strict':
                         continue
                     self.send_email_alerts(user)
                 except Exception:
@@ -106,7 +102,7 @@ class Command(NoArgsCommand):
 
     def format_debug_msg(self, user, content):
         msg = "%s site_id=%d user=%s: %s" % (
-            datetime.datetime.now().strftime('%y-%m-%d %h:%m:%s'),
+            timezone.now().strftime('%y-%m-%d %h:%m:%s'),
             SITE_ID,
             repr(user.username),
             content
@@ -119,12 +115,8 @@ class Command(NoArgsCommand):
         print(message)
         admin_email = askbot_settings.ADMIN_EMAIL
         try:
-            subject_line = "Error processing daily/weekly notification for User '%s' for Site '%s'" % (user.username, SITE_ID)
-            send_mail(
-                subject_line=subject_line.encode('utf-8'),
-                body_text=message,
-                recipient_list=[admin_email,]
-            )
+            subject = "Error processing daily/weekly notification for User '%s' for Site '%s'" % (user.username, SITE_ID)
+            send_mail(subject_line=subject, body_text=message, recipient_list=[admin_email])
         except:
             message = "ERROR: was unable to report this exception to %s: %s" % (admin_email, traceback.format_exc())
             print(self.format_debug_msg(user, message))
@@ -139,9 +131,7 @@ class Command(NoArgsCommand):
         views
         """
 
-        user_feeds = EmailFeedSetting.objects.filter(
-            subscriber=user
-        ).exclude(frequency__in=('n', 'i'))
+        user_feeds = EmailFeedSetting.objects.filter(subscriber=user).exclude(frequency__in=('n', 'i'))
 
         should_proceed = False
         for feed in user_feeds:
@@ -158,33 +148,24 @@ class Command(NoArgsCommand):
         # and each group has subtypes A and B
         # that's because of the strange thing commented below
         # see note on Q and F objects marked with TODO tag
-        q_sel_A = None
-        q_sel_B = None
-
-        q_ask_A = None
-        q_ask_B = None
-
-        q_ans_A = None
-        q_ans_B = None
-
-        q_all_A = None
-        q_all_B = None
+        q_sel_A, q_sel_B = None, None
+        q_ask_A, q_ask_B = None, None
+        q_ans_A, q_ans_B = None, None
+        q_all_A, q_all_B = None, None
 
         # base question query set for this user
         # basic things - not deleted, not closed, not too old
         # not last edited by the same user
-        base_qs = Post.objects.get_questions().exclude(
-            thread__last_activity_by=user
-        ).exclude(
-            thread__last_activity_at__lt=user.date_joined# exclude old stuff
-        ).exclude(
-            deleted=True
-        ).exclude(
-            thread__closed=True
-        ).order_by('-thread__last_activity_at')
+        base_qs = Post.objects.get_questions().\
+            exclude(thread__last_activity_by=user).\
+            exclude(thread__last_activity_at__lt=user.date_joined).\
+            exclude(deleted=True).\
+            exclude(thread__closed=True).\
+            order_by('-thread__last_activity_at')
 
         if askbot_settings.CONTENT_MODERATION_MODE == 'premoderation':
-            base_qs = base_qs.filter(approved = True)
+            base_qs = base_qs.filter(approved=True)
+
         # TODO: for some reason filter on did not work as expected ~Q(viewed__who=user) |
         #      Q(viewed__who=user,viewed__when__lt=F('thread__last_activity_at'))
         # returns way more questions than you might think it should
@@ -196,9 +177,7 @@ class Command(NoArgsCommand):
         # questions that are not seen by the user at all
         not_seen_qs = base_qs.filter(~Q(viewed__who=user))
         # questions that were seen, but before last modification
-        seen_before_last_mod_qs = base_qs.filter(
-            Q(viewed__who=user, viewed__when__lt=F('thread__last_activity_at'))
-        )
+        seen_before_last_mod_qs = base_qs.filter(Q(viewed__who=user, viewed__when__lt=F('thread__last_activity_at')))
 
         # shorten variables for convenience
         Q_set_A = not_seen_qs
@@ -228,9 +207,9 @@ class Command(NoArgsCommand):
 
                 if feed.feed_type == 'q_sel':
                     q_sel_A = Q_set_A.filter(thread__followed_by=user)
-                    q_sel_A.cutoff_time = cutoff_time # store cutoff time per query set
+                    q_sel_A.cutoff_time = cutoff_time  # store cutoff time per query set
                     q_sel_B = Q_set_B.filter(thread__followed_by=user)
-                    q_sel_B.cutoff_time = cutoff_time # store cutoff time per query set
+                    q_sel_B.cutoff_time = cutoff_time  # store cutoff time per query set
 
                 elif feed.feed_type == 'q_ask':
                     q_ask_A = Q_set_A.filter(author=user)
@@ -273,9 +252,8 @@ class Command(NoArgsCommand):
             feed = user_feeds.get(feed_type='m_and_c')
             if feed.should_send_now():
                 cutoff_time = feed.get_previous_report_cutoff_time()
-                comments = Post.objects.get_comments().filter(
-                    added_at__lt=cutoff_time
-                ).exclude(author=user).select_related('parent')
+                comments = Post.objects.get_comments().filter(added_at__lt=cutoff_time).\
+                    exclude(author=user).select_related('parent')
                 q_commented = list()
 
                 for c in comments:
@@ -288,18 +266,9 @@ class Command(NoArgsCommand):
                     # the comment posting time
                     q_commented.append(post.get_origin_post())
 
-                extend_question_list(
-                    q_commented,
-                    q_list,
-                    cutoff_time=cutoff_time,
-                    add_comment=True,
-                    languages=languages
-                )
+                extend_question_list(q_commented, q_list, cutoff_time=cutoff_time, add_comment=True, languages=languages)
 
-                mentions = Activity.objects.get_mentions(
-                    mentioned_at__lt=cutoff_time,
-                    mentioned_whom=user
-                )
+                mentions = Activity.objects.get_mentions(mentioned_at__lt=cutoff_time, mentioned_whom=user)
 
                 # print('have %d mentions' % len(mentions))
                 # MM = Activity.objects.filter(activity_type = const.TYPE_ACTIVITY_MENTION)
@@ -310,23 +279,13 @@ class Command(NoArgsCommand):
                 mention_posts = get_all_origin_posts(mentions)
                 q_mentions_id = [q.id for q in mention_posts]
 
-                q_mentions_A = Q_set_A.filter(id__in = q_mentions_id)
+                q_mentions_A = Q_set_A.filter(id__in=q_mentions_id)
                 q_mentions_A.cutoff_time = cutoff_time
-                extend_question_list(
-                    q_mentions_A,
-                    q_list,
-                    add_mention=True,
-                    languages=languages
-                )
+                extend_question_list(q_mentions_A, q_list, add_mention=True, languages=languages)
 
-                q_mentions_B = Q_set_B.filter(id__in = q_mentions_id)
+                q_mentions_B = Q_set_B.filter(id__in=q_mentions_id)
                 q_mentions_B.cutoff_time = cutoff_time
-                extend_question_list(
-                    q_mentions_B,
-                    q_list,
-                    add_mention=True,
-                    languages=languages
-                )
+                extend_question_list(q_mentions_B, q_list, add_mention=True, languages=languages)
         except EmailFeedSetting.DoesNotExist:
             pass
 
@@ -363,27 +322,16 @@ class Command(NoArgsCommand):
             try:
                 # TODO: is it possible to use content_object here, instead of
                 # content type and object_id pair?
-                update_info = Activity.objects.get(
-                    user=user,
-                    content_type=ctype,
-                    object_id=q.id,
-                    activity_type=EMAIL_UPDATE_ACTIVITY
-                )
+                update_info = Activity.objects.get(user=user, content_type=ctype, object_id=q.id,
+                                                   activity_type=EMAIL_UPDATE_ACTIVITY)
                 emailed_at = update_info.active_at
             except Activity.DoesNotExist:
-                update_info = Activity(
-                    user=user,
-                    content_object=q,
-                    activity_type=EMAIL_UPDATE_ACTIVITY
-                )
-                emailed_at = datetime.datetime(1970, 1, 1)# long time ago
+                update_info = Activity(user=user, content_object=q, activity_type=EMAIL_UPDATE_ACTIVITY)
+                emailed_at = datetime.datetime(1970, 1, 1, 0, 0, 0, 0, pytz.UTC)  # long time ago
             except Activity.MultipleObjectsReturned:
-                raise Exception(
-                                'server error - multiple question email activities '
-                                'found per user-question pair'
-                                )
+                raise Exception('server error - multiple question email activities found per user-question pair')
 
-            cutoff_time = meta_data['cutoff_time']# cutoff time for the question
+            cutoff_time = meta_data['cutoff_time']  # cutoff time for the question
 
             # skip question if we need to wait longer because
             # the delay before the next email has not yet elapsed
@@ -405,21 +353,15 @@ class Command(NoArgsCommand):
             else:
                 meta_data['new_q'] = False
 
-            new_ans = Post.objects.get_answers(user).filter(
-                thread=q.thread,
-                added_at__gt=emailed_at,
-                deleted=False,
-            )
+            new_ans = Post.objects.get_answers(user).filter(thread=q.thread, added_at__gt=emailed_at, deleted=False)
             new_ans = new_ans.exclude(author=user)
             meta_data['new_ans'] = len(new_ans)
 
-            ans_ids = Post.objects.get_answers(user).filter(
-                thread=q.thread,
-                added_at__gt=emailed_at,
-                deleted=False,
-            ).values_list('id', flat=True)
+            ans_ids = Post.objects.get_answers(user).\
+                filter(thread=q.thread, added_at__gt=emailed_at, deleted=False).\
+                values_list('id', flat=True)
 
-            ans_rev = PostRevision.objects.filter(post__id__in = ans_ids)
+            ans_rev = PostRevision.objects.filter(post__id__in=ans_ids)
             ans_rev = ans_rev.exclude(author=user).distinct()
 
             meta_data['ans_rev'] = len(ans_rev)
@@ -435,9 +377,10 @@ class Command(NoArgsCommand):
             else:
                 meta_data['skip'] = False
                 # print('not skipping')
-                update_info.active_at = datetime.datetime.now()
+                update_info.active_at = timezone.now()
                 if not DEBUG_THIS_COMMAND:
-                    update_info.save() # save question email update activity
+                    update_info.save()  # save question email update activity
+
         # q_list is actually an ordered dictionary
         # print('user %s gets %d' % (user.username, len(q_list.keys())))
         # TODO: sort question list by update time
@@ -475,7 +418,7 @@ class Command(NoArgsCommand):
                 if meta_data['skip']:
                     continue
                 if items_added >= askbot_settings.MAX_ALERTS_PER_EMAIL:
-                    items_unreported = num_q - items_added # may be inaccurate actually, but it's ok
+                    items_unreported = num_q - items_added  # may be inaccurate actually, but it's ok
                     break
                 else:
                     items_added += 1

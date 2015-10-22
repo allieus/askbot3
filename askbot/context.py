@@ -6,7 +6,6 @@ import sys
 import json
 from django.conf import settings as django_settings
 from django.core.urlresolvers import reverse
-
 import askbot
 from askbot import api
 from askbot import models
@@ -34,7 +33,7 @@ def application_settings(request):
     my_settings = askbot_settings.as_dict()
 
     my_settings.update({
-        'USE_ASKBOT_LOGIN_SYSTEM': False,  # FIXME: not using askbot.deps.django_authopenid
+        'USE_ASKBOT_LOGIN_SYSTEM': False,  # FIXME: not using django_authopenid
         'LANGUAGE_CODE': getattr(request, 'LANGUAGE_CODE', django_settings.LANGUAGE_CODE),
         'MULTILINGUAL': False,  # FIXME: REMOVE ME
         'LANGUAGES_DICT': dict(getattr(django_settings, 'LANGUAGES', [])),

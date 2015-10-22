@@ -5,12 +5,11 @@
 This module contains views that allow adding, editing, and deleting main textual content.
 """
 
-import datetime
-import logging
 import os
 import os.path
 import sys
 import tempfile
+import traceback
 from django.contrib import messages as django_messages
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render
@@ -21,6 +20,7 @@ from django.http import JsonResponse
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.http import Http404
+from django.utils import timezone
 from django.utils.encoding import force_text
 from django.utils.html import escape
 from django.utils.translation import get_language
@@ -91,9 +91,10 @@ def upload(request):  # ajax upload file to a question or answer
             raise exceptions.PermissionDenied(msg)
 
     except exceptions.PermissionDenied as e:
+        traceback.print_exc()
         error = force_text(e)
     except Exception as e:
-        logging.critical(force_text(e))
+        traceback.print_exc()
         error = _('Error uploading file. Please contact the site administrator. Thank you.')
 
     if error == '':
@@ -224,7 +225,7 @@ def ask(request):  # view used to ask a new question
     if request.method == 'POST':
         form = forms.AskForm(request.POST, user=request.user)
         if form.is_valid():
-            timestamp = datetime.datetime.now()
+            timestamp = timezone.now()
             title = form.cleaned_data['title']
             wiki = form.cleaned_data['wiki']
             tagnames = form.cleaned_data['tags']
@@ -265,6 +266,7 @@ def ask(request):  # view used to ask a new question
                         form_data=form.cleaned_data)
                     return redirect(question)
                 except exceptions.PermissionDenied as e:
+                    traceback.print_exc()
                     # request.user.message_set.create(message=force_text(e))
                     django_messages.info(request, force_text(e))
                     return redirect('index')
@@ -372,10 +374,11 @@ def retag_question(request, id):
         data = {
             'active_tab': 'questions',
             'question': question,
-            'form' : form,
+            'form': form,
         }
         return render(request, 'question_retag.jinja', data)
     except exceptions.PermissionDenied as e:
+        traceback.print_exc()
         if request.is_ajax():
             return JsonResponse({
                 'message': force_text(e),
@@ -495,6 +498,7 @@ def edit_question(request, id):
         return render(request, 'question_edit.jinja', data)
 
     except exceptions.PermissionDenied as e:
+        traceback.print_exc()
         # request.user.message_set.create(message=force_text(e))
         django_messages.info(request, force_text(e))
         return redirect(question)
@@ -596,6 +600,7 @@ def edit_answer(request, id):
         return render(request, 'answer_edit.jinja', data)
 
     except exceptions.PermissionDenied as e:
+        traceback.print_exc()
         # request.user.message_set.create(message=force_text(e))
         django_messages.info(request, force_text(e))
         return redirect(answer)
@@ -638,11 +643,13 @@ def answer(request, id, form_class=forms.AnswerForm):# process a new answer
                     signals.new_answer_posted.send(None, answer=answer, user=user, form_data=form.cleaned_data)
                     return redirect(answer)
                 except askbot_exceptions.AnswerAlreadyGiven as e:
+                    traceback.print_exc()
                     # request.user.message_set.create(message=force_text(e))
                     django_messages.info(request, force_text(e))
                     answer = question.thread.get_answers_by_user(user)[0]
                     return redirect(answer)
                 except exceptions.PermissionDenied as e:
+                    traceback.print_exc()
                     # request.user.message_set.create(message=force_text(e))
                     django_messages.info(request, force_text(e))
             else:

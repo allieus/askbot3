@@ -2,14 +2,11 @@
 from __future__ import unicode_literals
 import re
 from collections import OrderedDict
-import datetime
 from django import forms
-from askbot import const
-from askbot.const import message_keys
 from django.conf import settings as django_settings
 from django.core.exceptions import PermissionDenied
 from django.forms.utils import ErrorList
-from django.utils import six
+from django.utils import six, timezone
 from django.utils.html import strip_tags
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ungettext_lazy, string_concat
@@ -17,6 +14,8 @@ from django.utils.translation import get_language
 from django.utils.text import get_text_list
 from django.contrib.auth.models import User
 from django_countries import countries
+from askbot import const
+from askbot.const import message_keys
 from askbot.utils.forms import NextUrlField, UserNameField
 from askbot.utils.forms import moderated_email_validator
 from askbot.utils.slug import slugify
@@ -1265,7 +1264,7 @@ class AnswerForm(PostAsSomeoneForm, PostPrivatelyForm):
             body_text=text,
             wiki=wiki,
             is_private=is_private,
-            timestamp=datetime.datetime.now(),
+            timestamp=timezone.now(),
             ip_addr=ip_addr)
 
 

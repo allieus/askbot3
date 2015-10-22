@@ -1,5 +1,5 @@
 """
-Definition of a Singleton wrapper class for askbot.deps.livesettings
+Definition of a Singleton wrapper class for livesettings
 with interface similar to django.conf.settings
 that is each setting has unique key and is accessible
 via dotted lookup.
@@ -13,12 +13,12 @@ askbot_settings.BLAH
 NOTE that at the moment there is distinction between settings
 (django settings) and askbot_settings (forum.deps.livesettings)
 
-the value will be taken from askbot.deps.livesettings database or cache
+the value will be taken from livesettings database or cache
 note that during compilation phase database is not accessible
 for the most part, so actual values are reliably available only
 at run time
 
-askbot.deps.livesettings is a module developed for satchmo project
+livesettings is a module developed for satchmo project
 """
 from __future__ import unicode_literals
 from django.conf import settings as django_settings
@@ -29,9 +29,9 @@ from django.utils.functional import lazy
 from django.utils.translation import get_language
 from django.utils.translation import string_concat
 from django.utils.translation import ugettext_lazy as _
-from askbot.deps.livesettings import SortedDotDict, config_register
-from askbot.deps.livesettings.functions import config_get
-from askbot.deps.livesettings import signals
+from livesettings import SortedDotDict, config_register
+from livesettings.functions import config_get
+from livesettings.signals import configuration_value_changed
 
 
 def assert_setting_info_correct(info):
@@ -62,7 +62,7 @@ class ConfigSettings(object):
         """value lookup returns the actual value of setting
         not the object - this way only very minimal modifications
         will be required in code to convert an app
-        depending on django.conf.settings to askbot.deps.livesettings
+        depending on django.conf.settings to livesettings
         """
         hardcoded_setting = getattr(django_settings, 'ASKBOT_' + key, None)
         if hardcoded_setting is None:
@@ -92,7 +92,7 @@ class ConfigSettings(object):
             setting.update(value, lang)
 
         except:
-            from askbot.deps.livesettings.models import Setting
+            from livesettings.models import Setting
             lang_postfix = '_' + get_language().upper()
             # first try localized setting
             try:
@@ -106,7 +106,7 @@ class ConfigSettings(object):
 
     def register(self, value):
         """registers the setting
-        value must be a subclass of askbot.deps.livesettings.Value
+        value must be a subclass of livesettings.Value
         """
         key = value.key
         group_key = value.group.key
@@ -220,7 +220,7 @@ def cached_value_update_handler(setting=None, new_value=None, language_code=None
     key = setting.key
     update_cached_value(key, new_value, language_code)
 
-signals.configuration_value_changed.connect(
+configuration_value_changed.connect(
     cached_value_update_handler,
     dispatch_uid='update_cached_value_upon_config_change'
 )

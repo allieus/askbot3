@@ -4,8 +4,8 @@ Settings that modify processing of user text input
 
 from askbot.conf.settings_wrapper import settings
 from askbot.conf.super_groups import DATA_AND_FORMATTING
-from askbot.deps.livesettings import ConfigurationGroup
-from askbot.deps.livesettings import BooleanValue, StringValue, LongStringValue
+from livesettings import ConfigurationGroup
+from livesettings import BooleanValue, StringValue, LongStringValue
 from askbot import const
 from django.utils.translation import ugettext_lazy as _
 import re

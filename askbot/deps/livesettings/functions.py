@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext as _
-from askbot.deps.livesettings import values
-from askbot.deps.livesettings.models import SettingNotSet
-from askbot.deps.livesettings.utils import is_string_like
+from livesettings import values
+from livesettings.models import SettingNotSet
+from livesettings.utils import is_string_like
 
 import logging
 

@@ -5,9 +5,9 @@ This module contains most (but not all) processors for Ajax requests.
 Not so clear if this subdivision was necessary as separation of Ajax and non-ajax views
 is not always very clean.
 """
-import datetime
 import json
 import logging
+import traceback
 from bs4 import BeautifulSoup
 from django.contrib import messages as django_messages
 from django.core import exceptions
@@ -24,7 +24,7 @@ from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
-from django.utils import translation
+from django.utils import timezone, translation
 from django.utils.encoding import force_text
 from django.utils.html import escape
 from django.utils.translation import ugettext as _
@@ -403,6 +403,7 @@ def delete_tag(request):
         category_tree.delete_category(tree, tag_name, path)
         category_tree.save_data(tree)
     except Exception:
+        traceback.print_exc()
         if 'tag_name' in locals():
             logging.critical('could not delete tag %s' % tag_name)
         else:
@@ -694,6 +695,7 @@ def close(request, id):  # close question
             data = {'question': question, 'form': form}
             return render(request, 'close.jinja', data)
     except exceptions.PermissionDenied as e:
+        traceback.print_exc()
         # request.user.message_set.create(message=force_text(e))
         django_messages.info(request, force_text(e))
         return redirect(question)
@@ -726,6 +728,7 @@ def reopen(request, id):  # re-open question
             return render(request, 'reopen.jinja', data)
 
     except exceptions.PermissionDenied as e:
+        traceback.print_exc()
         # request.user.message_set.create(message=force_text(e))
         django_messages.info(request, force_text(e))
         return redirect(question)
@@ -1046,7 +1049,7 @@ def moderate_suggested_tag(request):
             tag.status = models.Tag.STATUS_ACCEPTED
             tag.save()
             for thread in threads:
-                thread.add_tag(tag_name=tag.name, user=tag.created_by, timestamp=datetime.datetime.now(),
+                thread.add_tag(tag_name=tag.name, user=tag.created_by, timestamp=timezone.now(),
                                silent=True)
         else:
             if tag.threads.count() > len(threads):
@@ -1183,11 +1186,12 @@ def share_question_with_group(request):
                 updated_by=request.user,
                 notify_sets=notify_sets,
                 activity_type=const.TYPE_ACTIVITY_POST_SHARED,
-                timestamp=datetime.datetime.now()
+                timestamp=timezone.now()
             )
 
             return redirect(thread)
     except Exception:
+        traceback.print_exc()
         error_message = _('Sorry, looks like sharing request was invalid')
         # request.user.message_set.create(message=error_message)
         django_messages.info(request, error_message)
@@ -1220,9 +1224,10 @@ def share_question_with_user(request):
                 updated_by=request.user,
                 notify_sets=notify_sets,
                 activity_type=const.TYPE_ACTIVITY_POST_SHARED,
-                timestamp=datetime.datetime.now()
+                timestamp=timezone.now()
             )
     except Exception:
+        traceback.print_exc()
         error_message = _('Sorry, looks like sharing request was invalid')
         # request.user.message_set.create(message=error_message)
         django_messages.info(request, error_message)

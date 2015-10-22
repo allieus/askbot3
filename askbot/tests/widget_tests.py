@@ -1,12 +1,10 @@
-from datetime import datetime
+from django.conf import settings as django_settings
+from django.core.urlresolvers import reverse
+from django.test.client import Client
+from django.utils import timezone, translation
 
 from askbot import models
 from askbot.tests.utils import AskbotTestCase
-
-from django.test.client import Client
-from django.conf import settings as django_settings
-from django.core.urlresolvers import reverse
-from django.utils import translation
 
 
 class WidgetViewsTests(AskbotTestCase):
@@ -41,7 +39,7 @@ class WidgetViewsTests(AskbotTestCase):
         widget_question_data = {
             'title': 'testing post after login, does it?',
             'author': self.user,
-            'added_at': datetime.now(),
+            'added_at': timezone.now(),
             'wiki': False,
             'text': ' ',
             'tagnames': '',

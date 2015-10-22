@@ -2,7 +2,7 @@
 Settings for askbot data display and entry
 """
 from askbot.conf.settings_wrapper import settings
-from askbot.deps import livesettings
+import livesettings
 from askbot import const
 from askbot.conf.super_groups import DATA_AND_FORMATTING
 from django.utils.translation import ugettext_lazy as _
@@ -534,7 +534,7 @@ settings.register(
     )
 )
 
-# TODO: looks like there is a bug in askbot.deps.livesettings
+# TODO: looks like there is a bug in livesettings
 # that does not allow Integer values with defaults and choices
 settings.register(
     livesettings.StringValue(

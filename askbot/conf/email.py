@@ -3,7 +3,7 @@ Email related settings
 """
 from askbot.conf.settings_wrapper import settings
 from askbot.conf.super_groups import LOGIN_USERS_COMMUNICATION
-from askbot.deps import livesettings
+import livesettings
 from askbot import const
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import string_concat

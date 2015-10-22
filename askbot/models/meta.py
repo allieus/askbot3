@@ -5,13 +5,12 @@ Data in these models can be erased without loss of function.
 from django.db import models
 from picklefield.fields import PickledObjectField
 
+
 class ImportRun(models.Model):
     """records information about the data import run"""
     command = models.TextField(default='')
     timestamp = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        app_label = 'askbot'
 
 class ImportedObjectInfo(models.Model):
     """records data about objects imported into askbot
@@ -20,13 +19,7 @@ class ImportedObjectInfo(models.Model):
     """
     old_id = models.IntegerField(help_text='Old object id in the source database')
     new_id = models.IntegerField(help_text='New object id in the current database')
-    model = models.CharField(
-                default='',
-                help_text='dotted python path to model',
-                max_length=255
-            )
+    model = models.CharField(max_length=255, default='', help_text='dotted python path to model')
     run = models.ForeignKey(ImportRun)
     extra_info = PickledObjectField(help_text='to hold dictionary for various data')
 
-    class Meta:
-        app_label = 'askbot'

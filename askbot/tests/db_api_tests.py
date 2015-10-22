@@ -7,13 +7,14 @@ from __future__ import unicode_literals
 from bs4 import BeautifulSoup
 from django.core import exceptions
 from django.contrib.auth.models import AnonymousUser
+from django.utils import timezone
 from askbot import exceptions as askbot_exceptions
 from askbot.tests.utils import AskbotTestCase
 from askbot.tests.utils import with_settings
 from askbot import models
 from askbot import const
 from askbot.conf import settings as askbot_settings
-import datetime
+
 
 class DBApiTests(AskbotTestCase):
     """tests methods on User object,
@@ -22,20 +23,17 @@ class DBApiTests(AskbotTestCase):
 
     def setUp(self):
         self.create_user()
-        self.create_user(username = 'other_user')
+        self.create_user(username='other_user')
         self.question = self.post_question()
-        self.now = datetime.datetime.now()
+        self.now = timezone.now()
 
-    def post_answer(self, user = None, question = None):
+    def post_answer(self, user=None, question=None):
         if user is None:
             user = self.user
         if question is None:
             question = self.question
 
-        self.answer = super(DBApiTests, self).post_answer(
-                                                user = user,
-                                                question = question,
-                                            )
+        self.answer = super(DBApiTests, self).post_answer(user=user, question=question)
         return self.answer
 
     def assert_post_is_deleted(self, post):
@@ -50,46 +48,27 @@ class DBApiTests(AskbotTestCase):
 
     def test_blank_tags_impossible(self):
         self.post_question(tags='')
-        self.assertEqual(
-            models.Tag.objects.filter(name='').count(),
-            0
-        )
+        self.assertEqual(models.Tag.objects.filter(name='').count(), 0)
 
     def test_flag_question(self):
         self.user.set_status('m')
         self.user.flag_post(self.question)
-        self.assertEquals(
-            self.user.get_flags().count(),
-            1
-        )
+        self.assertEquals(self.user.get_flags().count(), 1)
 
     def test_flag_answer(self):
         self.post_answer()
         self.user.set_status('m')
         self.user.flag_post(self.answer)
-        self.assertEquals(
-            self.user.get_flags().count(),
-            1
-        )
+        self.assertEquals(self.user.get_flags().count(), 1)
 
     def ask_anonymous_question(self):
-        q = self.user.post_question(
-                        is_anonymous = True,
-                        body_text = 'hahahah',
-                        title = 'aouaouaosuoa',
-                        tags = 'test'
-                    )
+        q = self.user.post_question(is_anonymous=True, body_text='hahahah', title='aouaouaosuoa', tags='test')
         return self.reload_object(q)
 
     def test_user_cannot_post_two_answers(self):
         question = self.post_question(user=self.user)
         answer = self.post_answer(question=question, user=self.user)
-        self.assertRaises(
-            askbot_exceptions.AnswerAlreadyGiven,
-            self.post_answer,
-            question=question,
-            user=self.user
-        )
+        self.assertRaises(askbot_exceptions.AnswerAlreadyGiven, self.post_answer, question=question, user=self.user)
 
     def test_user_can_post_answer_after_deleting_one(self):
         question = self.post_question(user=self.user)
@@ -115,24 +94,14 @@ class DBApiTests(AskbotTestCase):
         )
 
     def test_post_bodyless_question(self):
-        q = self.user.post_question(
-            body_text = '',
-            title = 'aeuaouaousaotuhao',
-            tags = 'test'
-        )
+        q = self.user.post_question(body_text='', title='aeuaouaousaotuhao', tags='test')
         self.assertEquals(q.text.strip(), '')
 
     def test_reveal_asker_identity(self):
         q = self.ask_anonymous_question()
         self.other_user.set_status('m')
         self.other_user.save()
-        self.other_user.edit_question(
-                            question = q,
-                            title = 'hahah',
-                            body_text = 'hoeuaoea',
-                            tags = 'aoeuaoeu',
-                            revision_comment = 'hahahah'
-                        )
+        self.other_user.edit_question(question=q, title='hahah', body_text='hoeuaoea', tags='aoeuaoeu', revision_comment='hahahah')
         q.thread.remove_author_anonymity()
         q = self.reload_object(q)
         self.assertFalse(q.is_anonymous)
@@ -406,6 +375,7 @@ class GlobalTagSubscriberGetterTests(AskbotTestCase):
             reason = 'bad'
         )
 
+
 class CommentTests(AskbotTestCase):
     """unfortunately, not very useful tests,
     as assertions of type "user can" are not inside
@@ -416,11 +386,8 @@ class CommentTests(AskbotTestCase):
         self.create_user()
         self.create_user(username = 'other_user')
         self.question = self.post_question()
-        self.now = datetime.datetime.now()
-        self.comment = self.user.post_comment(
-            parent_post = self.question,
-            body_text = 'lalalalalalalalal hahahah'
-        )
+        self.now = timezone.now()
+        self.comment = self.user.post_comment(parent_post=self.question, body_text='lalalalalalalalal hahahah')
 
     def test_other_user_can_upvote_comment(self):
         self.other_user.upvote(self.comment)

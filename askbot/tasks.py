@@ -18,7 +18,6 @@ That is the reason for having two types of methods here:
   objects and call the base methods
 """
 import logging
-import json
 import traceback
 import uuid
 
@@ -151,7 +150,7 @@ def record_post_update_celery_task(post_id, newly_mentioned_user_id_list=None, u
             timestamp=timestamp,
             diff=diff)
     except Exception:
-        logger.error(force_text(traceback.format_exc()).encode('utf-8'))
+        traceback.print_exc()
 
 
 @task(ignore_result=True)

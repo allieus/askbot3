@@ -1,4 +1,5 @@
-from .models import UnreadInboxCounter
+from group_messaging.models import UnreadInboxCounter
+
 
 def group_messaging_context(request):
     if hasattr(request, 'user') and request.user.is_authenticated():

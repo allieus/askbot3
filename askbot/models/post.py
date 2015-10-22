@@ -1,7 +1,6 @@
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
+
 from collections import defaultdict
-import datetime
 import operator
 import logging
 
@@ -12,7 +11,7 @@ from django.core import urlresolvers
 from django.db import models
 from django.http import HttpRequest
 from django.template.loader import render_to_string
-from django.utils import html as html_utils
+from django.utils import html as html_utils, timezone
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.text import Truncator
 from django.utils.translation import get_language
@@ -83,8 +82,6 @@ class PostToGroup(models.Model):
 
     class Meta:
         unique_together = ('post', 'group')
-        app_label = 'askbot'
-        db_table = 'askbot_post_groups'
 
 
 class PostQuerySet(models.query.QuerySet):
@@ -160,12 +157,12 @@ class PostQuerySet(models.query.QuerySet):
         for question in self:
             try:
                 activity = Activity.objects.get(user=user, question=question, activity_type=activity_type)
-                now = datetime.datetime.now()
+                now = timezone.now()
                 if now < activity.active_at + recurrence_delay:
                     continue
             except Activity.DoesNotExist:
                 activity = Activity(user=user, question=question, activity_type=activity_type, content_object=question)
-            activity.active_at = datetime.datetime.now()
+            activity.active_at = timezone.now()
             activity.save()
             question_list.append(question)
         return question_list
@@ -203,7 +200,7 @@ class PostManager(BaseQuerySetManager):
         return self.create_new(
             None,  # this post type is threadless
             author,
-            datetime.datetime.now(),
+            timezone.now(),
             text,
             wiki=True,
             post_type='tag_wiki')
@@ -219,17 +216,9 @@ class PostManager(BaseQuerySetManager):
         else:
             language_code = get_language()
 
-        post = Post(
-            post_type=post_type,
-            thread=thread,
-            parent=parent,
-            author=author,
-            added_at=added_at,
-            wiki=wiki,
-            text=text,
-            language_code=language_code
-            #.html field is denormalized by the save() call
-        )
+        # html field is denormalized by the save() call
+        post = Post(post_type=post_type, thread=thread, parent=parent, author=author, added_at=added_at, wiki=wiki,
+                    text=text, language_code=language_code)
 
         if post.wiki:
             post.last_edited_by = post.author
@@ -238,19 +227,13 @@ class PostManager(BaseQuerySetManager):
 
         # possibly modify the is_private, if one of the groups
         # mandates explicit publishing of the posts
-        is_private = is_private or \
-            (thread and thread.requires_response_moderation(author))
+        is_private = is_private or (thread and thread.requires_response_moderation(author))
 
         post.save()  # saved so that revision can have post_id
 
-        revision = post.add_revision(
-            author=author,
-            revised_at=added_at,
-            text=text,
-            comment=force_text(const.POST_STATUS['default_version']),
-            by_email=by_email,
-            ip_addr=ip_addr
-        )
+        revision = post.add_revision(author=author, revised_at=added_at, text=text,
+                                     comment=force_text(const.POST_STATUS['default_version']), by_email=by_email,
+                                     ip_addr=ip_addr)
 
         # now we parse html
         parse_results = post.parse_and_save(author=author, is_private=is_private)
@@ -260,14 +243,8 @@ class PostManager(BaseQuerySetManager):
 
         if revision.revision > 0:
             signals.post_updated.send(
-                post=post,
-                updated_by=author,
-                newly_mentioned_users=parse_results['newly_mentioned_users'],
-                timestamp=added_at,
-                created=True,
-                diff=parse_results['diff'],
-                sender=post.__class__
-            )
+                post=post, updated_by=author, newly_mentioned_users=parse_results['newly_mentioned_users'],
+                timestamp=added_at, created=True, diff=parse_results['diff'], sender=post.__class__)
 
         return post
 
@@ -350,7 +327,7 @@ class MockPost(object):
         self.id = 0
         self.author = MockUser()
         self.summary = ''
-        self.added_at = datetime.datetime.now()
+        self.added_at = timezone.now()
 
     def needs_moderation(self):
         return False
@@ -395,7 +372,7 @@ class Post(models.Model):
     groups = models.ManyToManyField('Group', through='PostToGroup', related_name='group_posts')  # used for group-private posts
 
     author = models.ForeignKey(User, related_name='posts')
-    added_at = models.DateTimeField(default=datetime.datetime.now)
+    added_at = models.DateTimeField(default=timezone.now)
 
     # endorsed == accepted as best in the case of answer
     # use word 'endorsed' to differentiate from 'approved', which
@@ -449,10 +426,6 @@ class Post(models.Model):
     is_anonymous = models.BooleanField(default=False)
 
     objects = PostManager()
-
-    class Meta:
-        app_label = 'askbot'
-        db_table = 'askbot_post'
 
     # property to support legacy themes in case there are.
     @property
@@ -763,13 +736,8 @@ class Post(models.Model):
         from askbot.tasks import send_instant_notifications_about_activity_in_post
         defer_celery_task(
             send_instant_notifications_about_activity_in_post,
-            args=(
-                update_activity.pk,
-                self.id,
-                notify_sets['for_email']
-            ),
-            countdown=django_settings.NOTIFICATION_DELAY_TIME
-        )
+            args=(update_activity.pk, self.id, notify_sets['for_email']),
+            countdown=django_settings.NOTIFICATION_DELAY_TIME)
 
     def make_private(self, user, group_id=None):
         """makes post private within user's groups
@@ -816,15 +784,8 @@ class Post(models.Model):
             # for each revision of other post Ri
             # append content of Ri to R1 and use author
             new_text = orig_text + '\n\n' + rev.text
-            self.apply_edit(
-                edited_by=user,
-                text=new_text,
-                comment=_('merged revision'),
-                by_email=False,
-                edit_anonymously=rev.is_anonymous,
-                suppress_email=True,
-                ip_addr=rev.ip_addr
-            )
+            self.apply_edit(edited_by=user, text=new_text, comment=_('merged revision'), by_email=False,
+                            edit_anonymously=rev.is_anonymous, suppress_email=True, ip_addr=rev.ip_addr)
         if post.is_question() or post.is_answer():
             comments = Post.objects.get_comments().filter(parent=post)
             comments.update(parent=self)
@@ -1064,11 +1025,7 @@ class Post(models.Model):
             if parent_post is None:
                 break
             quote_level += 1
-            output += parent_post.format_for_email(
-                quote_level=quote_level,
-                format='parent_subthread',
-                recipient=recipient
-            )
+            output += parent_post.format_for_email(quote_level=quote_level, format='parent_subthread', recipient=recipient)
             current_post = parent_post
         return output
 
@@ -1104,7 +1061,7 @@ class Post(models.Model):
 
     def add_comment(self, comment=None, user=None, added_at=None, by_email=False, ip_addr=None):
         if added_at is None:
-            added_at = datetime.datetime.now()
+            added_at = timezone.now()
         if None in (comment, user):
             raise Exception('arguments comment and user are required')
 
@@ -1708,7 +1665,7 @@ class Post(models.Model):
         if text is None:
             text = latest_rev.text
         if edited_at is None:
-            edited_at = datetime.datetime.now()
+            edited_at = timezone.now()
         if edited_by is None:
             raise Exception('edited_by is required')
 
@@ -1762,7 +1719,7 @@ class Post(models.Model):
                 self.make_public()
 
         if edited_at is None:
-            edited_at = datetime.datetime.now()
+            edited_at = timezone.now()
 
         revision = self.__apply_edit(edited_at=edited_at, edited_by=edited_by, text=text, comment=comment, wiki=wiki,
                                      by_email=by_email, is_private=is_private, suppress_email=suppress_email,
@@ -2054,7 +2011,6 @@ class PostRevision(models.Model):
         #       As far as I know MySQL, PostgreSQL and SQLite allow that so we're on the safe side.
         unique_together = ('post', 'revision')
         ordering = ('-revision',)
-        app_label = 'askbot'
 
     def place_on_moderation_queue(self):
         """Creates moderation queue Activity items with recipients"""
@@ -2177,9 +2133,6 @@ class PostFlagReason(models.Model):
     title = models.CharField(max_length=128)
     details = models.ForeignKey(Post, related_name='post_reject_reasons')
 
-    class Meta:
-        app_label = 'askbot'
-
 
 class DraftAnswer(models.Model):
     """Provides space for draft answers,
@@ -2190,16 +2143,13 @@ class DraftAnswer(models.Model):
     author = models.ForeignKey(User, related_name='draft_answers')
     text = models.TextField(null=True)
 
-    class Meta:
-        app_label = 'askbot'
-
 
 class AnonymousAnswer(DraftContent):
     """Todo: re-route the foreign key to ``Thread``"""
     question = models.ForeignKey(Post, related_name='anonymous_answers')
 
     def publish(self, user):
-        added_at = datetime.datetime.now()
+        added_at = timezone.now()
         try:
             user.assert_can_post_text(self.text)
 

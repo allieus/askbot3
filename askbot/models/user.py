@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group as AuthGroup
 from django.core import exceptions
 from django.forms import EmailField
-from django.utils import translation
+from django.utils import translation, timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
@@ -204,8 +204,6 @@ class ActivityAuditStatus(models.Model):
 
     class Meta:
         unique_together = ('user', 'activity')
-        app_label = 'askbot'
-        db_table = 'askbot_activityauditstatus'
 
     def is_new(self):
         return (self.status == self.STATUS_NEW)
@@ -219,7 +217,7 @@ class Activity(models.Model):
     user = models.ForeignKey(User)
     recipients = models.ManyToManyField(User, through=ActivityAuditStatus, related_name='incoming_activity')
     activity_type = models.SmallIntegerField(choices=const.TYPE_ACTIVITY, db_index=True)
-    active_at = models.DateTimeField(default=datetime.datetime.now)
+    active_at = models.DateTimeField(default=timezone.now)
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField(db_index=True)
     content_object = GenericForeignKey('content_type', 'object_id')
@@ -237,17 +235,13 @@ class Activity(models.Model):
     def __str__(self):
         return '[%s] was active at %s' % (self.user.username, self.active_at)
 
-    class Meta:
-        app_label = 'askbot'
-        db_table = 'activity'
-
     def add_recipients(self, recipients):
         """have to use a special method, because django does not allow
         auto-adding to M2M with "through" model
         """
         for recipient in recipients:
             # TODO: may optimize for bulk addition
-            aas = ActivityAuditStatus(user = recipient, activity = self)
+            aas = ActivityAuditStatus(user=recipient, activity=self)
             aas.save()
 
     def get_mentioned_user(self):
@@ -259,19 +253,15 @@ class Activity(models.Model):
         assert(user_count == 1)
         return user_qs[0]
 
-    def get_snippet(self, max_length = 120):
+    def get_snippet(self, max_length=120):
         return self.content_object.get_snippet(max_length)
 
     def get_absolute_url(self):
         return self.content_object.get_absolute_url()
 
+
 class EmailFeedSettingManager(models.Manager):
-    def filter_subscribers(
-                        self,
-                        potential_subscribers = None,
-                        feed_type = None,
-                        frequency = None
-                    ):
+    def filter_subscribers(self, potential_subscribers=None, feed_type=None, frequency=None):
         """returns set of users who have matching subscriptions
         and if potential_subscribers is not none, search will
         be limited to only potential subscribers,
@@ -281,14 +271,9 @@ class EmailFeedSettingManager(models.Manager):
         TODO: when EmailFeedSetting is merged into user table
         this method may become unnecessary
         """
-        matching_feeds = self.filter(
-                                        feed_type = feed_type,
-                                        frequency = frequency
-                                    )
+        matching_feeds = self.filter(feed_type=feed_type, frequency=frequency)
         if potential_subscribers is not None:
-            matching_feeds = matching_feeds.filter(
-                            subscriber__in = potential_subscribers
-                        )
+            matching_feeds = matching_feeds.filter(subscriber__in=potential_subscribers)
         subscriber_set = set()
         for feed in matching_feeds:
             subscriber_set.add(feed.subscriber)
@@ -300,18 +285,18 @@ class EmailFeedSettingManager(models.Manager):
 class EmailFeedSetting(models.Model):
     # definitions of delays before notification for each type of notification frequency
     DELTA_TABLE = {
-        'i':datetime.timedelta(-1),# instant emails are processed separately
-        'd':datetime.timedelta(1),
-        'w':datetime.timedelta(7),
-        'n':datetime.timedelta(-1),
+        'i': datetime.timedelta(-1),  # instant emails are processed separately
+        'd': datetime.timedelta(1),
+        'w': datetime.timedelta(7),
+        'n': datetime.timedelta(-1),
     }
     # definitions of feed schedule types
     FEED_TYPES = (
-            'q_ask', # questions that user asks
-            'q_all', # enture forum, tag filtered
-            'q_ans', # questions that user answers
-            'q_sel', # questions that user decides to follow
-            'm_and_c' # comments and mentions of user anywhere
+        'q_ask',    # questions that user asks
+        'q_all',    # enture forum, tag filtered
+        'q_ans',    # questions that user answers
+        'q_sel',    # questions that user decides to follow
+        'm_and_c',  # comments and mentions of user anywhere
     )
     # email delivery schedule when no email is sent at all
     NO_EMAIL_SCHEDULE = {
@@ -319,38 +304,33 @@ class EmailFeedSetting(models.Model):
         'q_ans': 'n',
         'q_all': 'n',
         'q_sel': 'n',
-        'm_and_c': 'n'
+        'm_and_c': 'n',
     }
     MAX_EMAIL_SCHEDULE = {
         'q_ask': 'i',
         'q_ans': 'i',
         'q_all': 'i',
         'q_sel': 'i',
-        'm_and_c': 'i'
+        'm_and_c': 'i',
     }
     # TODO: words
     FEED_TYPE_CHOICES = (
-                    ('q_all', ugettext_lazy('Entire forum')),
-                    ('q_ask', ugettext_lazy('Questions that I asked')),
-                    ('q_ans', ugettext_lazy('Questions that I answered')),
-                    ('q_sel', ugettext_lazy('Individually selected questions')),
-                    ('m_and_c', ugettext_lazy('Mentions and comment responses')),
-                    )
+        ('q_all', ugettext_lazy('Entire forum')),
+        ('q_ask', ugettext_lazy('Questions that I asked')),
+        ('q_ans', ugettext_lazy('Questions that I answered')),
+        ('q_sel', ugettext_lazy('Individually selected questions')),
+        ('m_and_c', ugettext_lazy('Mentions and comment responses')),
+    )
     UPDATE_FREQUENCY = (
-                    ('i', ugettext_lazy('Instantly')),
-                    ('d', ugettext_lazy('Daily')),
-                    ('w', ugettext_lazy('Weekly')),
-                    ('n', ugettext_lazy('No email')),
-                   )
-
+        ('i', ugettext_lazy('Instantly')),
+        ('d', ugettext_lazy('Daily')),
+        ('w', ugettext_lazy('Weekly')),
+        ('n', ugettext_lazy('No email')),
+    )
 
     subscriber = models.ForeignKey(User, related_name='notification_subscriptions')
     feed_type = models.CharField(max_length=16, choices=FEED_TYPE_CHOICES)
-    frequency = models.CharField(
-                                    max_length=8,
-                                    choices=const.NOTIFICATION_DELIVERY_SCHEDULE_CHOICES,
-                                    default='n',
-                                )
+    frequency = models.CharField(max_length=8, choices=const.NOTIFICATION_DELIVERY_SCHEDULE_CHOICES, default='n')
     added_at = models.DateTimeField(auto_now_add=True)
     reported_at = models.DateTimeField(null=True)
     objects = EmailFeedSettingManager()
@@ -358,37 +338,29 @@ class EmailFeedSetting(models.Model):
     class Meta:
         # added to make account merges work properly
         unique_together = ('subscriber', 'feed_type')
-        app_label = 'askbot'
 
     def __str__(self):
         if self.reported_at is None:
             reported_at = "'not yet'"
         else:
             reported_at = '%s' % self.reported_at.strftime('%d/%m/%y %H:%M')
-        return 'Email feed for %s type=%s, frequency=%s, reported_at=%s' % (
-                                                     self.subscriber,
-                                                     self.feed_type,
-                                                     self.frequency,
-                                                     reported_at
-                                                 )
+        return 'Email feed for %s type=%s, frequency=%s, reported_at=%s' % (self.subscriber, self.feed_type,
+                                                                            self.frequency, reported_at)
 
-    def save(self,*args,**kwargs):
+    def save(self, *args, **kwargs):
         type = self.feed_type
         subscriber = self.subscriber
-        similar = self.__class__.objects.filter(
-                                            feed_type=type,
-                                            subscriber=subscriber
-                                        ).exclude(pk=self.id)
-        if len(similar) > 0:
+        similar = self.__class__.objects.filter(feed_type=type, subscriber=subscriber).exclude(pk=self.id)
+        if similar.exists():
             raise IntegrityError('email feed setting already exists')
-        super(EmailFeedSetting,self).save(*args,**kwargs)
+        super(EmailFeedSetting, self).save(*args, **kwargs)
 
     def get_previous_report_cutoff_time(self):
-        now = datetime.datetime.now()
+        now = timezone.now()
         return now - self.DELTA_TABLE[self.frequency]
 
     def should_send_now(self):
-        now = datetime.datetime.now()
+        now = timezone.now()
         cutoff_time = self.get_previous_report_cutoff_time()
         if self.reported_at is None or self.reported_at <= cutoff_time:
             return True
@@ -396,7 +368,7 @@ class EmailFeedSetting(models.Model):
             return False
 
     def mark_reported_now(self):
-        self.reported_at = datetime.datetime.now()
+        self.reported_at = timezone.now()
         self.save()
 
 
@@ -407,10 +379,9 @@ class AuthUserGroups(models.Model):
     user = models.ForeignKey(User)
 
     class Meta:
-        app_label = 'auth'
         unique_together = ('group', 'user')
-        db_table = 'auth_user_groups'
-        managed = False
+        abstract = True
+        # managed = False
 
 
 class GroupMembershipManager(models.Manager):
@@ -420,10 +391,10 @@ class GroupMembershipManager(models.Manager):
         try:
             # need this for the cases where auth User_groups is there,
             # but ours is not
-            auth_gm = AuthUserGroups.objects.get(user=user, group=group)
+            auth_gm = GroupMembership.objects.get(user=user, group=group)
             # use this as link for the One to One relation
             kwargs['authusergroups_ptr'] = auth_gm
-        except AuthUserGroups.DoesNotExist:
+        except GroupMembership.DoesNotExist:
             pass
         super(GroupMembershipManager, self).create(**kwargs)
 
@@ -432,25 +403,18 @@ class GroupMembership(AuthUserGroups):
     """contains one-to-one relation to ``auth_user_group``
     and extra membership profile fields"""
     # note: this may hold info on when user joined, etc
-    NONE = -1# not part of the choices as for this records should be just missing
+    NONE = -1  # not part of the choices as for this records should be just missing
     PENDING = 0
     FULL = 1
-    LEVEL_CHOICES = (# 'none' is by absence of membership
+    LEVEL_CHOICES = (  # 'none' is by absence of membership
         (PENDING, 'pending'),
-        (FULL, 'full')
+        (FULL, 'full'),
     )
     ALL_LEVEL_CHOICES = LEVEL_CHOICES + ((NONE, 'none'),)
 
-    level = models.SmallIntegerField(
-                        default=FULL,
-                        choices=LEVEL_CHOICES,
-                    )
+    level = models.SmallIntegerField(default=FULL, choices=LEVEL_CHOICES)
 
     objects = GroupMembershipManager()
-
-
-    class Meta:
-        app_label = 'askbot'
 
     @classmethod
     def get_level_value_display(cls, level):
@@ -479,15 +443,13 @@ class GroupQuerySet(models.query.QuerySet):
     def get_for_user(self, user=None, private=False):
         if private:
             global_group = Group.objects.get_global_group()
-            return self.filter(
-                        user=user
-                    ).exclude(id=global_group.id)
+            return self.filter(user=user).exclude(id=global_group.id)
         else:
             return self.filter(user=user)
 
-    def get_by_name(self, group_name = None):
+    def get_by_name(self, group_name=None):
         from askbot.models.tag import clean_group_name  # TODO - delete this
-        return self.get(name = clean_group_name(group_name))
+        return self.get(name=clean_group_name(group_name))
 
 
 class GroupManager(BaseQuerySetManager):
@@ -563,10 +525,6 @@ class Group(AuthGroup):
     read_only = models.BooleanField(default=False)
 
     objects = GroupManager()
-
-    class Meta:
-        app_label = 'askbot'
-        db_table = 'askbot_group'
 
     def get_moderators(self):
         """returns group moderators"""
@@ -655,6 +613,7 @@ class Group(AuthGroup):
         self.clean()
         super(Group, self).save(*args, **kwargs)
 
+
 class BulkTagSubscriptionManager(BaseQuerySetManager):
 
     def create(self, tag_names=None, user_list=None, group_list=None, tag_author=None, language_code=None, **kwargs):
@@ -717,5 +676,4 @@ class BulkTagSubscription(models.Model):
         return [tag.name for tag in self.tags.all()]
 
     class Meta:
-        app_label = 'askbot'
         ordering = ['-date_added']

@@ -2,11 +2,7 @@
 
 from askbot.conf.settings_wrapper import settings
 from askbot.conf.super_groups import DATA_AND_FORMATTING
-from askbot.deps.livesettings import ConfigurationGroup
-from askbot.deps.livesettings import BooleanValue
-from askbot.deps.livesettings import LongStringValue
-from askbot.deps.livesettings import StringValue
-from django.core.cache import cache
+from livesettings import ConfigurationGroup, BooleanValue, LongStringValue, StringValue
 from django.utils.translation import ugettext_lazy as _
 
 MODERATION = ConfigurationGroup(

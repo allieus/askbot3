@@ -2,17 +2,19 @@
 This command is incomplete, current awards only
 Civic Duty badge
 """
+
 from __future__ import print_function
+from django.utils import timezone
 from askbot.models import badges
 from askbot.models import User
 from askbot.models import Vote
 from askbot.utils.console import ProgressBar
-import datetime
 from django.core.management.base import NoArgsCommand
+
 
 class Command(NoArgsCommand):
     def handle_noargs(self, *args, **kwargs):
-        now = datetime.datetime.now()
+        now = timezone.now()
         awarded_count = 0
 
         users = User.objects.all()
@@ -27,11 +29,8 @@ class Command(NoArgsCommand):
                 continue
             else:
                 cd = badges.CivicDuty()
-                awarded = cd.consider_award(
-                            actor=user,
-                            context_object=vote.voted_post,
-                            timestamp=now
-                        )
+                awarded = cd.consider_award(actor=user, context_object=vote.voted_post, timestamp=now)
                 awarded_count += int(awarded)
 
         print('Awarded %d badges' % awarded_count)
+

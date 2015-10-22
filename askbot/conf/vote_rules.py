@@ -4,17 +4,19 @@ and offensive flags.
 
 For example number of times a person can vote each day, etc.
 """
+from django.utils.translation import ugettext_lazy as _
 from askbot.conf.settings_wrapper import settings
 from askbot.conf.super_groups import REP_AND_BADGES
-from askbot.deps.livesettings import ConfigurationGroup, IntegerValue
-from django.utils.translation import ugettext_lazy as _
+from livesettings import ConfigurationGroup, IntegerValue
+
 
 VOTE_RULES = ConfigurationGroup(
-                    'VOTE_RULES',
-                    _('Vote and flag limits'),
-                    ordering = 1,
-                    super_group = REP_AND_BADGES
-                )
+    'VOTE_RULES',
+    _('Vote and flag limits'),
+    ordering=1,
+    super_group=REP_AND_BADGES
+)
+
 
 settings.register(
     IntegerValue(

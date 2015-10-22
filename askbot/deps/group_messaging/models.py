@@ -1,7 +1,6 @@
 """models for the ``group_messaging`` app
 """
 import copy
-import datetime
 from importlib import import_module
 from askbot.mail import send_mail  # TODO: remove dependency?
 from askbot.mail.messages import GroupMessagingEmailAlert
@@ -10,6 +9,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q, Manager, Model
+from django.utils import timezone
 from django.utils.six.moves.urllib.parse import urlencode
 from django.utils.translation import ugettext as _
 from group_messaging.signals import response_created
@@ -215,7 +215,7 @@ class MessageManager(Manager):
             sender=sender,
             senders_info=sender.username,
             text=text)
-        now = datetime.datetime.now()
+        now = timezone.now()
         LastVisitTime.objects.create(message=message, user=sender, at=now)
         names = get_recipient_names(recipients)
         message.add_recipient_names_to_senders_info(recipients)
@@ -245,7 +245,7 @@ class MessageManager(Manager):
         # update headline
         message.root.headline = text[:MAX_HEADLINE_LENGTH]
         # mark last active timestamp for the root message
-        message.root.last_active_at = datetime.datetime.now()
+        message.root.last_active_at = timezone.now()
         # update senders info - stuff that is shown in the thread heading
         message.root.update_senders_info()
         # signal response as created, upon signal increment counters

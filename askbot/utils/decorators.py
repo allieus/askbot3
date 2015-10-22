@@ -8,7 +8,6 @@ except ImportError:
 
 import time
 import os
-import datetime
 import functools
 import inspect
 import logging
@@ -19,6 +18,7 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ImproperlyConfigured
 from django.http import JsonResponse, HttpResponse, HttpResponseForbidden, Http404
 from django.shortcuts import redirect
+from django.utils import timezone
 from django.utils.translation import ugettext as _
 from django.utils.encoding import force_text
 from django.utils.encoding import smart_str
@@ -39,7 +39,7 @@ def auto_now_timestamp(func):
     def decorating_func(*arg, **kwarg):
         timestamp = kwarg.get('timestamp', None)
         if timestamp is None:
-            kwarg['timestamp'] = datetime.datetime.now()
+            kwarg['timestamp'] = timezone.now()
         return func(*arg, **kwarg)
     return decorating_func
 
@@ -193,11 +193,7 @@ def check_spam(field):
                 )
 
                 if api.comment_check(comment, data, build_data=False):
-                    logging.debug(
-                        'Spam detected in %s post at: %s',
-                        request.user.username,
-                        datetime.datetime.now()
-                    )
+                    logging.debug('Spam detected in %s post at: %s', request.user.username, timezone.now())
                     spam_message = _(
                         'Spam was detected on your post, sorry '
                         'for if this is a mistake'

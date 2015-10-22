@@ -1,11 +1,11 @@
-from datetime import datetime
-from django.shortcuts import render
-from django.http import Http404
-from django.views.decorators.csrf import csrf_protect
-from django.core.urlresolvers import reverse
-from django.shortcuts import redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from askbot.conf import settings as askbot_settings
+from django.contrib.auth.decorators import login_required
+from django.core.urlresolvers import reverse
+from django.http import Http404
+from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_protect
+from django.utils import timezone
 from askbot.utils.decorators import moderators_only
 from askbot import models
 from askbot import forms
@@ -88,7 +88,7 @@ def ask_widget(request, widget_id):
 
             data_dict = {
                 'title': title,
-                'added_at': datetime.now(),
+                'added_at': timezone.now(),
                 'wiki': False,
                 'text': text,
                 'tagnames': tagnames,

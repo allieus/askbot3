@@ -4,11 +4,11 @@ Site modes settings:
     Bootstrap - for sites that are starting and
     Default - for sites that already have a momentum.
 """
+from django.utils.translation import ugettext_lazy as _
 from askbot.conf.settings_wrapper import settings
 from askbot.conf.super_groups import REP_AND_BADGES
-from askbot.deps.livesettings import ConfigurationGroup
-from askbot.deps.livesettings import BooleanValue
-from django.utils.translation import ugettext_lazy as _
+from livesettings import ConfigurationGroup, BooleanValue
+
 
 LARGE_SITE_MODE_SETTINGS = {
     # minimum reputation settins.

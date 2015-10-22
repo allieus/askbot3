@@ -1,74 +1,71 @@
-from askbot.deps.livesettings.compat import get_cache_timeout
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import ugettext_lazy
-from keyedcache import cache_key, cache_get, cache_set, NotCachedError
+from keyedcache import cache_key as cache_key_get, cache_get, cache_set, NotCachedError
 from keyedcache.models import CachedObjectMixin
-from askbot.deps.livesettings.overrides import get_overrides
+from livesettings.compat import get_cache_timeout
+from livesettings.overrides import get_overrides
 import logging
 
-log = logging.getLogger('configuration.models')
+logger = logging.getLogger('configuration.models')
 
 __all__ = ['SettingNotSet', 'Setting', 'LongSetting', 'find_setting']
 
-def _safe_get_siteid(site):
+
+def _safe_get_site_id(site):
     if not site:
         try:
             site = Site.objects.get_current()
-            siteid = site.id
+            site_id = site.id
         except:
-            siteid = settings.SITE_ID
+            site_id = settings.SITE_ID
     else:
-        siteid = site.id
-    return siteid
+        site_id = site.id
+    return site_id
+
 
 def find_setting(group, key, site=None):
-    """Get a setting or longsetting by group and key, cache and return it."""
+    'Get a setting or longsetting by group and key, cache and return it.'
 
-    siteid = _safe_get_siteid(site)
+    site_id = _safe_get_site_id(site)
     setting = None
 
-    use_db, overrides = get_overrides(siteid)
-    ck = cache_key('Setting', siteid, group, key)
+    use_db, overrides = get_overrides(site_id)
+    ck = cache_key_get('Setting', site_id, group, key)
 
     grp = overrides.get(group, None)
 
-    if grp and key in grp:
+    if grp and (key in grp):
         val = grp[key]
         setting = ImmutableSetting(key=key, group=group, value=val)
-        log.debug('Returning overridden: %s', setting)
+        logger.debug('Returning overridden: %s', setting)
+
     elif use_db:
         try:
             setting = cache_get(ck)
         except NotCachedError:
-            # FIXME : using deprecated modules.
-            '''
-            if loading.app_cache_ready():
+            model_classes = (Setting, LongSetting)
+            for model_cls in model_classes:
                 try:
-                    setting = Setting.objects.get(site__id__exact=siteid, key__exact=key, group__exact=group)
+                    setting = model_cls.objects.get(site__id=site_id, key=key, group=group)
+                    break
+                except model_cls.DoesNotExist:
+                    pass
 
-                except Setting.DoesNotExist:
-                    # maybe it is a "long setting"
-                    try:
-                        setting = LongSetting.objects.get(site__id__exact=siteid, key__exact=key, group__exact=group)
-
-                    except LongSetting.DoesNotExist:
-                        pass
-
-                cache_set(ck, value=setting)
-            '''
+            cache_set(ck, value=setting)
     else:
         grp = overrides.get(group, None)
         if grp and key in grp:
             val = grp[key]
             setting = ImmutableSetting(key=key, group=group, value=val)
-            log.debug('Returning overridden: %s', setting)
+            logger.debug('Returning overridden: %s', setting)
 
-    if not setting:
+    if setting is None:
         raise SettingNotSet(key, cachekey=ck)
 
     return setting
+
 
 class SettingNotSet(Exception):
     def __init__(self, k, cachekey=None):
@@ -76,23 +73,23 @@ class SettingNotSet(Exception):
         self.cachekey = cachekey
         self.args = [self.key, self.cachekey]
 
+
 class SettingManager(models.Manager):
     def get_queryset(self):
         all = super(SettingManager, self).get_queryset()
-        siteid = _safe_get_siteid(None)
-        return all.filter(site__id__exact=siteid)
+        site_id = _safe_get_site_id(None)
+        return all.filter(site__id=site_id)
 
 
 class ImmutableSetting(object):
-
-    def __init__(self, group="", key="", value="", site=1):
+    def __init__(self, group='', key='', value='', site=1):
         self.site = site
         self.group = group
         self.key = key
         self.value = value
 
     def cache_key(self, *args, **kwargs):
-        return cache_key('OverrideSetting', self.site, self.group, self.key)
+        return cache_key_get('OverrideSetting', self.site, self.group, self.key)
 
     def delete(self):
         pass
@@ -101,7 +98,7 @@ class ImmutableSetting(object):
         pass
 
     def __repr__(self):
-        return "ImmutableSetting: %s.%s=%s" % (self.group, self.key, self.value)
+        return 'ImmutableSetting: %s.%s=%s' % (self.group, self.key, self.value)
 
 
 class Setting(models.Model, CachedObjectMixin):
@@ -116,7 +113,7 @@ class Setting(models.Model, CachedObjectMixin):
         return self.id is not None
 
     def cache_key(self, *args, **kwargs):
-        return cache_key('Setting', self.site, self.group, self.key)
+        return cache_key_get('Setting', self.site, self.group, self.key)
 
     def delete(self):
         self.cache_delete()
@@ -140,17 +137,18 @@ class Setting(models.Model, CachedObjectMixin):
 
     class Meta:
         unique_together = ('site', 'group', 'key')
+        db_table = 'livesettings_setting'
 
 
 class LongSettingManager(models.Manager):
     def get_queryset(self):
         all = super(LongSettingManager, self).get_queryset()
-        siteid = _safe_get_siteid(None)
-        return all.filter(site__id__exact=siteid)
+        site_id = _safe_get_site_id(None)
+        return all.filter(site__id=site_id)
 
 
 class LongSetting(models.Model, CachedObjectMixin):
-    """A Setting which can handle more than 255 characters"""
+    'A Setting which can handle more than 255 characters'
     site = models.ForeignKey(Site, verbose_name=ugettext_lazy('Site'))
     group = models.CharField(max_length=100, blank=False, null=False)
     key = models.CharField(max_length=100, blank=False, null=False)
@@ -165,7 +163,7 @@ class LongSetting(models.Model, CachedObjectMixin):
         # note same cache pattern as Setting.  This is so we can look up in one check.
         # they can't overlap anyway, so this is moderately safe.  At the worst, the
         # Setting will override a LongSetting.
-        return cache_key('Setting', self.site, self.group, self.key)
+        return cache_key_get('Setting', self.site, self.group, self.key)
 
     def delete(self):
         self.cache_delete()
@@ -187,3 +185,5 @@ class LongSetting(models.Model, CachedObjectMixin):
 
     class Meta:
         unique_together = ('site', 'group', 'key')
+        db_table = 'livesettings_longsetting'
+

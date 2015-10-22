@@ -1,6 +1,6 @@
 from askbot.conf.settings_wrapper import settings
 from askbot.conf.super_groups import LOGIN_USERS_COMMUNICATION
-from askbot.deps import livesettings
+import livesettings
 from django.utils.translation import ugettext_lazy as _
 
 EMAIL_TEXT = livesettings.ConfigurationGroup(

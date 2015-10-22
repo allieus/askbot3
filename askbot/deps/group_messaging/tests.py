@@ -2,6 +2,7 @@ from askbot.tests.utils import with_settings
 from bs4 import BeautifulSoup
 from django.contrib.auth.models import User, Group
 from django.test import TestCase
+from django.utils import timezone
 from django.utils.six.moves.urllib.parse import urlparse, parse_qs, parse_qsl
 from group_messaging.models import LastVisitTime
 from group_messaging.models import Message
@@ -12,7 +13,6 @@ from group_messaging.models import get_personal_group
 from group_messaging.models import UnreadInboxCounter
 from group_messaging.views import ThreadsList
 from mock import Mock
-import datetime
 import time
 
 
@@ -55,7 +55,7 @@ class GroupMessagingTests(TestCase):
 
     def visit_thread(self, thread, user):
         last_visit_time, created = LastVisitTime.objects.get_or_create(user=user, message=thread)
-        last_visit_time.at = datetime.datetime.now()
+        last_visit_time.at = timezone.now()
         last_visit_time.save()
         time.sleep(1.5)
         return last_visit_time
@@ -105,7 +105,8 @@ class ViewsTests(GroupMessagingTests):
         # setup: message, reply, responder deletes thread
         root_message = self.create_thread_for_user(self.sender, self.recipient)
         response = Message.objects.create_response(sender=self.recipient, text='some response', parent=root_message)
-        memo1, created = MessageMemo.objects.get_or_create(message=root_message, user=self.recipient, status=MessageMemo.ARCHIVED)
+        memo1, created = MessageMemo.objects.get_or_create(message=root_message, user=self.recipient,
+                                                           status=MessageMemo.ARCHIVED)
         # OP sends reply to reply
         response2 = Message.objects.create_response(sender=self.sender, text='some response2', parent=response)
 

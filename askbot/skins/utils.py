@@ -102,8 +102,6 @@ def get_media_url(url, ignore_missing = False):
 
     TODO: move this to the skin environment class
     """
-    # import datetime
-    # before = datetime.datetime.now()
     url = unquote(force_text(url))
     while url[0] == '/': url = url[1:]
 
@@ -157,8 +155,7 @@ def get_media_url(url, ignore_missing = False):
         use_skin = resolve_skin_for_media(media=url, preferred_skin=use_skin)
     except MediaNotFound:
         if not ignore_missing:
-            log_message = 'missing media resource %s in skin %s' % (url, use_skin)
-            logging.critical(log_message)
+            logging.critical('missing media resource %s in skin %s' % (url, use_skin))
         return None
 
     url = django_settings.STATIC_URL + use_skin + '/media/' + url
@@ -167,8 +164,6 @@ def get_media_url(url, ignore_missing = False):
     if resource_revision:
         url += '?v=%d' % resource_revision
 
-    # after = datetime.datetime.now()
-    # print(after - before)
     return url
 
 

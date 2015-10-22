@@ -7,8 +7,8 @@ the future
 Many of these functions are being replaced with assertions:
 User.assert_can...
 """
-import datetime
 from django.db import transaction
+from django.utils import timezone
 from askbot.models import Repute
 # from askbot.models import Answer
 from askbot import signals
@@ -20,7 +20,7 @@ from askbot.conf import settings as askbot_settings
 @transaction.atomic
 def onFlaggedItem(post, user, timestamp=None):
     if timestamp is None:
-        timestamp = datetime.datetime.now()
+        timestamp = timezone.now()
 
     post.offensive_flag_count = post.offensive_flag_count + 1
     post.save()
@@ -104,7 +104,7 @@ def onFlaggedItem(post, user, timestamp=None):
 @transaction.atomic
 def onUnFlaggedItem(post, user, timestamp=None):
     if timestamp is None:
-        timestamp = datetime.datetime.now()
+        timestamp = timezone.now()
 
     post.offensive_flag_count = post.offensive_flag_count - 1
     post.save()
@@ -218,7 +218,7 @@ def onAnswerAccept(answer, user, timestamp=None):
 @transaction.atomic
 def onAnswerAcceptCanceled(answer, user, timestamp=None):
     if timestamp is None:
-        timestamp = datetime.datetime.now()
+        timestamp = timezone.now()
 
     answer.endorsed = False
     answer.endorsed_by = None
@@ -267,7 +267,7 @@ def onAnswerAcceptCanceled(answer, user, timestamp=None):
 @transaction.atomic
 def onUpVoted(vote, post, user, timestamp=None):
     if timestamp is None:
-        timestamp = datetime.datetime.now()
+        timestamp = timezone.now()
     vote.save()
 
     if post.post_type != 'comment':
@@ -303,7 +303,7 @@ def onUpVoted(vote, post, user, timestamp=None):
 @transaction.atomic
 def onUpVotedCanceled(vote, post, user, timestamp=None):
     if timestamp is None:
-        timestamp = datetime.datetime.now()
+        timestamp = timezone.now()
     vote.delete()
 
     if post.post_type != 'comment':
@@ -341,7 +341,7 @@ def onUpVotedCanceled(vote, post, user, timestamp=None):
 @transaction.atomic
 def onDownVoted(vote, post, user, timestamp=None):
     if timestamp is None:
-        timestamp = datetime.datetime.now()
+        timestamp = timezone.now()
     vote.save()
 
     post.vote_down_count = int(post.vote_down_count) + 1
@@ -384,7 +384,7 @@ def onDownVoted(vote, post, user, timestamp=None):
 @transaction.atomic
 def onDownVotedCanceled(vote, post, user, timestamp=None):
     if timestamp is None:
-        timestamp = datetime.datetime.now()
+        timestamp = timezone.now()
     vote.delete()
 
     post.vote_down_count = int(post.vote_down_count) - 1

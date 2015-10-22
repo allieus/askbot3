@@ -1,11 +1,10 @@
-import datetime
 import re
 import random
 import time
+from django.utils import six, timezone
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext
 from django.utils.html import escape
-from django.utils import six
 from django.utils.functional import lazy
 from django.utils.safestring import mark_safe
 
@@ -118,7 +117,7 @@ def not_a_robot_request(request):
 
 
 def diff_date(date, use_on_prefix=False):
-    now = datetime.datetime.now()  # datetime(*time.localtime()[0:6])#???
+    now = timezone.now()  # datetime(*time.localtime()[0:6])#???
     diff = now - date
     days = diff.days
     hours = int(diff.seconds/3600)

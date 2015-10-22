@@ -19,9 +19,8 @@ from django.db import connection
 from django.conf import settings as django_settings
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import six
+from django.utils import six, timezone
 from django.utils.six.moves.urllib.parse import urlparse, quote_plus
-from datetime import datetime
 from askbot.utils.loading import load_module
 from askbot.utils.functions import enumerate_string_list
 
@@ -192,7 +191,7 @@ for the correct order.\n\n"""
         raise AskbotConfigError(error_message + middleware_text)
 
     # middleware that was used in the past an now removed
-    canceled_middleware = ['askbot.deps.recaptcha_django.middleware.ReCaptchaMiddleware']
+    canceled_middleware = ['recaptcha_django.middleware.ReCaptchaMiddleware']
 
     invalid_middleware = [x for x in canceled_middleware if x in django_settings.MIDDLEWARE_CLASSES]
     if invalid_middleware:
@@ -832,7 +831,7 @@ def test_template_context_processors():
         'askbot.context.application_settings',
         'askbot.user_messages.context_processors.user_messages',
         'django.core.context_processors.csrf',
-        'askbot.deps.group_messaging.context.group_messaging_context',
+        'group_messaging.context.group_messaging_context',
     ]
     old_auth_processor = 'django.core.context_processors.auth'
     new_auth_processor = 'django.contrib.auth.context_processors.auth'
@@ -871,7 +870,7 @@ def test_cache_backend():
     # test that cache actually works
     errors = list()
 
-    test_value = 'test value %s' % datetime.now()
+    test_value = 'test value %s' % timezone.now()
     cache.set('askbot-cache-test', test_value)
     if cache.get('askbot-cache-test') != test_value:
         errors.append(

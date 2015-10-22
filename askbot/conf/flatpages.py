@@ -2,16 +2,16 @@
 Q&A forum flatpages (about, etc.)
 """
 from askbot.conf.settings_wrapper import settings
-from askbot.deps.livesettings import ConfigurationGroup, LongStringValue
+from livesettings import ConfigurationGroup, LongStringValue
 from askbot.conf.super_groups import CONTENT_AND_UI
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import string_concat
 
 FLATPAGES = ConfigurationGroup(
-                'FLATPAGES',
-                _('Messages and pages - about, privacy policy, etc.'),
-                super_group = CONTENT_AND_UI
-            )
+    'FLATPAGES',
+    _('Messages and pages - about, privacy policy, etc.'),
+    super_group=CONTENT_AND_UI,
+)
 
 settings.register(
     LongStringValue(

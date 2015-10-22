@@ -1,21 +1,22 @@
 import datetime
-from django.conf import settings as django_settings
 from django.core.urlresolvers import reverse
+from django.utils import timezone
 from django.test.client import Client
 from askbot.tests.utils import AskbotTestCase
 from askbot.conf import settings
 from askbot import models
 from askbot.models.badges import award_badges_signal
 
+
 class BadgeTests(AskbotTestCase):
 
     def setUp(self):
-        self.u1 = self.create_user(username = 'user1')
-        self.u2 = self.create_user(username = 'user2')
-        self.u3 = self.create_user(username = 'user3')
+        self.u1 = self.create_user(username='user1')
+        self.u2 = self.create_user(username='user2')
+        self.u3 = self.create_user(username='user3')
         self.client = Client()
 
-    def assert_have_badge(self, badge_key, recipient = None, expected_count = 1):
+    def assert_have_badge(self, badge_key, recipient=None, expected_count=1):
         """note - expected_count matches total number of
         badges within test, not the one that was awarded between the calls
         to this assertion"""
@@ -23,16 +24,10 @@ class BadgeTests(AskbotTestCase):
         count = models.Award.objects.filter(**filters).count()
         self.assertEquals(count, expected_count)
 
-    def assert_accepted_answer_badge_works(self,
-                                    badge_key = None,
-                                    min_points = None,
-                                    expected_count = 1,
-                                    previous_count = 0,
-                                    trigger = None
-                                ):
+    def assert_accepted_answer_badge_works(self, badge_key=None, min_points=None, expected_count=1, previous_count=0, trigger=None):
         assert(trigger in ('accept_best_answer', 'upvote_answer'))
-        question = self.post_question(user = self.u1)
-        answer = self.post_answer(user = self.u2, question = question)
+        question = self.post_question(user=self.u1)
+        answer = self.post_answer(user=self.u2, question=question)
         answer.points = min_points - 1
         answer.save()
 
@@ -48,29 +43,25 @@ class BadgeTests(AskbotTestCase):
             self.u1.upvote(answer)
         self.assert_have_badge(badge_key, recipient, expected_count)
 
-    def assert_upvoted_answer_badge_works(self,
-                                    badge_key = None,
-                                    min_points = None,
-                                    multiple = False
-                                ):
+    def assert_upvoted_answer_badge_works(self, badge_key=None, min_points=None, multiple=False):
         """test answer badge where answer author is the recipient
         where badge award is triggered by upvotes
         * min_points - minimum # of upvotes required
         * multiple - multiple award or not
         * badge_key - key on askbot.models.badges.Badge object
         """
-        question = self.post_question(user = self.u1)
-        answer = self.post_answer(user = self.u2, question = question)
+        question = self.post_question(user=self.u1)
+        answer = self.post_answer(user=self.u2, question=question)
         answer.points = min_points - 1
         answer.save()
         self.u1.upvote(answer)
-        self.assert_have_badge(badge_key, recipient = self.u2)
+        self.assert_have_badge(badge_key, recipient=self.u2)
         self.u3.upvote(answer)
-        self.assert_have_badge(badge_key, recipient = self.u2, expected_count = 1)
+        self.assert_have_badge(badge_key, recipient=self.u2, expected_count=1)
 
         # post another question and check that there are no new badges
-        question2 = self.post_question(user = self.u1)
-        answer2 = self.post_answer(user = self.u2, question = question2)
+        question2 = self.post_question(user=self.u1)
+        answer2 = self.post_answer(user=self.u2, question=question2)
         answer2.score = min_points - 1
         answer2.save()
         self.u1.upvote(answer2)
@@ -80,33 +71,25 @@ class BadgeTests(AskbotTestCase):
         else:
             expected_count = 1
 
-        self.assert_have_badge(
-                badge_key,
-                recipient = self.u2,
-                expected_count = expected_count
-            )
+        self.assert_have_badge(badge_key, recipient=self.u2, expected_count=expected_count)
 
-    def assert_upvoted_question_badge_works(self,
-                                    badge_key = None,
-                                    min_points = None,
-                                    multiple = False
-                                ):
+    def assert_upvoted_question_badge_works(self, badge_key=None, min_points=None, multiple=False):
         """test question badge where question author is the recipient
         where badge award is triggered by upvotes
         * min_points - minimum # of upvotes required
         * multiple - multiple award or not
         * badge_key - key on askbot.models.badges.Badge object
         """
-        question = self.post_question(user = self.u1)
+        question = self.post_question(user=self.u1)
         question.points = min_points - 1
         question.save()
         self.u2.upvote(question)
-        self.assert_have_badge(badge_key, recipient = self.u1)
+        self.assert_have_badge(badge_key, recipient=self.u1)
         self.u3.upvote(question)
-        self.assert_have_badge(badge_key, recipient = self.u1, expected_count = 1)
+        self.assert_have_badge(badge_key, recipient=self.u1, expected_count=1)
 
         # post another question and check that there are no new badges
-        question2 = self.post_question(user = self.u1)
+        question2 = self.post_question(user=self.u1)
         question2.points = min_points - 1
         question2.save()
         self.u2.upvote(question2)
@@ -116,56 +99,43 @@ class BadgeTests(AskbotTestCase):
         else:
             expected_count = 1
 
-        self.assert_have_badge(
-                        badge_key,
-                        recipient = self.u1,
-                        expected_count = expected_count
-                    )
+        self.assert_have_badge(badge_key, recipient=self.u1, expected_count=expected_count)
 
     def test_disciplined_badge(self):
-        question = self.post_question(user = self.u1)
+        question = self.post_question(user=self.u1)
         question.points = settings.DISCIPLINED_BADGE_MIN_UPVOTES
         question.save()
         self.u1.delete_question(question)
-        self.assert_have_badge('disciplined', recipient = self.u1)
+        self.assert_have_badge('disciplined', recipient=self.u1)
 
-        question2 = self.post_question(user = self.u1)
+        question2 = self.post_question(user=self.u1)
         question2.points = settings.DISCIPLINED_BADGE_MIN_UPVOTES
         question2.save()
         self.u1.delete_question(question2)
-        self.assert_have_badge('disciplined', recipient = self.u1, expected_count = 2)
+        self.assert_have_badge('disciplined', recipient=self.u1, expected_count=2)
 
     def test_peer_pressure_badge(self):
-        question = self.post_question(user = self.u1)
-        answer = self.post_answer(user = self.u1, question = question)
+        question = self.post_question(user=self.u1)
+        answer = self.post_answer(user=self.u1, question=question)
         answer.points = -1*settings.PEER_PRESSURE_BADGE_MIN_DOWNVOTES
         answer.save()
         self.u1.delete_answer(answer)
-        self.assert_have_badge('peer-pressure', recipient = self.u1)
+        self.assert_have_badge('peer-pressure', recipient=self.u1)
 
     def test_teacher_badge(self):
         self.assert_upvoted_answer_badge_works(
-            badge_key = 'teacher',
-            min_points = settings.TEACHER_BADGE_MIN_UPVOTES,
-            multiple = False
-        )
+            badge_key='teacher', min_points=settings.TEACHER_BADGE_MIN_UPVOTES, multiple=False)
 
     def test_nice_answer_badge(self):
         self.assert_upvoted_answer_badge_works(
-            badge_key = 'nice-answer',
-            min_points = settings.NICE_ANSWER_BADGE_MIN_UPVOTES,
-            multiple = True
-        )
+            badge_key='nice-answer', min_points=settings.NICE_ANSWER_BADGE_MIN_UPVOTES, multiple=True)
 
     def test_nice_question_badge(self):
         self.assert_upvoted_question_badge_works(
-            badge_key = 'nice-question',
-            min_points = settings.NICE_QUESTION_BADGE_MIN_UPVOTES,
-            multiple = True
-        )
+            badge_key='nice-question', min_points=settings.NICE_QUESTION_BADGE_MIN_UPVOTES, multiple=True)
 
     def test_popular_question_badge(self):
-        question = self.post_question(user = self.u1)
+        question = self.post_question(user=self.u1)
         min_views = settings.POPULAR_QUESTION_BADGE_MIN_VIEWS
         question.thread.view_count = min_views - 1
         question.thread.save()
@@ -192,26 +162,26 @@ class BadgeTests(AskbotTestCase):
         self.assert_have_badge('popular-question', recipient=self.u1, expected_count=2)
 
     def test_student_badge(self):
-        question = self.post_question(user = self.u1)
+        question = self.post_question(user=self.u1)
         self.u2.upvote(question)
-        self.assert_have_badge('student', recipient = self.u1)
+        self.assert_have_badge('student', recipient=self.u1)
         self.u3.upvote(question)
-        self.assert_have_badge('student', recipient = self.u1, expected_count = 1)
+        self.assert_have_badge('student', recipient=self.u1, expected_count=1)
 
-        question2 = self.post_question(user = self.u1)
+        question2 = self.post_question(user=self.u1)
         self.u2.upvote(question)
-        self.assert_have_badge('student', recipient = self.u1, expected_count = 1)
+        self.assert_have_badge('student', recipient=self.u1, expected_count=1)
 
     def test_supporter_badge(self):
-        question = self.post_question(user = self.u1)
+        question = self.post_question(user=self.u1)
         self.u2.upvote(question)
-        self.assert_have_badge('supporter', recipient = self.u2)
+        self.assert_have_badge('supporter', recipient=self.u2)
 
-        answer = self.post_answer(user = self.u1, question = question)
+        answer = self.post_answer(user=self.u1, question=question)
         self.u3.upvote(answer)
-        self.assert_have_badge('supporter', recipient = self.u3)
+        self.assert_have_badge('supporter', recipient=self.u3)
         self.u2.upvote(answer)
-        self.assert_have_badge('supporter', recipient = self.u2, expected_count = 1)
+        self.assert_have_badge('supporter', recipient=self.u2, expected_count=1)
 
     def test_critic_badge(self):
         question = self.post_question(user = self.u1)
@@ -323,15 +293,11 @@ class BadgeTests(AskbotTestCase):
         self.assert_guru_badge_works('accept_best_answer')
 
     def test_necromancer_badge(self):
-        question = self.post_question(user = self.u1)
-        now = datetime.datetime.now()
+        question = self.post_question(user=self.u1)
+        now = timezone.now()
         delta = datetime.timedelta(settings.NECROMANCER_BADGE_MIN_DELAY + 1)
         future = now + delta
-        answer = self.post_answer(
-                        user = self.u2,
-                        question = question,
-                        timestamp = future
-                    )
+        answer = self.post_answer(user=self.u2, question=question, timestamp=future)
         answer.points = settings.NECROMANCER_BADGE_MIN_UPVOTES - 1
         answer.save()
         self.assert_have_badge('necromancer', self.u2, expected_count = 0)
@@ -475,33 +441,33 @@ class BadgeTests(AskbotTestCase):
         self.assert_have_badge('stellar-question', self.u1, 1)
 
     def test_commentator_badge(self):
-        question = self.post_question(user = self.u1)
+        question = self.post_question(user=self.u1)
         min_comments = settings.COMMENTATOR_BADGE_MIN_COMMENTS
         for i in xrange(min_comments - 1):
-            self.post_comment(user = self.u1, parent_post = question)
+            self.post_comment(user=self.u1, parent_post=question)
 
         self.assert_have_badge('commentator', self.u1, 0)
-        self.post_comment(user = self.u1, parent_post = question)
+        self.post_comment(user=self.u1, parent_post=question)
         self.assert_have_badge('commentator', self.u1, 1)
-        self.post_comment(user = self.u1, parent_post = question)
+        self.post_comment(user=self.u1, parent_post=question)
         self.assert_have_badge('commentator', self.u1, 1)
 
     def test_taxonomist_badge(self):
-        self.post_question(user = self.u1, tags = 'test')
+        self.post_question(user=self.u1, tags='test')
         min_use = settings.TAXONOMIST_BADGE_MIN_USE_COUNT
         for i in xrange(min_use - 2):
-            self.post_question(user = self.u2, tags = 'test')
+            self.post_question(user=self.u2, tags='test')
         self.assert_have_badge('taxonomist', self.u1, 0)
-        self.post_question(user = self.u2, tags = 'test')
+        self.post_question(user=self.u2, tags='test')
         self.assert_have_badge('taxonomist', self.u1, 1)
 
     def test_enthusiast_badge(self):
-        yesterday = datetime.datetime.now() - datetime.timedelta(1)
+        yesterday = timezone.now() - datetime.timedelta(1)
         self.u1.last_seen = yesterday
         prev_visit_count = settings.ENTHUSIAST_BADGE_MIN_DAYS - 1
         self.u1.consecutive_days_visit_count = prev_visit_count
         self.u1.save()
         self.assert_have_badge('enthusiast', self.u1, 0)
-        self.client.login(method = 'force', user_id = self.u1.id)
+        self.client.login(method='force', user_id=self.u1.id)
         self.client.get(reverse('questions'))
         self.assert_have_badge('enthusiast', self.u1, 1)

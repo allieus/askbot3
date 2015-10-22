@@ -6,8 +6,11 @@ http://code.google.com/p/django-values/
 from __future__ import unicode_literals
 from __future__ import absolute_import
 import json
+import datetime
 from decimal import Decimal
 from collections import OrderedDict
+import logging
+import traceback
 from django import forms
 from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
@@ -20,26 +23,24 @@ from django.utils.translation import ugettext_lazy
 from django.utils.translation import get_language
 from django.utils.translation import activate as activate_language
 from django.core.files import storage
-from askbot.deps.livesettings.models import find_setting, LongSetting, Setting, SettingNotSet
-from askbot.deps.livesettings.overrides import get_overrides
-from askbot.deps.livesettings.utils import load_module, is_string_like, is_list_or_tuple
-from askbot.deps.livesettings.widgets import ImageInput
 from askbot.utils.functions import format_setting_name
-import datetime
-import logging
-from . import signals
+from livesettings.models import find_setting, LongSetting, Setting, SettingNotSet
+from livesettings.overrides import get_overrides
+from livesettings.utils import load_module, is_string_like, is_list_or_tuple
+from livesettings.widgets import ImageInput
+from livesettings.signals import configuration_value_changed
 import os
 
 __all__ = [
     'BASE_GROUP', 'BASE_SUPER_GROUP', 'ConfigurationGroup', 'Value', 'BooleanValue',
-    'DecimalValue', 'DurationValue',
-    'FloatValue', 'IntegerValue', 'ModuleValue', 'PercentValue', 'PositiveIntegerValue', 'SortedDotDict',
-    'StringValue', 'SuperGroup', 'ImageValue', 'LongStringValue', 'MultipleStringValue', 'URLValue',
+    'DecimalValue', 'DurationValue', 'FloatValue', 'IntegerValue', 'ModuleValue', 'PercentValue',
+    'PositiveIntegerValue', 'SortedDotDict', 'StringValue', 'SuperGroup', 'ImageValue', 'LongStringValue',
+    'MultipleStringValue', 'URLValue',
 ]
 
 _WARN = {}
 
-log = logging.getLogger('configuration')
+logger = logging.getLogger('configuration')
 
 NOTSET = object()
 
@@ -115,9 +116,6 @@ class ConfigurationGroup(SortedDotDict):
 
     def __lt__(self, other):
         return (self.ordering, self.name) < (other.ordering, other.name)
-
-    def __cmp__(self, other):
-        return cmp((self.ordering, self.name), (other.ordering, other.name))
 
     def __eq__(self, other):
         return (type(self) == type(other)
@@ -207,9 +205,6 @@ class Value(object):
         return (self.ordering, self.description, self.creation_counter) < \
             (other.ordering, other.description, other.creation_counter)
 
-    def __cmp__(self, other):
-        return cmp((self.ordering, self.description, self.creation_counter), (other.ordering, other.description, other.creation_counter))
-
     def __eq__(self, other):
         if type(self) == type(other):
             return self.value == other.value
@@ -237,7 +232,7 @@ class Value(object):
     def choice_field(self, **kwargs):
         if self.hidden:
             kwargs['widget'] = forms.MultipleHiddenInput()
-        from askbot.deps.livesettings.forms import LocalizedChoiceField
+        from livesettings.forms import LocalizedChoiceField
         return LocalizedChoiceField(choices=self.choices, **kwargs)
 
     def _choice_values(self):
@@ -324,7 +319,7 @@ class Value(object):
         return fields
 
     def make_setting(self, db_value, language_code=None):
-        log.debug('new setting %s.%s', self.group.key, self.key)
+        logger.debug('new setting %s.%s', self.group.key, self.key)
         key = self.key
         if self.localized and language_code:
             key += '_' + format_setting_name(language_code)
@@ -384,16 +379,16 @@ class Value(object):
                     val = NOTSET
 
             except AttributeError as ae:
-                log.error("Attribute error: %s", ae)
-                log.error("%s: Could not get _value of %s", key, self.setting)
+                logger.error("Attribute error: %s", ae)
+                logger.error("%s: Could not get _value of %s", key, self.setting)
                 raise(ae)
 
             except Exception as e:
                 global _WARN
-                log.error(e)
+                logger.error(e)
                 if str(e).find("configuration_setting") > -1:
                     if 'configuration_setting' not in _WARN:
-                        log.warn('Error loading setting %s.%s from table, OK if you are in syncdb', self.group.key, key)
+                        logger.warn('Error loading setting %s.%s from table, OK if you are in syncdb', self.group.key, key)
                         _WARN['configuration_setting'] = True
 
                     if self.use_default:
@@ -402,9 +397,8 @@ class Value(object):
                         raise ImproperlyConfigured("All settings used in startup must have defaults, %s.%s does not",
                                                    self.group.key, key)
                 else:
-                    import traceback
                     traceback.print_exc()
-                    log.warn("Problem finding settings %s.%s, %s", self.group.key, key, e)
+                    logger.warn("Problem finding settings %s.%s, %s", self.group.key, key, e)
                     raise SettingNotSet("Startup error, couldn't load %s.%s" % (self.group.key, key))
         return val
 
@@ -417,24 +411,23 @@ class Value(object):
             new_value = self.to_python(value)
             if current_value != new_value:
                 if self.update_callback:
-                    new_value = apply(self.update_callback, (current_value, new_value))
+                    new_value = self.update_callback(current_value, new_value)
 
                 db_value = self.get_db_prep_save(new_value)
 
                 try:
-                    s = self.get_setting(language_code)
-                    s.value = db_value
-
+                    settings_ = self.get_setting(language_code)
+                    settings_.value = db_value
                 except SettingNotSet:
-                    s = self.make_setting(db_value, language_code=language_code)
+                    settings_ = self.make_setting(db_value, language_code=language_code)
 
                 if self.use_default and self.default == new_value:
-                    if s.id:
-                        log.info("Deleted setting %s.%s", self.group.key, self.key)
-                        s.delete()
+                    if settings_.id:
+                        logger.info("Deleted setting %s.%s", self.group.key, self.key)
+                        settings_.delete()
                 else:
-                    log.info("Updated setting %s.%s = %s", self.group.key, self.key, value)
-                    s.save()
+                    logger.info("Updated setting(id=%s) %s.%s = %s", settings_.id, self.group.key, self.key, value)
+                    settings_.save()
 
                 if self.localized:
                     try:
@@ -443,15 +436,15 @@ class Value(object):
                     except SettingNotSet:
                         pass
 
-                signals.configuration_value_changed.send(self, old_value=current_value, new_value=new_value,
-                                                         setting=self, language_code=language_code)
+                configuration_value_changed.send(None, old_value=current_value, new_value=new_value,
+                                                 setting=self, language_code=language_code)
 
                 if self.clear_cache:
                     cache.clear()
 
                 return True
         else:
-            log.debug('not updating setting %s.%s - askbot.deps.livesettings db is disabled', self.group.key, self.key)
+            logger.debug('not updating setting %s.%s - livesettings db is disabled', self.group.key, self.key)
 
         return False
 
@@ -556,7 +549,7 @@ class DecimalValue(Value):
         try:
             return Decimal(value)
         except TypeError as te:
-            log.warning("Can't convert %s to Decimal for settings %s.%s", value, self.group.key, self.key)
+            logger.warning("Can't convert %s to Decimal for settings %s.%s", value, self.group.key, self.key)
             raise TypeError(te)
 
     def to_editor(self, value):
@@ -711,7 +704,7 @@ class LongStringValue(Value):
             forms.CharField.__init__(self, *args, **kwargs)
 
     def make_setting(self, db_value, language_code=None):
-        log.debug('new long setting %s.%s', self.group.key, self.key)
+        logger.debug('new long setting %s.%s', self.group.key, self.key)
         key = self.key
         if self.localized and language_code:
             key = self.key + '_' + format_setting_name(language_code)
@@ -800,7 +793,7 @@ class MultipleStringValue(Value):
 
     def choice_field(self, **kwargs):
         kwargs['required'] = False
-        from askbot.deps.livesettings.forms import LocalizedMultipleChoiceField
+        from livesettings.forms import LocalizedMultipleChoiceField
         return LocalizedMultipleChoiceField(choices=self.choices, **kwargs)
 
     def get_db_prep_save(self, value):
@@ -820,7 +813,7 @@ class MultipleStringValue(Value):
                 if is_string_like(value):
                     return [value]
                 else:
-                    log.warning('Could not decode returning empty list: %s', value)
+                    logger.warning('Could not decode returning empty list: %s', value)
                     return []
 
     to_editor = to_python

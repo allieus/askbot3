@@ -3,6 +3,7 @@ from django.test.client import Client
 from django.core.urlresolvers import reverse
 from django.conf import settings
 from django.core import exceptions
+from django.utils import timezone
 from askbot.tests import utils
 from askbot.tests.utils import with_settings
 from askbot.conf import settings as askbot_settings
@@ -1077,48 +1078,35 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         if original_poster is None:
             original_poster = self.user
 
-        question = self.post_question(
-                            author = original_poster,
-                            timestamp = old_timestamp
-                        )
-        comment1 = original_poster.post_comment(
-                                    parent_post = question,
-                                    timestamp = old_timestamp,
-                                    body_text = 'blah'
-                                )
-        comment2 = self.other_user.post_comment(# post this one with the current timestamp
-                                    parent_post = question,
-                                    body_text = 'blah'
-                                )
+        question = self.post_question(author=original_poster, timestamp=old_timestamp)
+        comment1 = original_poster.post_comment(parent_post=question, timestamp=old_timestamp, body_text='blah')
+        # post this one with the current timestamp
+        comment2 = self.other_user.post_comment(parent_post=question, body_text='blah')
         self.user.assert_can_edit_comment(comment1)
 
-    def assert_user_can_edit_very_old_comment(self, original_poster = None):
+    def assert_user_can_edit_very_old_comment(self, original_poster=None):
         """tries to edit comment in the most restictive situation
         """
         askbot_settings.update('USE_TIME_LIMIT_TO_EDIT_COMMENT', True)
         askbot_settings.update('MINUTES_TO_EDIT_COMMENT', 0)
-        old_timestamp = datetime.datetime.now() - datetime.timedelta(1)
-        self.assert_user_can_edit_previous_comment(
-                                    old_timestamp = old_timestamp,
-                                    original_poster = original_poster
-                                )
-
+        old_timestamp = timezone.now() - datetime.timedelta(1)
+        self.assert_user_can_edit_previous_comment(old_timestamp=old_timestamp, original_poster=original_poster)
 
     def test_admin_can_edit_very_old_comment(self):
         self.user.set_admin_status()
         self.user.save()
-        self.assert_user_can_edit_very_old_comment(original_poster = self.other_user)
+        self.assert_user_can_edit_very_old_comment(original_poster=self.other_user)
 
     def test_moderator_can_edit_very_old_comment(self):
         self.user.set_status('m')
         self.user.save()
-        self.assert_user_can_edit_very_old_comment(original_poster = self.other_user)
+        self.assert_user_can_edit_very_old_comment(original_poster=self.other_user)
 
     def test_regular_user_cannot_edit_very_old_comment(self):
         self.assertRaises(
             exceptions.PermissionDenied,
             self.assert_user_can_edit_very_old_comment,
-            original_poster = self.user
+            original_poster=self.user
         )
 
     def test_regular_user_can_edit_reasonably_old_comment(self):
@@ -1127,23 +1115,16 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         askbot_settings.update('USE_TIME_LIMIT_TO_EDIT_COMMENT', True)
         askbot_settings.update('MINUTES_TO_EDIT_COMMENT', 10)
         # about 3 min ago
-        old_timestamp = datetime.datetime.now() - datetime.timedelta(0, 200)
-        self.assert_user_can_edit_previous_comment(
-                                old_timestamp = old_timestamp,
-                                original_poster = self.user
-                            )
+        old_timestamp = timezone.now() - datetime.timedelta(0, 200)
+        self.assert_user_can_edit_previous_comment(old_timestamp=old_timestamp, original_poster=self.user)
 
     def test_disable_comment_edit_time_limit(self):
         self.user.set_status('a')
         self.user.save()
         askbot_settings.update('USE_TIME_LIMIT_TO_EDIT_COMMENT', False)
         askbot_settings.update('MINUTES_TO_EDIT_COMMENT', 10)
-        old_timestamp = datetime.datetime.now() - datetime.timedelta(365)# a year ago
-        self.assert_user_can_edit_previous_comment(
-                                old_timestamp = old_timestamp,
-                                original_poster = self.user
-                            )
-
+        old_timestamp = timezone.now() - datetime.timedelta(365)  # a year ago
+        self.assert_user_can_edit_previous_comment(old_timestamp=old_timestamp, original_poster=self.user)
 
     def test_regular_user_can_edit_last_comment(self):
         """and a very old last comment"""
@@ -1151,14 +1132,11 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         self.user.save()
         askbot_settings.update('USE_TIME_LIMIT_TO_EDIT_COMMENT', True)
         askbot_settings.update('MINUTES_TO_EDIT_COMMENT', 10)
-        old_timestamp = datetime.datetime.now() - datetime.timedelta(1)
-        question = self.post_question(author = self.user, timestamp = old_timestamp)
-        comment = self.user.post_comment(
-                                    parent_post = question,
-                                    body_text = 'blah',
-                                    timestamp = old_timestamp
-                                )
+        old_timestamp = timezone.now() - datetime.timedelta(1)
+        question = self.post_question(author=self.user, timestamp=old_timestamp)
+        comment = self.user.post_comment(parent_post=question, body_text='blah', timestamp=old_timestamp)
         self.user.assert_can_edit_comment(comment)
+
 
 # def user_assert_can_post_comment(self, parent_post):
 # def user_assert_can_delete_comment(self, comment = None):
@@ -1176,26 +1154,21 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
 # def user_assert_can_close_question(self, question = None):
 # def user_assert_can_retag_questions(self):
 
+
 class AcceptBestAnswerPermissionAssertionTests(utils.AskbotTestCase):
 
     def setUp(self):
         self.create_user()
-        self.create_user(username = 'other_user')
+        self.create_user(username='other_user')
         self.question = self.post_question()
 
     def other_post_answer(self):
-        self.answer = self.post_answer(
-                                question = self.question,
-                                user = self.other_user
-                            )
+        self.answer = self.post_answer(question=self.question, user=self.other_user)
 
     def user_post_answer(self):
-        self.answer = self.post_answer(
-                                question = self.question,
-                                user = self.user
-                            )
+        self.answer = self.post_answer(question=self.question, user=self.user)
 
-    def assert_user_can(self, user = None):
+    def assert_user_can(self, user=None):
         if user is None:
             user = self.user
         user.assert_can_accept_best_answer(self.answer)
@@ -1206,8 +1179,7 @@ class AcceptBestAnswerPermissionAssertionTests(utils.AskbotTestCase):
         self.assertRaises(
             exceptions.PermissionDenied,
             user.assert_can_accept_best_answer,
-            answer=self.answer
-        )
+            answer=self.answer)
 
     def test_question_owner_can_accept_others_answer(self):
         self.other_post_answer()
@@ -1233,32 +1205,32 @@ class AcceptBestAnswerPermissionAssertionTests(utils.AskbotTestCase):
 
     def test_low_rep_other_user_cannot_accept_answer(self):
         self.other_post_answer()
-        self.create_user(username = 'third_user')
+        self.create_user(username='third_user')
         self.third_user.reputation = askbot_settings.MIN_REP_TO_ACCEPT_ANY_ANSWER - 1
-        self.assert_user_cannot(user = self.third_user)
+        self.assert_user_cannot(user=self.third_user)
 
     @with_settings(MIN_DAYS_FOR_STAFF_TO_ACCEPT_ANSWER=0)
     def test_high_rep_other_user_can_accept_answer(self):
         self.other_post_answer()
-        self.create_user(username = 'third_user')
+        self.create_user(username='third_user')
         self.third_user.reputation = askbot_settings.MIN_REP_TO_ACCEPT_ANY_ANSWER
-        self.assert_user_can(user = self.third_user)
+        self.assert_user_can(user=self.third_user)
 
     def test_moderator_cannot_accept_own_answer(self):
         self.other_post_answer()
         self.other_user.set_status('m')
-        self.assert_user_cannot(user = self.other_user)
+        self.assert_user_cannot(user=self.other_user)
 
     def test_moderator_cannot_accept_others_answer_today(self):
         self.other_post_answer()
-        self.create_user(username = 'third_user')
+        self.create_user(username='third_user')
         self.third_user.set_status('m')
-        self.assert_user_cannot(user = self.third_user)
+        self.assert_user_cannot(user=self.third_user)
 
     def test_moderator_can_accept_others_old_answer(self):
         self.other_post_answer()
         self.answer.added_at -= datetime.timedelta(
-            days = askbot_settings.MIN_DAYS_FOR_STAFF_TO_ACCEPT_ANSWER + 1
+            days=askbot_settings.MIN_DAYS_FOR_STAFF_TO_ACCEPT_ANSWER + 1
         )
         self.answer.save()
         self.create_user(username = 'third_user')

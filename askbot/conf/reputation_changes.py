@@ -3,17 +3,17 @@ Settings for reputation changes that apply to
 user in response to various actions by the same
 users or others
 """
-from askbot.conf.settings_wrapper import settings
-from askbot.deps.livesettings import ConfigurationGroup, IntegerValue
 from django.utils.translation import ugettext_lazy as _
+from askbot.conf.settings_wrapper import settings
 from askbot.conf.super_groups import REP_AND_BADGES
+from livesettings import ConfigurationGroup, IntegerValue
 
 REP_CHANGES = ConfigurationGroup(
-                    'REP_CHANGES',
-                    _('Karma loss and gain rules'),
-                    super_group = REP_AND_BADGES,
-                    ordering=2
-                )
+    'REP_CHANGES',
+    _('Karma loss and gain rules'),
+    super_group=REP_AND_BADGES,
+    ordering=2
+)
 
 settings.register(
     IntegerValue(

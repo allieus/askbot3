@@ -12,6 +12,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import logging
 import operator
+import traceback
 from django.conf import settings as django_settings
 from django.contrib import messages as django_messages
 from django.contrib.humanize.templatetags import humanize
@@ -27,7 +28,7 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.template import RequestContext
 from django.template.loader import get_template
-from django.utils import translation
+from django.utils import timezone, translation
 from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.parse import urlencode
 from django.utils.translation import ugettext as _
@@ -74,8 +75,6 @@ def questions(request, **kwargs):
     List of Questions, Tagged questions, and Unanswered questions.
     matching search query or user selection
     """
-    # before = datetime.datetime.now()
-
     search_state = SearchState(user_logged_in=request.user.is_authenticated(), **kwargs)
 
     qs, meta_data = models.Thread.objects.run_advanced_search(
@@ -267,8 +266,6 @@ def questions(request, **kwargs):
                 django_messages.info(request, msg)
 
         return render(request, 'main_page.jinja', template_data)
-        # print(datetime.datetime.now() - before)
-        # return res
 
 
 def get_top_answers(request):
@@ -365,7 +362,7 @@ def question(request, id):  # refactor - long subroutine. display question body,
     """
     # process url parameters
     # TODO: fix inheritance of sort method from questions
-    # before = datetime.datetime.now()
+
     form = ShowQuestionForm(request.REQUEST)
     form.full_clean()  # always valid
     show_answer = form.cleaned_data['show_answer']
@@ -416,6 +413,7 @@ def question(request, id):  # refactor - long subroutine. display question body,
     try:
         question_post.assert_is_visible_to(request.user)
     except exceptions.QuestionHidden as error:
+        traceback.print_exc()
         # request.user.message_set.create(message=force_text(error))
         django_messages.info(request, force_text(error))
         return redirect('index')
@@ -447,7 +445,8 @@ def question(request, id):  # refactor - long subroutine. display question body,
         # is for the answer - we need the answer object
         try:
             show_comment = models.Post.objects.get_comments().get(id=show_comment)
-        except models.Post.DoesNotExist:
+        except models.Post.DoesNotExist as e:
+            traceback.print_exc()
             error_message = _(
                 'Sorry, the comment you are looking for has been '
                 'deleted and is no longer accessible'
@@ -462,14 +461,16 @@ def question(request, id):  # refactor - long subroutine. display question body,
 
         try:
             show_comment.assert_is_visible_to(request.user)
-        except exceptions.AnswerHidden as error:
-            # request.user.message_set.create(message=force_text(error))
-            django_messages.info(request, force_text(error))
+        except exceptions.AnswerHidden as e:
+            traceback.print_exc()
+            # request.user.message_set.create(message=force_text(e))
+            django_messages.info(request, force_text(e))
             # use reverse function here because question is not yet loaded
             return redirect('question', id=id)
-        except exceptions.QuestionHidden as error:
-            # request.user.message_set.create(message=force_text(error))
-            django_messages.info(request, force_text(error))
+        except exceptions.QuestionHidden as e:
+            traceback.print_exc()
+            # request.user.message_set.create(message=force_text(e))
+            django_messages.info(request, force_text(e))
             return redirect('index')
 
     elif show_answer:
@@ -483,9 +484,10 @@ def question(request, id):  # refactor - long subroutine. display question body,
 
         try:
             show_post.assert_is_visible_to(request.user)
-        except django_exceptions.PermissionDenied as error:
-            # request.user.message_set.create(message=force_text(error))
-            django_messages.info(request, force_text(error))
+        except django_exceptions.PermissionDenied as e:
+            traceback.print_exc()
+            # request.user.message_set.create(message=force_text(e))
+            django_messages.info(request, force_text(e))
             return redirect('question', id=id)
 
     thread = question_post.thread

@@ -11,7 +11,6 @@ from __future__ import print_function
 import calendar
 from collections import defaultdict
 import functools
-import datetime
 import json
 import logging
 import operator
@@ -26,6 +25,7 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.shortcuts import redirect
 from django.http import Http404
+from django.utils import timezone
 from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.parse import urlencode, quote
 from django.utils.translation import get_language
@@ -283,7 +283,7 @@ def user_moderate(request, subject, context):
                     user=subject,
                     reputation_change=rep_delta,
                     comment=comment,
-                    timestamp=datetime.datetime.now())
+                    timestamp=timezone.now())
 
                 # reset form to preclude accidentally repeating submission
                 user_rep_form = forms.ChangeUserReputationForm()
@@ -896,14 +896,14 @@ def user_reputation(request, user, context):
     reputes = models.Repute.objects.filter(user=user).select_related('question', 'question__thread', 'user').order_by('-reputed_at')
 
     # prepare data for the graph - last values go in first
-    rep_list = ['[%s,%s]' % (calendar.timegm(datetime.datetime.now().timetuple()) * 1000, user.reputation)]
+    rep_list = ['[%s,%s]' % (calendar.timegm(timezone.now().timetuple()) * 1000, user.reputation)]
     for rep in reputes:
         rep_list.append('[%s,%s]' % (calendar.timegm(rep.reputed_at.timetuple()) * 1000, rep.reputation))
     reps = ','.join(rep_list)
     reps = '[%s]' % reps
 
     data = {
-        'active_tab':'users',
+        'active_tab': 'users',
         'page_class': 'user-profile-page',
         'tab_name': 'reputation',
         'page_title': _("Profile - User's Karma"),
@@ -916,14 +916,10 @@ def user_reputation(request, user, context):
 
 def user_favorites(request, user, context):
     favorite_threads = user.user_favorite_questions.values_list('thread', flat=True)
-    questions_qs = models.Post.objects.filter(
-                                post_type='question',
-                                thread__in=favorite_threads
-                            ).select_related(
-                                'thread', 'thread__last_activity_by'
-                            ).order_by(
-                                '-points', '-thread__last_activity_at'
-                            )[:const.USER_VIEW_DATA_SIZE]
+    questions_qs = models.Post.objects.\
+        filter(post_type='question', thread__in=favorite_threads).\
+        select_related('thread', 'thread__last_activity_by').\
+        order_by('-points', '-thread__last_activity_at')[:const.USER_VIEW_DATA_SIZE]
 
     q_paginator = Paginator(questions_qs, const.USER_POSTS_PAGE_SIZE)
 
@@ -932,22 +928,22 @@ def user_favorites(request, user, context):
     question_count = q_paginator.count
 
     q_paginator_context = functions.setup_paginator({
-                    'is_paginated' : (question_count > const.USER_POSTS_PAGE_SIZE),
-                    'pages': q_paginator.num_pages,
-                    'current_page_number': page,
-                    'page_object': q_paginator.page(page),
-                    'base_url' : request.path + '?sort=favorites&' # this paginator will be ajax
-                })
+        'is_paginated': (question_count > const.USER_POSTS_PAGE_SIZE),
+        'pages': q_paginator.num_pages,
+        'current_page_number': page,
+        'page_object': q_paginator.page(page),
+        'base_url': request.path + '?sort=favorites&',  # this paginator will be ajax
+    })
 
     data = {
-        'active_tab':'users',
+        'active_tab': 'users',
         'page_class': 'user-profile-page',
-        'tab_name' : 'favorites',
-        'page_title' : _('profile - favorites'),
-        'questions' : questions,
+        'tab_name': 'favorites',
+        'page_title': _('profile - favorites'),
+        'questions': questions,
         'q_paginator_context': q_paginator_context,
         'question_count': question_count,
-        'page_size': const.USER_POSTS_PAGE_SIZE
+        'page_size': const.USER_POSTS_PAGE_SIZE,
     }
     context.update(data)
     return render(request, 'user_profile/user_favorites.jinja', context)
@@ -1087,7 +1083,7 @@ def user(request, id, slug=None, tab_name=None):
     TODO: decide what to do with slug - it is not used
     in the code in any way
     """
-    profile_owner = get_object_or_404(models.User, id = id)
+    profile_owner = get_object_or_404(models.User, id=id)
 
     if profile_owner.is_blocked():
         if request.user.is_anonymous() or \

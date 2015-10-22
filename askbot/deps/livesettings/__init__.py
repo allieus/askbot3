@@ -10,7 +10,8 @@ Appropriate:  Your google code for adwords.
 Inappropriate: The keyedcache timeout for the store.
 
 """
+
 from __future__ import absolute_import
-from .functions import *
-from .models import *
-from .values import *
+from livesettings.functions import *
+from livesettings.models import *
+from livesettings.values import *

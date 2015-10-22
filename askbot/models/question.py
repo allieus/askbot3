@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
-from __future__ import unicode_literals
-import datetime
+from __future__ import print_function, unicode_literals
+
+from copy import copy
 import logging
 import operator
 import re
 from functools import cmp_to_key
 
-from copy import copy
 from django.conf import settings as django_settings
 from django.db import models
 from django.db.models import F, Q
@@ -16,6 +15,7 @@ from django.core import cache  # import cache, not from cache import cache, to b
 from django.core import exceptions as django_exceptions
 from django.http import HttpRequest
 from django.template.loader import render_to_string
+from django.utils import timezone
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext, get_language
@@ -551,8 +551,6 @@ class ThreadToGroup(models.Model):
 
     class Meta:
         unique_together = ('thread', 'group')
-        db_table = 'askbot_thread_groups'
-        app_label = 'askbot'
 
 
 class Thread(models.Model):
@@ -566,7 +564,7 @@ class Thread(models.Model):
     view_count = models.PositiveIntegerField(default=0)
     favourite_count = models.PositiveIntegerField(default=0)
     answer_count = models.PositiveIntegerField(default=0)
-    last_activity_at = models.DateTimeField(default=datetime.datetime.now)
+    last_activity_at = models.DateTimeField(default=timezone.now)
     last_activity_by = models.ForeignKey(User, related_name='unused_last_active_in_threads')
     language_code = models.CharField(
         choices=django_settings.LANGUAGES,
@@ -596,9 +594,6 @@ class Thread(models.Model):
     points = models.IntegerField(default=0, db_column='score')
 
     objects = ThreadManager()
-
-    class Meta:
-        app_label = 'askbot'
 
     # property to support legacy themes in case there are.
     @property
@@ -665,11 +660,10 @@ class Thread(models.Model):
         if askbot_settings.FORCE_LOWERCASE_TAGS:
             tagnames = tagnames.lower()
 
-        self.retag(
-            retagged_by=user,
-            retagged_at=timestamp or datetime.datetime.now(),
-            tagnames=' '.join(existing_tags + add_tags),
-            silent=silent)
+        if timestamp is None:
+            timestamp = timezone.now()
+
+        self.retag(retagged_by=user, retagged_at=timestamp, tagnames=' '.join(existing_tags + add_tags), silent=silent)
 
     def get_absolute_url(self):
         return self._question_post().get_absolute_url(thread=self)
@@ -1714,20 +1708,13 @@ class QuestionView(models.Model):
     who = models.ForeignKey(User, related_name='question_views')
     when = models.DateTimeField()
 
-    class Meta:
-        app_label = 'askbot'
-
 
 @python_2_unicode_compatible
 class FavoriteQuestion(models.Model):
     """A favorite Question of a User."""
     thread = models.ForeignKey(Thread)
     user = models.ForeignKey(User, related_name='user_favorite_questions')
-    added_at = models.DateTimeField(default=datetime.datetime.now)
-
-    class Meta:
-        app_label = 'askbot'
-        db_table = 'favorite_question'
+    added_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return '[%s] favorited at %s' % (self.user, self.added_at)
@@ -1742,9 +1729,6 @@ class DraftQuestion(models.Model):
     text = models.TextField(null=True)
     tagnames = models.CharField(max_length=125, null=True)
 
-    class Meta:
-        app_label = 'askbot'
-
 
 class AnonymousQuestion(DraftContent):
     """question that was asked before logging in
@@ -1757,7 +1741,7 @@ class AnonymousQuestion(DraftContent):
     is_anonymous = models.BooleanField(default=False)
 
     def publish(self, user):
-        added_at = datetime.datetime.now()
+        added_at = timezone.now()
         # TODO: wrong - use User.post_question() instead
         try:
             user.assert_can_post_text(self.text)
@@ -1785,3 +1769,4 @@ class AnonymousQuestion(DraftContent):
 
         finally:
             self.delete()
+

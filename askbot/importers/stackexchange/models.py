@@ -1,4 +1,5 @@
 from django.db import models
+
 class Badge(models.Model):
     id = models.IntegerField(primary_key=True)
     class_type = models.IntegerField(null=True)
@@ -10,11 +11,19 @@ class Badge(models.Model):
     command = models.TextField(null=True)
     award_frequency = models.IntegerField(null=True)
 
+    class Meta:
+        db_table = 'stackexchange_badge'
+
+
 class CloseReason(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=200, null=True)
     description = models.CharField(max_length=256, null=True)
     display_order = models.IntegerField(null=True)
+
+    class Meta:
+        db_table = 'stackexchange_closereason'
+
 
 class Comment2Vote(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -26,6 +35,10 @@ class Comment2Vote(models.Model):
     user_display_name = models.CharField(max_length=40, null=True)
     deletion_date = models.DateTimeField(null=True)
 
+    class Meta:
+        db_table = 'stackexchange_comment2vote'
+
+
 class FlatPage(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50, null=True)
@@ -34,6 +47,10 @@ class FlatPage(models.Model):
     content_type = models.CharField(max_length=50, null=True)
     active = models.NullBooleanField(null=True)
     use_master = models.NullBooleanField(null=True)
+
+    class Meta:
+        db_table = 'stackexchange_flatpage'
+
 
 class Message(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -44,10 +61,18 @@ class Message(models.Model):
     text = models.TextField(null=True)
     post = models.ForeignKey('Post', related_name='Message_by_post_set', null=True)
 
+    class Meta:
+        db_table = 'stackexchange_message'
+
+
 class MessageType(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50, null=True)
     description = models.CharField(max_length=300, null=True)
+
+    class Meta:
+        db_table = 'stackexchange_messagetype'
+
 
 class ModeratorMessage(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -62,6 +87,10 @@ class ModeratorMessage(models.Model):
     deletion_ip_address = models.CharField(max_length=40, null=True)
     user_display_name = models.CharField(max_length=40, null=True)
 
+    class Meta:
+        db_table = 'stackexchange_moderatormessage'
+
+
 class PostComment(models.Model):
     id = models.IntegerField(primary_key=True)
     post = models.ForeignKey('Post', related_name='PostComment_by_post_set', null=True)
@@ -74,10 +103,18 @@ class PostComment(models.Model):
     deletion_user = models.ForeignKey('User', related_name='PostComment_by_deletion_user_set', null=True)
     score = models.IntegerField(null=True)
 
+    class Meta:
+        db_table = 'stackexchange_postcomment'
+
+
 class PostHistoryType(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50, null=True)
     description = models.CharField(max_length=300, null=True)
+
+    class Meta:
+        db_table = 'stackexchange_posthistorytype'
+
 
 class PostHistory(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -93,6 +130,10 @@ class PostHistory(models.Model):
     user_email = models.CharField(max_length=100, null=True)
     user_website_url = models.CharField(max_length=200, null=True)
 
+    class Meta:
+        db_table = 'stackexchange_posthistory'
+
+
 class Post2Vote(models.Model):
     id = models.IntegerField(primary_key=True)
     post = models.ForeignKey('Post', related_name='Post2Vote_by_post_set', null=True)
@@ -106,6 +147,10 @@ class Post2Vote(models.Model):
     comment = models.CharField(max_length=150, null=True)
     ip_address = models.CharField(max_length=40, null=True)
     linked_post = models.ForeignKey('Post', related_name='Post2Vote_by_linked_post_set', null=True)
+
+    class Meta:
+        db_table = 'stackexchange_post2vote'
+
 
 class Post(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -140,18 +185,34 @@ class Post(models.Model):
     bounty_closed = models.DateTimeField(null=True)
     last_owner_email_date = models.DateTimeField(null=True)
 
+    class Meta:
+        db_table = 'stackexchange_post'
+
+
 class PostType(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50, null=True)
     description = models.CharField(max_length=300, null=True)
 
+    class Meta:
+        db_table = 'stackexchange_posttype'
+
+
 class SchemaVersion(models.Model):
     version = models.IntegerField(null=True)
+
+    class Meta:
+        db_table = 'stackexchange_schemaversion'
+
 
 class Setting(models.Model):
     id = models.IntegerField(primary_key=True)
     key = models.CharField(max_length=256, null=True)
     value = models.TextField(null=True)
+
+    class Meta:
+        db_table = 'stackexchange_setting'
+
 
 class SystemMessage(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -160,6 +221,10 @@ class SystemMessage(models.Model):
     text = models.TextField(null=True)
     deletion_date = models.DateTimeField(null=True)
     deletion_user = models.ForeignKey('User', related_name='SystemMessage_by_deletion_user_set', null=True)
+
+    class Meta:
+        db_table = 'stackexchange_systemmessage'
+
 
 class Tag(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -171,6 +236,10 @@ class Tag(models.Model):
     is_required = models.NullBooleanField(null=True)
     aliases = models.CharField(max_length=200, null=True)
 
+    class Meta:
+        db_table = 'stackexchange_tag'
+
+
 class ThemeResource(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50, null=True)
@@ -178,11 +247,19 @@ class ThemeResource(models.Model):
     content_type = models.CharField(max_length=50, null=True)
     version = models.CharField(max_length=6, null=True)
 
+    class Meta:
+        db_table = 'stackexchange_themeresource'
+
+
 class ThemeTextResource(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50, null=True)
     value = models.TextField(null=True)
     content_type = models.CharField(max_length=50, null=True)
+
+    class Meta:
+        db_table = 'stackexchange_themetextresource'
+
 
 class ThrottleBucket(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -191,10 +268,18 @@ class ThrottleBucket(models.Model):
     tokens = models.IntegerField(null=True)
     last_update = models.DateTimeField(null=True)
 
+    class Meta:
+        db_table = 'stackexchange_throttlebucket'
+
+
 class UserHistoryType(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50, null=True)
     description = models.CharField(max_length=300, null=True)
+
+    class Meta:
+        db_table = 'stackexchange_userhistorytype'
+
 
 class UserHistory(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -207,12 +292,20 @@ class UserHistory(models.Model):
     moderator_user = models.ForeignKey('User', related_name='UserHistory_by_moderator_user_set', null=True)
     reputation = models.IntegerField(null=True)
 
+    class Meta:
+        db_table = 'stackexchange_userhistory'
+
+
 class User2Badge(models.Model):
     id = models.IntegerField(primary_key=True)
     user = models.ForeignKey('User', related_name='User2Badge_by_user_set', null=True)
     badge = models.ForeignKey('Badge', related_name='User2Badge_by_badge_set', null=True)
     date = models.DateTimeField(null=True)
     comment = models.CharField(max_length=50, null=True)
+
+    class Meta:
+        db_table = 'stackexchange_user2badge'
+
 
 class User2Vote(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -222,6 +315,10 @@ class User2Vote(models.Model):
     creation_date = models.DateTimeField(null=True)
     deletion_date = models.DateTimeField(null=True)
     ip_address = models.CharField(max_length=40, null=True)
+
+    class Meta:
+        db_table = 'stackexchange_user2vote'
+
 
 class User(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -254,17 +351,33 @@ class User(models.Model):
     phone = models.CharField(max_length=20, null=True)
     password_id = models.IntegerField(null=True)
 
+    class Meta:
+        db_table = 'stackexchange_user'
+
+
 class UserType(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50, null=True)
     description = models.CharField(max_length=300, null=True)
+
+    class Meta:
+        db_table = 'stackexchange_usertype'
+
 
 class VoteType(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50, null=True)
     description = models.CharField(max_length=300, null=True)
 
+    class Meta:
+        db_table = 'stackexchange_votetype'
+
+
 class Password(models.Model):
-    id = models.IntegerField(primary_key = True)
-    password = models.CharField(max_length = 128)
-    salt = models.CharField(max_length = 32)
+    id = models.IntegerField(primary_key=True)
+    password = models.CharField(max_length=128)
+    salt = models.CharField(max_length=32)
+
+    class Meta:
+        db_table = 'stackexchange_password'
+

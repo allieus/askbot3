@@ -19,11 +19,6 @@ class Message(models.Model):
     user = models.ForeignKey(User, related_name='_message_set')
     message = models.TextField(ugettext_lazy('message'))
 
-    class Meta:
-        'Added for backwards compatibility with databases migrated from django 1.3'
-        app_label = 'auth'
-        db_table = 'auth_message'
-
     def __str__(self):
         return self.message
 

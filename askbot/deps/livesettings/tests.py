@@ -1,9 +1,11 @@
+import keyedcache
 from django.conf import settings as djangosettings
 from django.test import TestCase
-import keyedcache
-from askbot.deps.livesettings import *
+from livesettings import *
 import logging
-log = logging.getLogger('test');
+
+log = logging.getLogger('test')
+
 
 class ConfigurationFunctionTest(TestCase):
 

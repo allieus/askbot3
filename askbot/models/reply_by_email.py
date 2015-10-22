@@ -1,9 +1,9 @@
-from datetime import datetime
 import random
 import string
 import logging
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 from django.utils.translation import ugettext as _
 from askbot.models.post import Post
 from askbot.models.base import BaseQuerySetManager
@@ -29,21 +29,18 @@ def emailed_content_needs_moderation(email):
 class ReplyAddressManager(BaseQuerySetManager):
     """A manager for the :class:`ReplyAddress` model"""
 
+    SAMPLE = string.ascii_letters + string.digits
+
     def get_unused(self, address, allowed_from_email):
-        return self.get(
-            address = address,
-            allowed_from_email = allowed_from_email,
-            used_at__isnull = True
-        )
+        return self.get(address=address, allowed_from_email=allowed_from_email, used_at__isnull=True)
 
     def create_new(self, **kwargs):
         """creates a new reply address"""
         kwargs['allowed_from_email'] = kwargs['user'].email
         reply_address = ReplyAddress(**kwargs)
         while True:
-            reply_address.address = ''.join(random.choice(string.letters +
-                string.digits) for i in xrange(random.randint(12, 25))).lower()
-            if self.filter(address = reply_address.address).count() == 0:
+            reply_address.address = ''.join(random.choice(self.SAMPLE) for i in xrange(random.randint(12, 25))).lower()
+            if not self.filter(address=reply_address.address).exists():
                 break
         reply_address.save()
         return reply_address
@@ -57,34 +54,21 @@ REPLY_ACTION_CHOICES = (
     ('auto_answer_or_comment', 'Answer or comment, depending on the size of post'),
     ('validate_email', 'Validate email and record signature'),
 )
+
+
 class ReplyAddress(models.Model):
     """Stores a reply address for the post
     and the user"""
-    address = models.CharField(max_length = 25, unique = True)
-    post = models.ForeignKey(
-                            Post,
-                            null = True,# reply not necessarily to posts
-                            related_name = 'reply_addresses'
-                        )# the emailed post
-    reply_action = models.CharField(
-                        max_length = 32,
-                        choices = REPLY_ACTION_CHOICES,
-                        default = 'auto_answer_or_comment'
-                    )
-    response_post = models.ForeignKey(
-                            Post,
-                            null = True,
-                            related_name = 'edit_addresses'
-                        )
+    address = models.CharField(max_length=25, unique=True)
+    # reply not necessarily to posts
+    post = models.ForeignKey(Post, null=True, related_name='reply_addresses')  # the emailed post
+    reply_action = models.CharField(max_length=32, choices=REPLY_ACTION_CHOICES, default='auto_answer_or_comment')
+    response_post = models.ForeignKey(Post, null=True, related_name='edit_addresses')
     user = models.ForeignKey(User)
-    allowed_from_email = models.EmailField(max_length = 150)
-    used_at = models.DateTimeField(null = True, default = None)
+    allowed_from_email = models.EmailField(max_length=150)
+    used_at = models.DateTimeField(null=True, default=None)
 
     objects = ReplyAddressManager()
-
-    class Meta:
-        app_label = 'askbot'
-        db_table = 'askbot_replyaddress'
 
     @property
     def was_used(self):
@@ -143,7 +127,7 @@ class ReplyAddress(models.Model):
                 by_email=True)
         elif self.post.post_type == 'question':
             if self.reply_action == 'auto_answer_or_comment':
-                wordcount = len(body_text)/6# TODO: this is a simplistic hack
+                wordcount = int(len(body_text)/6)  # TODO: this is a simplistic hack
                 if wordcount > askbot_settings.MIN_WORDS_FOR_ANSWER_BY_EMAIL:
                     reply_action = 'post_answer'
                 else:
@@ -163,7 +147,7 @@ class ReplyAddress(models.Model):
                     by_email=True)
             else:
                 logging.critical('Unexpected reply action: "%s", post by email failed' % reply_action)
-                return None# TODO: there may be a better action to take here...
+                return None  # TODO: there may be a better action to take here...
         elif self.post.post_type == 'comment':
             result = self.user.post_comment(
                 self.post.parent,
@@ -171,6 +155,7 @@ class ReplyAddress(models.Model):
                 by_email=True)
         result.thread.reset_cached_data()
         self.response_post = result
-        self.used_at = datetime.now()
+        self.used_at = timezone.now()
         self.save()
         return result
+
