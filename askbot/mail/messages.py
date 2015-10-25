@@ -94,7 +94,7 @@ class BaseEmail(object):
         for key in context:
             if isinstance(context[key], six.string_types):
                 context[key] = mark_safe(context[key])
-        return ' '.join(render_to_string(self.template_path + '/subject.txt', context, request=HttpRequest()).split())
+        return ' '.join(render_to_string(self.template_path + '/subject.txt.jinja', context, request=HttpRequest()).split())
 
     def render_body(self):
         body = render_to_string(self.template_path + '/body.jinja', self.get_context(), request=HttpRequest())

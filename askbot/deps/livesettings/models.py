@@ -109,6 +109,11 @@ class Setting(models.Model, CachedObjectMixin):
 
     objects = SettingManager()
 
+    class Meta:
+        app_label = 'livesettings'
+        db_table = 'livesettings_setting'
+        unique_together = ('site', 'group', 'key')
+
     def __nonzero__(self):
         return self.id is not None
 
@@ -135,10 +140,6 @@ class Setting(models.Model, CachedObjectMixin):
         length = get_cache_timeout()
         cache_set(key, value=val, length=length)
 
-    class Meta:
-        unique_together = ('site', 'group', 'key')
-        db_table = 'livesettings_setting'
-
 
 class LongSettingManager(models.Manager):
     def get_queryset(self):
@@ -155,6 +156,11 @@ class LongSetting(models.Model, CachedObjectMixin):
     value = models.TextField(blank=True)
 
     objects = LongSettingManager()
+
+    class Meta:
+        app_label = 'livesettings'
+        db_table = 'livesettings_longsetting'
+        unique_together = ('site', 'group', 'key')
 
     def __nonzero__(self):
         return self.id is not None
@@ -183,7 +189,4 @@ class LongSetting(models.Model, CachedObjectMixin):
         length = get_cache_timeout()
         cache_set(key, value=val, length=length)
 
-    class Meta:
-        unique_together = ('site', 'group', 'key')
-        db_table = 'livesettings_longsetting'
 

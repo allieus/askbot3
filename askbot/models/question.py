@@ -6,7 +6,6 @@ import logging
 import operator
 import re
 from functools import cmp_to_key
-
 from django.conf import settings as django_settings
 from django.db import models
 from django.db.models import F, Q
@@ -19,7 +18,8 @@ from django.utils import timezone
 from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext, get_language
-
+from djorm_pgfulltext.fields import VectorField
+from djorm_pgfulltext.models import SearchManagerMixIn
 import askbot
 from askbot import signals
 from askbot import const
@@ -33,6 +33,7 @@ from askbot.models.tag import filter_accepted_tags, filter_suggested_tags
 from askbot.models.tag import separate_unused_tags
 from askbot.models.user import Group, PERSONAL_GROUP_NAME_PREFIX
 from askbot.search import mysql
+from askbot.search.postgresql import QuerySetSearchMixIn
 from askbot.search.state_manager import DummySearchState
 from askbot.utils import translation as translation_utils
 from askbot.utils.lists import LazyList
@@ -47,7 +48,6 @@ def clean_tagnames(tagnames):
     TODO: remove this when the Thread.tagnames field is converted into
     text_field
     """
-    original = tagnames
     tagnames = tagnames.strip().split()
     # see if the tagnames field fits into 125 bytes
     while True:
@@ -80,7 +80,7 @@ def default_title_renderer(thread):
         return thread.title
 
 
-class ThreadQuerySet(models.query.QuerySet):
+class ThreadQuerySet(QuerySetSearchMixIn, models.query.QuerySet):
 
     def get_visible(self, user):
         """filters out threads not belonging to the user groups"""
@@ -96,18 +96,26 @@ class ThreadQuerySet(models.query.QuerySet):
         TODO: implement full text search on relevant fields
         """
 
-        if getattr(django_settings, 'ENABLE_HAYSTACK_SEARCH', False):
+        if django_settings.ENABLE_HAYSTACK_SEARCH:
             from askbot.search.haystack.helpers import get_threads_from_query
             return self & get_threads_from_query(search_query)
         else:
             db_engine_name = askbot.get_database_engine_name()
             filter_parameters = {'deleted': False}
-            if 'postgresql_psycopg2' in db_engine_name:
-                from askbot.search import postgresql
-                return postgresql.\
-                    run_title_search(self, search_query).\
-                    filter(**filter_parameters).\
-                    order_by('-relevance')
+            if 'postgresql_psycopg2' in db_engine_name or 'postgis' in db_engine_name:
+
+                # TODO: full-text search 를 적용하지 못해서, 기본 쿼리로 임시적용
+                filter_parameters['title__icontains'] = search_query
+
+                # TODO: title/tagnames search
+                # filter_parameters = {'deleted': False}
+                # return self.filter(**filter_parameters).search(search_query).order_by('-relevance')
+
+                # from askbot.search import postgresql
+                # return postgresql.\
+                #     run_title_search(self, search_query).\
+                #     filter(**filter_parameters).\
+                #     order_by('-relevance')
             elif 'mysql' in db_engine_name and mysql.supports_full_text_search():
                 filter_parameters['title__search'] = search_query
             else:
@@ -116,10 +124,10 @@ class ThreadQuerySet(models.query.QuerySet):
             return self.filter(**filter_parameters)
 
 
-class ThreadManager(BaseQuerySetManager):
+class ThreadManager(SearchManagerMixIn, BaseQuerySetManager):
 
     def get_queryset(self):
-        return ThreadQuerySet(self.model)
+        return ThreadQuerySet(model=self.model, using=self._db)
 
     def get_tag_summary_from_threads(self, threads):
         """returns a humanized string containing up to
@@ -133,7 +141,7 @@ class ThreadManager(BaseQuerySetManager):
         """
         # TODO: In Python 2.6 there is collections.Counter() thing which would be very useful here
         # TODO: In Python 2.5 there is `defaultdict` which already would be an improvement
-        tag_counts = dict()
+        tag_counts = {}
         for thread in threads:
             for tag_name in thread.get_tag_names():
                 if tag_name in tag_counts:
@@ -188,8 +196,9 @@ class ThreadManager(BaseQuerySetManager):
         question.save()
 
         revision = question.add_revision(
-            author=author, is_anonymous=is_anonymous, text=text, comment=force_text(const.POST_STATUS['default_version']),
-            revised_at=added_at, by_email=by_email, email_address=email_address, ip_addr=ip_addr)
+            author=author, is_anonymous=is_anonymous, text=text,
+            comment=force_text(const.POST_STATUS['default_version']), revised_at=added_at, by_email=by_email,
+            email_address=email_address, ip_addr=ip_addr)
 
         # this is kind of bad, but we save assign privacy groups to posts and thread
         # this call is rather heavy, we should split into several functions
@@ -229,26 +238,38 @@ class ThreadManager(BaseQuerySetManager):
         matching the full text query
         TODO: move to query set
         """
-        if getattr(django_settings, 'ENABLE_HAYSTACK_SEARCH', False):
+
+        if django_settings.ENABLE_HAYSTACK_SEARCH:
             from askbot.search.haystack.helpers import get_threads_from_query
             return get_threads_from_query(search_query)
         else:
             if not qs:
                 qs = self.all()
-    #        if getattr(settings, 'USE_SPHINX_SEARCH', False):
-    #            matching_questions = Question.sphinx_search.query(search_query)
-    #            question_ids = [q.id for q in matching_questions]
-    #            return qs.filter(posts__post_type='question', posts__deleted=False, posts__self_question_id__in=question_ids)
-            if askbot.get_database_engine_name().endswith('mysql') \
-                    and mysql.supports_full_text_search():
+            # FIXME: why comments ?
+            # if getattr(django_settings, 'USE_SPHINX_SEARCH', False):
+            #     matching_questions = Question.sphinx_search.query(search_query)
+            #     question_ids = [q.id for q in matching_questions]
+            #     return qs.filter(posts__post_type='question', posts__deleted=False,
+            #                      posts__self_question_id__in=question_ids)
+            db_engine_name = askbot.get_database_engine_name()
+            if 'postgresql_psycopg2' in db_engine_name or 'postgis' in db_engine_name:
+
+                # TODO: full-text search 를 적용하지 못해서, 기본 쿼리로 임시적용
+                return qs.filter(
+                    Q(title__icontains=search_query) |
+                    Q(tagnames__icontains=search_query) |
+                    Q(posts__deleted=False, posts__text__icontains=search_query)
+                )
+
+                # return qs.search(search_query).order_by('-relevance')  # TODO: plsql 에 맞춰 개선
+                # from askbot.search import postgresql
+                # return postgresql.run_thread_search(qs, search_query)
+            elif db_engine_name.endswith('mysql') and mysql.supports_full_text_search():
                 return qs.filter(
                     Q(title__search=search_query) |
                     Q(tagnames__search=search_query) |
                     Q(posts__deleted=False, posts__text__search=search_query)
                 )
-            elif 'postgresql_psycopg2' in askbot.get_database_engine_name():
-                from askbot.search import postgresql
-                return postgresql.run_thread_search(qs, search_query)
             else:
                 return qs.filter(
                     Q(title__icontains=search_query) |
@@ -300,10 +321,7 @@ class ThreadManager(BaseQuerySetManager):
         if search_state.query_users:
             query_users = User.objects.filter(username__in=search_state.query_users)
             if query_users:
-                qs = qs.filter(
-                    posts__post_type='question',
-                    posts__author__in=query_users
-                )  # TODO: unify with search_state.author ?
+                qs = qs.filter(posts__post_type='question', posts__author__in=query_users)  # TODO: unify with search_state.author ?
 
         # unified tags - is list of tags taken from the tag selection
         # plus any tags added to the query string with # tag or [tag:something]
@@ -318,10 +336,8 @@ class ThreadManager(BaseQuerySetManager):
                 # "tag_search_box_enabled"
                 existing_tags = set()
                 non_existing_tags = set()
-                # we're using a one-by-one tag retreival, b/c
-                # we want to take advantage of case-insensitive search indexes
-                # in postgresql, plus it is most likely that there will be
-                # only one or two search tags anyway
+                # we're using a one-by-one tag retreival, b/c we want to take advantage of case-insensitive search indexes
+                # in postgresql, plus it is most likely that there will be only one or two search tags anyway
                 for tag in tags:
                     try:
                         tag_record = Tag.objects.get(name__iexact=tag, language_code=get_language())
@@ -332,13 +348,14 @@ class ThreadManager(BaseQuerySetManager):
                 meta_data['non_existing_tags'] = list(non_existing_tags)
                 tags = existing_tags
             else:
-                meta_data['non_existing_tags'] = list()
+                meta_data['non_existing_tags'] = []
 
             # construct filter for the tag search
             for tag in tags:
-                qs = qs.filter(tags__name=tag)  # Tags or AND-ed here, not OR-ed (i.e. we fetch only threads with all tags)
+                # Tags or AND-ed here, not OR-ed (i.e. we fetch only threads with all tags)
+                qs = qs.filter(tags__name=tag)
         else:
-            meta_data['non_existing_tags'] = list()
+            meta_data['non_existing_tags'] = []
 
         if search_state.scope == 'unanswered':
             qs = qs.filter(closed=False)  # Do not show closed questions in unanswered section
@@ -452,7 +469,7 @@ class ThreadManager(BaseQuerySetManager):
 
         orderby = QUESTION_ORDER_BY_MAP[search_state.sort]
 
-        if not (getattr(django_settings, 'ENABLE_HAYSTACK_SEARCH', False) and orderby == '-relevance'):
+        if not (django_settings.ENABLE_HAYSTACK_SEARCH and orderby == '-relevance'):
             # FIXME: this does not produces the very same results as postgres.
             qs = qs.extra(order_by=[orderby])
 
@@ -566,10 +583,8 @@ class Thread(models.Model):
     answer_count = models.PositiveIntegerField(default=0)
     last_activity_at = models.DateTimeField(default=timezone.now)
     last_activity_by = models.ForeignKey(User, related_name='unused_last_active_in_threads')
-    language_code = models.CharField(
-        choices=django_settings.LANGUAGES,
-        default=django_settings.LANGUAGE_CODE,
-        max_length=16)
+    language_code = models.CharField(choices=django_settings.LANGUAGES, default=django_settings.LANGUAGE_CODE,
+                                     max_length=16)
 
     # TODO: these two are redundant (we used to have a "star" and "subscribe"
     # now merged into "followed")
@@ -593,7 +608,9 @@ class Thread(models.Model):
     # db_column will be removed later
     points = models.IntegerField(default=0, db_column='score')
 
-    objects = ThreadManager()
+    search_index = VectorField()
+    objects = ThreadManager(fields=['title', 'tagnames'], config='pg_catalog.korean', search_field='search_index',
+                            auto_update_search_field=True)
 
     # property to support legacy themes in case there are.
     @property
@@ -633,7 +650,7 @@ class Thread(models.Model):
 
         # 3) get intersection set
         # normalize hints and tags and remember the originals
-        orig_hints = dict()
+        orig_hints = {}
         for hint in hints:
             orig_hints[hint.lower()] = hint
 
@@ -643,7 +660,7 @@ class Thread(models.Model):
         common_words = (set(norm_hints) & post_words) - set(norm_tags)
 
         # 4) for each common word count occurances in corpus
-        counts = dict()
+        counts = {}
         for word in common_words:
             counts[word] = sum(map(lambda w: w.lower() == word.lower(), post_words))
 
@@ -808,7 +825,7 @@ class Thread(models.Model):
         lang code. If necessary, tags are created and
         the used_counts are updated.
         """
-        wrong_lang_tags = list()
+        wrong_lang_tags = []
         for tag in self.tags.all():
             if tag.language_code != language_code:
                 wrong_lang_tags.append(tag)
@@ -816,7 +833,7 @@ class Thread(models.Model):
         # remove wrong tags
         self.tags.remove(*wrong_lang_tags)
         # update used counts of the wrong tags
-        wrong_lang_tag_names = list()
+        wrong_lang_tag_names = []
         for tag in wrong_lang_tags:
             wrong_lang_tag_names.append(tag.name)
             if tag.used_count > 0:
@@ -897,7 +914,7 @@ class Thread(models.Model):
     def get_tag_names(self):
         "Creates a list of Tag names from the ``tagnames`` attribute."
         if self.tagnames.strip() == '':
-            return list()
+            return []
         else:
             return self.tagnames.split(' ')
 
@@ -1031,7 +1048,7 @@ class Thread(models.Model):
             """posts - is source list
             need_ids - set of post ids
             """
-            found = dict()
+            found = {}
             for post in posts:
                 if post.id in need_ids:
                     found[post.id] = post
@@ -1183,10 +1200,10 @@ class Thread(models.Model):
         thread_posts = thread_posts.order_by(*order_by)
 
         # 1) collect question, answer and comment posts and list of post id's
-        answers = list()
-        post_map = dict()
-        comment_map = dict()
-        post_to_author = dict()
+        answers = []
+        post_map = {}
+        comment_map = {}
+        post_to_author = {}
         question_post = None
         for post in thread_posts:
             # precache some revision data
@@ -1208,7 +1225,7 @@ class Thread(models.Model):
                 post_map[post.id] = post
             elif post.post_type == 'comment':
                 if post.parent_id not in comment_map:
-                    comment_map[post.parent_id] = list()
+                    comment_map[post.parent_id] = []
                 comment_map[post.parent_id].append(post)
             elif post.post_type == 'question':
                 assert(question_post is None)
@@ -1238,7 +1255,7 @@ class Thread(models.Model):
         # if user is not an inquirer, and thread is moderated,
         # put published answers first
         # TODO: there may be > 1 enquirers
-        published_answer_ids = list()
+        published_answer_ids = []
         if question_post and (not question_post.is_approved()) and user != question_post.author:
             # if moderated - then author is guaranteed to be the limited visibility enquirer
             # TODO: may be > 1 user
@@ -1311,7 +1328,7 @@ class Thread(models.Model):
                 thread_map[q.thread_id].question_denorm = q
 
             # Postprocess data for the final output
-            result = list()
+            result = []
             for thread in similar_threads:
                 question_post = getattr(thread, 'question_denorm', None)
                 # unfortunately the if statement below is necessary due to
@@ -1446,7 +1463,7 @@ class Thread(models.Model):
 
     def remove_tags_by_names(self, tagnames):
         """removes tags from thread by names"""
-        removed_tags = list()
+        removed_tags = []
         for tag in self.tags.all():
             if tag.name in tagnames:
                 tag.used_count -= 1
@@ -1530,7 +1547,7 @@ class Thread(models.Model):
         accepted_added_tags = filter_accepted_tags(added_tags)
         added_tagnames = set([tag.name for tag in accepted_added_tags])
         final_tagnames = (previous_tagnames - removed_tagnames) | added_tagnames
-        ordered_final_tagnames = list()
+        ordered_final_tagnames = []
         for tagname in ordered_updated_tagnames:
             if tagname in final_tagnames:
                 ordered_final_tagnames.append(tagname)

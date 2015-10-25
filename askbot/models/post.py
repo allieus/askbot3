@@ -4,10 +4,16 @@ from collections import defaultdict
 import operator
 import logging
 
-from django.contrib.sitemaps import ping_google
 from django.conf import settings as django_settings
+from askbot.conf import settings as askbot_settings
 from django.contrib.auth.models import User
+from django.contrib.sitemaps import ping_google
+from django.core import cache
+from django.core import exceptions as django_exceptions
 from django.core import urlresolvers
+from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.http import HttpRequest
 from django.template.loader import render_to_string
@@ -17,20 +23,17 @@ from django.utils.text import Truncator
 from django.utils.translation import get_language
 from django.utils.translation import ugettext as _
 from django.utils.http import urlquote as django_urlquote
-from django.core import exceptions as django_exceptions
-from django.core import cache
-from django.core.exceptions import ValidationError
-from django.core.urlresolvers import reverse
-from django.contrib.contenttypes.models import ContentType
+from djorm_pgfulltext.fields import VectorField
+from djorm_pgfulltext.models import SearchManagerMixIn
 import askbot
+from askbot import exceptions
 from askbot import signals
 from askbot.utils.loading import load_module, load_plugin
 from askbot.utils.slug import slugify
 from askbot import const
 from askbot.models.tag import MarkedTag
 from askbot.models.tag import tags_match_some_wildcard
-from askbot.conf import settings as askbot_settings
-from askbot import exceptions
+from askbot.search.postgresql import QuerySetSearchMixIn
 from askbot.utils import markup
 from askbot.utils.html import (get_word_count, has_moderated_tags, moderate_tags, sanitize_html, site_url)
 from askbot.utils.transaction import defer_celery_task
@@ -84,7 +87,7 @@ class PostToGroup(models.Model):
         unique_together = ('post', 'group')
 
 
-class PostQuerySet(models.query.QuerySet):
+class PostQuerySet(QuerySetSearchMixIn, models.query.QuerySet):
     """
     Custom query set subclass for :class:`~askbot.models.Post`
     """
@@ -178,7 +181,7 @@ class PostQuerySet(models.query.QuerySet):
         return list(authors)
 
 
-class PostManager(BaseQuerySetManager):
+class PostManager(SearchManagerMixIn, BaseQuerySetManager):
     def get_queryset(self):
         return PostQuerySet(self.model)
 
@@ -425,7 +428,13 @@ class Post(models.Model):
     # but the question body to Post
     is_anonymous = models.BooleanField(default=False)
 
-    objects = PostManager()
+    # FIXME: weight
+    #   post_type == 'question' => 'B'
+    #   post_type == 'answer'   => 'C'
+    #   post_type == 'comment'  => 'D'
+    search_index = VectorField()
+    objects = PostManager(fields=['text'], config='pg_catalog.korean', search_field='search_index',
+                          auto_update_search_field=True)
 
     # property to support legacy themes in case there are.
     @property

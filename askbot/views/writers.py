@@ -413,35 +413,17 @@ def edit_question(request, id):
         if request.method == 'POST':
             if request.POST['select_revision'] == 'true':
                 # revert-type edit - user selected previous revision
-                revision_form = forms.RevisionForm(
-                                                question,
-                                                revision,
-                                                request.POST
-                                            )
+                revision_form = forms.RevisionForm(question, revision, request.POST)
                 if revision_form.is_valid():
                     # Replace with those from the selected revision
                     rev_id = revision_form.cleaned_data['revision']
-                    revision = question.revisions.get(revision = rev_id)
-                    form = forms.EditQuestionForm(
-                                            question=question,
-                                            user=request.user,
-                                            revision=revision
-                                        )
+                    revision = question.revisions.get(revision=rev_id)
+                    form = forms.EditQuestionForm(question=question, user=request.user, revision=revision)
                 else:
-                    form = forms.EditQuestionForm(
-                                            request.POST,
-                                            question=question,
-                                            user=question.user,
-                                            revision=revision
-                                        )
+                    form = forms.EditQuestionForm(request.POST, question=question, user=question.user, revision=revision)
             else:# new content edit
                 # Always check modifications against the latest revision
-                form = forms.EditQuestionForm(
-                                        request.POST,
-                                        question=question,
-                                        revision=revision,
-                                        user=request.user,
-                                    )
+                form = forms.EditQuestionForm(request.POST, question=question, revision=revision, user=request.user)
                 revision_form = forms.RevisionForm(question, revision)
                 if form.is_valid():
                     if form.has_changed():
@@ -529,25 +511,14 @@ def edit_answer(request, id):
         if request.method == "POST":
             if request.POST['select_revision'] == 'true':
                 # user has changed revistion number
-                revision_form = forms.RevisionForm(
-                                                answer,
-                                                revision,
-                                                request.POST
-                                            )
+                revision_form = forms.RevisionForm(answer, revision, request.POST)
                 if revision_form.is_valid():
                     # Replace with those from the selected revision
                     rev = revision_form.cleaned_data['revision']
-                    revision = answer.revisions.get(revision = rev)
-                    form = edit_answer_form_class(
-                                    answer, revision, user=request.user
-                                )
+                    revision = answer.revisions.get(revision=rev)
+                    form = edit_answer_form_class(answer, revision, user=request.user)
                 else:
-                    form = edit_answer_form_class(
-                                                answer,
-                                                revision,
-                                                request.POST,
-                                                user=request.user
-                                            )
+                    form = edit_answer_form_class(answer, revision, request.POST, user=request.user)
             else:
                 form = edit_answer_form_class(
                     answer, revision, request.POST, user=request.user
@@ -569,11 +540,7 @@ def edit_answer(request, id):
                             ip_addr=request.META.get('REMOTE_ADDR')
                         )
 
-                        signals.answer_edited.send(None,
-                            answer=answer,
-                            user=user,
-                            form_data=form.cleaned_data
-                        )
+                        signals.answer_edited.send(None, answer=answer, user=user, form_data=form.cleaned_data)
 
                     return redirect(answer)
         else:
@@ -609,7 +576,7 @@ def edit_answer(request, id):
 # TODO: rename this function to post_new_answer
 @check_authorization_to_post(ugettext_lazy('Please log in to make posts'))
 @check_spam('text')
-def answer(request, id, form_class=forms.AnswerForm):# process a new answer
+def answer(request, id, form_class=forms.AnswerForm):  # process a new answer
     """view that posts new answer
 
     anonymous users post into anonymous storage
@@ -716,7 +683,7 @@ def __generate_comments_json(obj, user, avatar_size):
 
 @csrf_protect
 @check_spam('comment')
-def post_comments(request):# generic ajax handler to load comments to an object
+def post_comments(request):  # generic ajax handler to load comments to an object
     """TODO: fixme: post_comments is ambigous:
     means either get comments for post or
     add a new comment to post
@@ -755,8 +722,8 @@ def post_comments(request):# generic ajax handler to load comments to an object
             if user.is_anonymous():
                 msg = _('Sorry, you appear to be logged out and '
                         'cannot post comments. Please '
-                        '<a href="%(sign_in_url)s">sign in</a>.') % \
-                        {'sign_in_url': url_utils.get_login_url()}
+                        '<a href="%(sign_in_url)s">sign in</a>.') % {
+                            'sign_in_url': url_utils.get_login_url()}
                 raise exceptions.PermissionDenied(msg)
 
             if askbot_settings.READ_ONLY_MODE_ENABLED:
@@ -767,7 +734,8 @@ def post_comments(request):# generic ajax handler to load comments to an object
                 body_text=form.cleaned_data['comment'],
                 ip_addr=request.META.get('REMOTE_ADDR')
             )
-            signals.new_comment_posted.send(None,
+            signals.new_comment_posted.send(
+                None,
                 comment=comment,
                 user=user,
                 form_data=form.cleaned_data
@@ -879,8 +847,8 @@ def delete_comment(request):
 def comment_to_answer(request):
     if request.user.is_anonymous():
         msg = _('Sorry, only logged in users can convert comments to answers. '
-                'Please <a href="%(sign_in_url)s">sign in</a>.') % \
-                {'sign_in_url': url_utils.get_login_url()}
+                'Please <a href="%(sign_in_url)s">sign in</a>.') % {
+                    'sign_in_url': url_utils.get_login_url()}
         raise exceptions.PermissionDenied(msg)
 
     form = forms.ConvertCommentForm(request.POST)
@@ -902,8 +870,8 @@ def repost_answer_as_comment(request, destination=None):
     assert(destination in ('comment_under_question', 'comment_under_previous_answer'))
     if request.user.is_anonymous():
         msg = _('Sorry, only logged in users can convert answers to comments. '
-                'Please <a href="%(sign_in_url)s">sign in</a>.') % \
-                {'sign_in_url': url_utils.get_login_url()}
+                'Please <a href="%(sign_in_url)s">sign in</a>.') % {
+                    'sign_in_url': url_utils.get_login_url()}
         raise exceptions.PermissionDenied(msg)
     answer_id = request.POST.get('answer_id')
     if answer_id:
@@ -922,6 +890,7 @@ def repost_answer_as_comment(request, destination=None):
         else:
             # comment_under_previous_answer
             destination_post = answer.get_previous_answer(user=request.user)
+
         # TODO: implement for comment under other answer
 
         if destination_post is None:

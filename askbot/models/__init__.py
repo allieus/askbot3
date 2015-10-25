@@ -44,7 +44,7 @@ from askbot.models.tag import Tag, MarkedTag, TagSynonym
 from askbot.models.tag import format_personal_group_name
 from askbot.models.user import ActivityAuditStatus, Activity, EmailFeedSetting
 from askbot.models.user import BulkTagSubscription, GroupMembership, Group
-from askbot.models.post import Post, PostRevision
+from askbot.models.post import Post, PostRevision, MockPost
 from askbot.models.post import PostFlagReason, AnonymousAnswer
 from askbot.models.post import PostToGroup
 from askbot.models.post import DraftAnswer
@@ -3684,6 +3684,7 @@ __all__ = [
     'Post',
     'PostRevision',
     'PostToGroup',
+    'MockPost',
 
     'Tag',
     'Vote',

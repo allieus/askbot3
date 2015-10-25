@@ -45,8 +45,7 @@ urlpatterns = [
             r'(%s)?' % r'/author:(?P<author>\d+)' +
             r'(%s)?' % r'/page:(?P<page>\d+)' +
             r'(%s)?' % r'/page-size:(?P<page_size>\d+)' +
-            r'(%s)?' % r'/query:(?P<query>.+)' +  # INFO: query is last, b/c it can contain slash!!!
-        r'/$'),
+            r'(%s)?' % r'/query:(?P<query>.+)' + r'/$'),  # INFO: query is last, b/c it can contain slash!!!
         views.readers.questions,
         name='questions'
     ),

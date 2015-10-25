@@ -626,31 +626,31 @@ def api_get_questions(request):
     tag_name = request.GET.get('tag_name', None)
 
     if askbot_settings.GROUPS_ENABLED:
-        threads = models.Thread.objects.get_visible(user=request.user)
+        thread_list = models.Thread.objects.get_visible(user=request.user)
     else:
-        threads = models.Thread.objects.all()
+        thread_list = models.Thread.objects.all()
 
     if tag_name:
-        threads = threads.filter(tags__name=tag_name)
+        thread_list = thread_list.filter(tags__name=tag_name)
 
     if query:
-        threads = threads.get_for_title_query(query)
+        thread_list = thread_list.get_for_title_query(query)
 
-    # TODO: filter out deleted threads, for now there is no way
-    threads = threads.distinct()[:30]
+    # TODO: filter out deleted thread_list, for now there is no way
+    thread_list = thread_list.distinct()[:30]
 
-    thread_list = list()
-    for thread in threads:  # TODO: this is a temp hack until thread model is fixed
-        try:
-            thread_list.append({
-                'title': escape(thread.title),
-                'url': thread.get_absolute_url(),
-                'answer_count': thread.get_answer_count(request.user)
-            })
-        except:
-            continue
+    thread_list = []
+    for thread in thread_list:  # TODO: this is a temp hack until thread model is fixed
+        # try:
+        thread_list.append({
+            'title': escape(thread.title),
+            'url': thread.get_absolute_url(),
+            'answer_count': thread.get_answer_count(request.user)
+        })
+        # except:
+        # continue
 
-    return JsonResponse(thread_list)
+    return JsonResponse(thread_list, safe=False)
 
 
 @csrf_protect
@@ -1038,22 +1038,21 @@ def moderate_suggested_tag(request):
             return
 
         if thread_id:
-            threads = models.Thread.objects.filter(id=thread_id, language_code=lang)
+            thread_list = models.Thread.objects.filter(id=thread_id, language_code=lang)
         else:
-            threads = tag.threads.none()
+            thread_list = tag.threads.none()
 
         if form.cleaned_data['action'] == 'accept':
             # TODO: here we lose ability to come back
             # to the tag moderation and approve tag to
-            # other threads later for the case where tag.used_count > 1
+            # other thread_list later for the case where tag.used_count > 1
             tag.status = models.Tag.STATUS_ACCEPTED
             tag.save()
-            for thread in threads:
-                thread.add_tag(tag_name=tag.name, user=tag.created_by, timestamp=timezone.now(),
-                               silent=True)
+            for thread in thread_list:
+                thread.add_tag(tag_name=tag.name, user=tag.created_by, timestamp=timezone.now(), silent=True)
         else:
-            if tag.threads.count() > len(threads):
-                for thread in threads:
+            if tag.threads.count() > thread_list.count():
+                for thread in thread_list:
                     thread.tags.remove(tag)
                 tag.used_count = tag.threads.count()
                 tag.save()
@@ -1292,7 +1291,7 @@ def get_editor(request):
     # we need that, because js needs to be added in a special way
     html_soup = BeautifulSoup(editor_html, 'html5lib')
 
-    parsed_scripts = list()
+    parsed_scripts = []
     for script in html_soup.find_all('script'):
         parsed_scripts.append({
             'contents': script.string,

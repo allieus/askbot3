@@ -1,5 +1,6 @@
 """Forms, custom form fields and related utility functions used in AskBot"""
 from __future__ import unicode_literals
+import logging
 import re
 from collections import OrderedDict
 from django import forms
@@ -24,7 +25,7 @@ from captcha.fields import ReCaptchaField
 from askbot.conf import settings as askbot_settings
 from askbot.conf import get_tag_display_filter_strategy_choices
 from tinymce.widgets import TinyMCE
-import logging
+
 
 def should_use_recaptcha(user):
     """True if user must use recaptcha"""
@@ -117,10 +118,7 @@ def filter_choices(remove_choices=None, from_choices=None):
 def need_mandatory_tags():
     """true, if list of mandatory tags is not empty"""
     from askbot import models
-    return (
-        askbot_settings.TAGS_ARE_REQUIRED
-        and len(models.tag.get_mandatory_tags()) > 0
-    )
+    return (askbot_settings.TAGS_ARE_REQUIRED and len(models.tag.get_mandatory_tags()) > 0)
 
 
 def mandatory_tag_missing_in_list(tag_strings):
@@ -144,7 +142,6 @@ def tag_strings_match(tag_string, mandatory_tag):
         return tag_string.startswith(mandatory_tag[:-1])
     else:
         return tag_string == mandatory_tag
-
 
 
 class CountryField(forms.ChoiceField):
@@ -182,10 +179,7 @@ class CountedWordsField(forms.CharField):
     """a field where a number of words is expected
     to be in a certain range"""
 
-    def __init__(
-        self, min_words=0, max_words=9999, field_name=None,
-        *args, **kwargs
-    ):
+    def __init__(self, min_words=0, max_words=9999, field_name=None, *args, **kwargs):
         self.min_words = min_words
         self.max_words = max_words
         self.field_name = field_name
@@ -245,14 +239,9 @@ class LanguageForm(forms.Form):
 
 
 class LanguagePrefsForm(forms.Form):
-    languages = forms.MultipleChoiceField(
-                        widget=forms.CheckboxSelectMultiple,
-                        choices=django_settings.LANGUAGES,
-                        required=False
-                    )
-    primary_language = forms.ChoiceField(
-                        choices=django_settings.LANGUAGES
-                    )
+    languages = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=django_settings.LANGUAGES,
+                                          required=False)
+    primary_language = forms.ChoiceField(choices=django_settings.LANGUAGES)
 
 
 class TranslateUrlForm(forms.Form):
@@ -287,9 +276,7 @@ class TitleField(forms.CharField):
     def __init__(self, *args, **kwargs):
         super(TitleField, self).__init__(*args, **kwargs)
         self.required = kwargs.get('required', True)
-        self.widget = forms.TextInput(
-                            attrs={'size': 70, 'autocomplete': 'off'}
-                        )
+        self.widget = forms.TextInput(attrs={'size': 70, 'autocomplete': 'off'})
         self.max_length = 255
         self.label = _('title')
         self.help_text = askbot_settings.WORDS_PLEASE_ENTER_YOUR_QUESTION
@@ -420,9 +407,7 @@ def clean_tag(tag_name, look_in_db=True):
                 _(message_keys.TAG_WRONG_FIRST_CHAR_MESSAGE)
             )
         else:
-            raise forms.ValidationError(
-                _(message_keys.TAG_WRONG_CHARS_MESSAGE)
-            )
+            raise forms.ValidationError(_(message_keys.TAG_WRONG_CHARS_MESSAGE))
 
     if askbot_settings.FORCE_LOWERCASE_TAGS:
         # a simpler way to handle tags - just lowercase thew all
@@ -431,10 +416,7 @@ def clean_tag(tag_name, look_in_db=True):
         return tag_name
     else:
         from askbot import models
-        matching_tags = models.Tag.objects.filter(
-                                            name__iexact=tag_name,
-                                            language_code=get_language()
-                                        )
+        matching_tags = models.Tag.objects.filter(name__iexact=tag_name, language_code=get_language())
         if len(matching_tags) > 0:
             return matching_tags[0].name
         else:
@@ -446,16 +428,15 @@ class TagNamesField(forms.CharField):
 
     def __init__(self, *args, **kwargs):
         super(TagNamesField, self).__init__(*args, **kwargs)
-        self.required = kwargs.get('required',
-                askbot_settings.TAGS_ARE_REQUIRED)
+        self.required = kwargs.get('required', askbot_settings.TAGS_ARE_REQUIRED)
         self.widget = forms.TextInput(
             attrs={'size': 50, 'autocomplete': 'off'}
         )
         self.max_length = 255
         self.error_messages['max_length'] = _(
-                            'We ran out of space for recording the tags. '
-                            'Please shorten or delete some of them.'
-                        )
+            'We ran out of space for recording the tags. '
+            'Please shorten or delete some of them.'
+        )
         self.label = kwargs.get('label') or _('tags')
         self.help_text = kwargs.get('help_text') or ungettext_lazy(
             'Tags are short keywords, with no spaces within. '
@@ -472,22 +453,19 @@ class TagNamesField(forms.CharField):
         data = value.strip(const.TAG_STRIP_CHARS)
         if len(data) < 1:
             if askbot_settings.TAGS_ARE_REQUIRED:
-                raise forms.ValidationError(
-                    _(message_keys.TAGS_ARE_REQUIRED_MESSAGE)
-                )
+                raise forms.ValidationError(_(message_keys.TAGS_ARE_REQUIRED_MESSAGE))
             else:
                 # don't test for required characters when tags is ''
                 return ''
         split_re = re.compile(const.TAG_SPLIT_REGEX)
         tag_strings = split_re.split(data)
-        entered_tags = []
         tag_count = len(tag_strings)
         if tag_count > askbot_settings.MAX_TAGS_PER_POST:
             max_tags = askbot_settings.MAX_TAGS_PER_POST
             msg = ungettext_lazy(
-                        'please use %(tag_count)d tag or less',
-                        'please use %(tag_count)d tags or less',
-                        tag_count) % {'tag_count': max_tags}
+                'please use %(tag_count)d tag or less',
+                'please use %(tag_count)d tags or less',
+                tag_count) % {'tag_count': max_tags}
             raise forms.ValidationError(msg)
 
         if need_mandatory_tags():
@@ -505,7 +483,7 @@ class TagNamesField(forms.CharField):
 
         result = ' '.join(cleaned_entered_tags)
 
-        if len(result) > 125:# magic number!, the same as max_length in db
+        if len(result) > 125:  # magic number!, the same as max_length in db
             raise forms.ValidationError(self.error_messages['max_length'])
 
         return ' '.join(cleaned_entered_tags)
@@ -560,9 +538,7 @@ class SummaryField(forms.CharField):
     def __init__(self, *args, **kwargs):
         super(SummaryField, self).__init__(*args, **kwargs)
         self.required = False
-        self.widget = forms.TextInput(
-            attrs={'size': 50, 'autocomplete': 'off'}
-        )
+        self.widget = forms.TextInput(attrs={'size': 50, 'autocomplete': 'off'})
         self.max_length = 300
         self.label = _('update summary:')
         self.help_text = _(
@@ -580,11 +556,7 @@ class EditorForm(forms.Form):
     def __init__(self, attrs=None, user=None, editor_attrs=None):
         super(EditorForm, self).__init__()
         editor_attrs = editor_attrs or {}
-        self.fields['editor'] = EditorField(
-                                    attrs=attrs,
-                                    editor_attrs=editor_attrs,
-                                    user=user
-                                )
+        self.fields['editor'] = EditorField(attrs=attrs, editor_attrs=editor_attrs, user=user) 
 
 
 class DumpUploadForm(forms.Form):
@@ -610,10 +582,7 @@ class ShowQuestionForm(forms.Form):
         super(ShowQuestionForm, self).__init__(*args, **kwargs)
         # uses livesettings for the default so the 'sort' field
         # must be added in the __init__
-        self.fields['sort'] = SortField(
-                choices=const.ANSWER_SORT_METHODS,
-                default=askbot_settings.DEFAULT_ANSWER_SORT_METHOD
-            )
+        self.fields['sort'] = SortField(choices=const.ANSWER_SORT_METHODS, default=askbot_settings.DEFAULT_ANSWER_SORT_METHOD)
 
     def get_pruned_data(self):
         nones = ('answer', 'comment', 'page')
@@ -655,19 +624,13 @@ class ShowQuestionForm(forms.Form):
 
 class ShowTagsForm(forms.Form):
     page = PageField()
-    sort = SortField(
-                    choices=const.TAGS_SORT_METHODS,
-                    default=const.DEFAULT_TAGS_SORT_METHOD
-                )
+    sort = SortField(choices=const.TAGS_SORT_METHODS, default=const.DEFAULT_TAGS_SORT_METHOD)
     query = forms.CharField(required=False)
 
 
 class ShowUsersForm(forms.Form):
     page = PageField()
-    sort = SortField(
-                    choices=const.USER_SORT_METHODS,
-                    default=const.DEFAULT_USER_SORT_METHOD
-                )
+    sort = SortField(choices=const.USER_SORT_METHODS, default=const.DEFAULT_USER_SORT_METHOD)
     query = forms.CharField(required=False)
 
     def clean_sort(self):
@@ -675,7 +638,6 @@ class ShowUsersForm(forms.Form):
         if sort_method == 'reputation' and askbot_settings.KARMA_MODE == 'private':
             self.cleaned_data['sort'] = 'newest'
         return self.cleaned_data['sort']
-
 
 
 class ChangeUserReputationForm(forms.Form):
@@ -686,13 +648,8 @@ class ChangeUserReputationForm(forms.Form):
     be a moderator acually is
     """
 
-    user_reputation_delta = forms.IntegerField(
-                            min_value=1,
-                            max_value=32767,
-                            label=_(
-                                'Enter number of points to add or subtract'
-                            )
-                        )
+    user_reputation_delta = forms.IntegerField(min_value=1, max_value=32767,
+                                               label=_('Enter number of points to add or subtract'))
     comment = forms.CharField(label=_('Comment'), max_length=128)
 
     def clean_comment(self):
@@ -705,14 +662,12 @@ class ChangeUserReputationForm(forms.Form):
             return comment
 
 MODERATOR_STATUS_CHOICES = (
-                                ('a', _('approved')),
-                                ('w', _('watched')),
-                                ('s', _('suspended')),
-                                ('b', _('blocked')),
-                           )
-ADMINISTRATOR_STATUS_CHOICES = (('d', _('administrator')),
-                               ('m', _('moderator')), ) \
-                               + MODERATOR_STATUS_CHOICES
+    ('a', _('approved')),
+    ('w', _('watched')),
+    ('s', _('suspended')),
+    ('b', _('blocked')),
+)
+ADMINISTRATOR_STATUS_CHOICES = (('d', _('administrator')), ('m', _('moderator')), ) + MODERATOR_STATUS_CHOICES
 
 
 class ChangeUserStatusForm(forms.Form):
@@ -752,14 +707,10 @@ class ChangeUserStatusForm(forms.Form):
             raise ValueError('moderator or admin expected from "moderator"')
 
         # remove current status of the "subject" user from choices
-        user_status_choices = filter_choices(
-                                        remove_choices=[subject.status, ],
-                                        from_choices=user_status_choices
-                                    )
+        user_status_choices = filter_choices(remove_choices=[subject.status, ], from_choices=user_status_choices)
 
         # add prompt option
-        user_status_choices = (('select', _('which one?')), ) \
-                                + user_status_choices
+        user_status_choices = (('select', _('which one?')), ) + user_status_choices
 
         self.fields['user_status'].choices = user_status_choices
 
@@ -793,32 +744,24 @@ class ChangeUserStatusForm(forms.Form):
             # do not let moderators turn other users into moderators
             if self.moderator.is_moderator() and user_status == 'moderator':
                 del self.cleanded_data['user_status']
-                raise forms.ValidationError(
-                                _('Cannot turn other user to moderator')
-                            )
+                raise forms.ValidationError(_('Cannot turn other user to moderator'))
 
             # do not allow moderator to change status of other moderators
             if self.moderator.is_moderator() and self.subject.is_moderator():
                 del self.cleaned_data['user_status']
-                raise forms.ValidationError(
-                                _('Cannot change status of another moderator')
-                            )
+                raise forms.ValidationError(_('Cannot change status of another moderator'))
 
             # do not allow moderator to change to admin
             if self.moderator.is_moderator() and user_status == 'd':
-                raise forms.ValidationError(
-                                _("Cannot change status to admin")
-                                )
+                raise forms.ValidationError(_("Cannot change status to admin"))
 
             if user_status == 'select':
                 del self.cleaned_data['user_status']
-                msg = _(
-                        'If you wish to change %(username)s\'s status, '
-                        'please make a meaningful selection.'
-                    ) % {'username': self.subject.username}
+                msg = _('If you wish to change %(username)s\'s status, please make a meaningful selection.') % {
+                    'username': self.subject.username}
                 raise forms.ValidationError(msg)
 
-            if user_status not in ('s', 'b'):# not blocked or suspended
+            if user_status not in ('s', 'b'):  # not blocked or suspended
                 if self.cleaned_data['delete_content'] is True:
                     self.cleaned_data['delete_content'] = False
 
@@ -826,16 +769,8 @@ class ChangeUserStatusForm(forms.Form):
 
 
 class SendMessageForm(forms.Form):
-    subject_line = forms.CharField(
-                        label=_('Subject line'),
-                        max_length=64,
-                        widget=forms.TextInput(attrs={'size': 64}, )
-                    )
-    body_text = forms.CharField(
-                            label=_('Message text'),
-                            max_length=1600,
-                            widget=forms.Textarea(attrs={'cols': 64})
-                        )
+    subject_line = forms.CharField(label=_('Subject line'), max_length=64, widget=forms.TextInput(attrs={'size': 64}))
+    body_text = forms.CharField(label=_('Message text'), max_length=1600, widget=forms.Textarea(attrs={'cols': 64}))
 
 
 class FeedbackForm(forms.Form):
@@ -908,10 +843,8 @@ class PostPrivatelyForm(forms.Form, FormWithHideableFields):
     """has a single field `post_privately` with
     two related methods"""
 
-    post_privately = forms.BooleanField(
-        label = _('keep private within your groups'),
-        required = False
-    )
+    post_privately = forms.BooleanField(label=_('keep private within your groups'), required=False)
+
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         self._user = user
@@ -921,11 +854,7 @@ class PostPrivatelyForm(forms.Form, FormWithHideableFields):
 
     def allows_post_privately(self):
         user = self._user
-        return (
-            askbot_settings.GROUPS_ENABLED and \
-            user and user.is_authenticated() and \
-            user.can_make_group_private_posts()
-        )
+        return askbot_settings.GROUPS_ENABLED and user and user.is_authenticated() and user.can_make_group_private_posts()
 
     def clean_post_privately(self):
         if not self.allows_post_privately():
@@ -967,7 +896,7 @@ class PostAsSomeoneForm(forms.Form):
         is being made
         """
         username = self.cleaned_data['post_author_username']
-        email= self.cleaned_data['post_author_email']
+        email = self.cleaned_data['post_author_email']
         if user.is_administrator() and username and email:
             post_user = user.get_or_create_fake_user(username, email)
         else:
@@ -1003,10 +932,7 @@ class PostAsSomeoneForm(forms.Form):
         username = self.cleaned_data.get('post_author_username', '')
         email = self.cleaned_data.get('post_author_email', '')
         if username == '' and email:
-            username_errors = self._errors.get(
-                                    'post_author_username',
-                                    ErrorList()
-                                )
+            username_errors = self._errors.get('post_author_username', ErrorList())
             username_errors.append(_('User name is required with the email'))
             self._errors['post_author_username'] = username_errors
             raise forms.ValidationError('missing user name')
@@ -1029,11 +955,9 @@ class AskForm(PostAsSomeoneForm, PostPrivatelyForm):
     """
     tags = TagNamesField()
     wiki = WikiField()
-    group_id = forms.IntegerField(required = False, widget = forms.HiddenInput)
-    openid = forms.CharField(
-        required=False, max_length=255,
-        widget=forms.TextInput(attrs={'size': 40, 'class': 'openid-input'})
-    )
+    group_id = forms.IntegerField(required=False, widget=forms.HiddenInput)
+    openid = forms.CharField(required=False, max_length=255,
+                             widget=forms.TextInput(attrs={'size': 40, 'class': 'openid-input'}))
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
@@ -1315,9 +1239,7 @@ class RevisionForm(forms.Form):
         date_format = '%c'
         rev_choices = list()
         for r in revisions:
-            rev_details = '%s - %s (%s) %s' % (
-                r[0], r[1], r[2].strftime(date_format), r[3]
-            )
+            rev_details = '%s - %s (%s) %s' % (r[0], r[1], r[2].strftime(date_format), r[3])
             rev_choices.append((r[0], rev_details))
 
         self.fields['revision'].choices = rev_choices
@@ -1411,61 +1333,17 @@ class EditTagWikiForm(forms.Form):
 
 
 class EditUserForm(forms.Form):
-    email = forms.EmailField(
-                    label='Email',
-                    required=False,
-                    max_length=255,
-                    widget=forms.TextInput(attrs={'size': 35})
-                )
-
-    realname = forms.CharField(
-                        label=_('Real name'),
-                        required=False,
-                        max_length=255,
-                        widget=forms.TextInput(attrs={'size': 35})
-                    )
-
-    website = forms.URLField(
-                        label=_('Website'),
-                        required=False,
-                        max_length=255,
-                        widget=forms.TextInput(attrs={'size': 35})
-                    )
-
-    city = forms.CharField(
-                        label=_('City'),
-                        required=False,
-                        max_length=255,
-                        widget=forms.TextInput(attrs={'size': 35})
-                    )
-
+    email = forms.EmailField(label='Email', required=False, max_length=255, widget=forms.TextInput(attrs={'size': 35}))
+    realname = forms.CharField(label=_('Real name'), required=False, max_length=255, widget=forms.TextInput(attrs={'size': 35}))
+    website = forms.URLField(label=_('Website'), required=False, max_length=255, widget=forms.TextInput(attrs={'size': 35}))
+    city = forms.CharField(label=_('City'), required=False, max_length=255, widget=forms.TextInput(attrs={'size': 35}))
     country = CountryField(required=False)
-
-    show_country = forms.BooleanField(
-                        label=_('Show country'),
-                        required=False
-                    )
-
-    show_marked_tags = forms.BooleanField(
-                        label=_('Show tag choices'),
-                        required=False
-                    )
-
+    show_country = forms.BooleanField(label=_('Show country'), required=False)
+    show_marked_tags = forms.BooleanField(label=_('Show tag choices'), required=False)
     birthday = forms.DateField(
-                        label=_('Date of birth'),
-                        help_text=_(
-                            'will not be shown, used to calculate '
-                            'age, format: YYYY-MM-DD'
-                        ),
-                        required=False,
-                        widget=forms.TextInput(attrs={'size': 35})
-                    )
-
-    about = forms.CharField(
-                        label=_('Profile'),
-                        required=False,
-                        widget=forms.Textarea(attrs={'cols': 60})
-                    )
+        label=_('Date of birth'), help_text=_('will not be shown, used to calculate age, format: YYYY-MM-DD'),
+        required=False, widget=forms.TextInput(attrs={'size': 35}))
+    about = forms.CharField(label=_('Profile'), required=False, widget=forms.Textarea(attrs={'cols': 60}))
 
     def __init__(self, user, *args, **kwargs):
         super(EditUserForm, self).__init__(*args, **kwargs)
@@ -1521,11 +1399,9 @@ class EditUserForm(forms.Form):
 
 
 class TagFilterSelectionForm(forms.ModelForm):
-    email_tag_filter_strategy = forms.ChoiceField(
-        initial = const.EXCLUDE_IGNORED,
-        label = _('Choose email tag filter'),
-        widget = forms.RadioSelect
-    )
+    email_tag_filter_strategy = forms.ChoiceField(initial=const.EXCLUDE_IGNORED, label=_('Choose email tag filter'),
+                                                  widget=forms.RadioSelect)
+
     def __init__(self, *args, **kwargs):
         super(TagFilterSelectionForm, self).__init__(*args, **kwargs)
         choices = get_tag_display_filter_strategy_choices()
@@ -1636,10 +1512,7 @@ class EditUserEmailFeedsForm(forms.Form):
         from askbot import models
         changed = False
         for form_field, feed_type in self.FORM_TO_MODEL_MAP.items():
-            s, created = models.EmailFeedSetting.objects.get_or_create(
-                                                    subscriber=user,
-                                                    feed_type=feed_type
-                                                )
+            s, created = models.EmailFeedSetting.objects.get_or_create(subscriber=user, feed_type=feed_type)
             if save_unbound:
                 # just save initial values instead
                 if form_field in self.initial:
@@ -1669,11 +1542,7 @@ class SubscribeForEmailUpdatesField(forms.ChoiceField):
         }
         kwargs['choices'] = (
             ('y', _('okay, let\'s try!')),
-            (
-                'n',
-                _('no %(sitename)s email please, thanks')
-                    % {'sitename': askbot_settings.APP_SHORT_NAME}
-            )
+            ('n', _('no %(sitename)s email please, thanks') % {'sitename': askbot_settings.APP_SHORT_NAME}),
         )
         super(SubscribeForEmailUpdatesField, self).__init__(**kwargs)
 
@@ -1718,16 +1587,13 @@ class EditGroupMembershipForm(forms.Form):
 
 class EditRejectReasonForm(forms.Form):
     reason_id = forms.IntegerField(required=False)
-    title = CountedWordsField(
-        min_words=1, max_words=4, field_name=_('Title')
-    )
-    details = CountedWordsField(
-        min_words=6, field_name=_('Description')
-    )
+    title = CountedWordsField(min_words=1, max_words=4, field_name=_('Title'))
+    details = CountedWordsField(min_words=6, field_name=_('Description'))
+
 
 class ModerateTagForm(forms.Form):
     tag_id = forms.IntegerField()
-    thread_id = forms.IntegerField(required = False)
+    thread_id = forms.IntegerField(required=False)
     action = forms.CharField()
 
     def clean_action(self):
@@ -1735,31 +1601,37 @@ class ModerateTagForm(forms.Form):
         assert(action in ('accept', 'reject'))
         return action
 
+
 class ShareQuestionForm(forms.Form):
     thread_id = forms.IntegerField()
     recipient_name = forms.CharField()
+
 
 class BulkTagSubscriptionForm(forms.Form):
     date_added = forms.DateField(required=False, widget=forms.HiddenInput())
     tags = TagNamesField(label=_("Tags"), help_text=' ')
 
     def __init__(self, *args, **kwargs):
-        from askbot.models import BulkTagSubscription, Tag, Group
+        from askbot.models import Group
         super(BulkTagSubscriptionForm, self).__init__(*args, **kwargs)
         self.fields['users'] = forms.ModelMultipleChoiceField(queryset=User.objects.all())
         if askbot_settings.GROUPS_ENABLED:
             self.fields['groups'] = forms.ModelMultipleChoiceField(queryset=Group.objects.exclude_personal())
 
+
 class GetDataForPostForm(forms.Form):
     post_id = forms.IntegerField()
 
+
 class GetCommentDataForPostForm(GetDataForPostForm):
     avatar_size = forms.IntegerField()
+
 
 class GetUserItemsForm(forms.Form):
     page_size = forms.IntegerField(required=False)
     page_number = forms.IntegerField(min_value=1)
     user_id = forms.IntegerField()
+
 
 class NewCommentForm(forms.Form):
     comment = forms.CharField()
@@ -1790,3 +1662,4 @@ class ConvertCommentForm(forms.Form):
 class ReorderBadgesForm(forms.Form):
     badge_id = forms.IntegerField()
     position = forms.IntegerField()
+

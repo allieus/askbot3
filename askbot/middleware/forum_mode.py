@@ -6,8 +6,8 @@ from django.conf import settings
 from django.contrib import messages as django_messages
 from django.core.urlresolvers import resolve
 from django.http import HttpResponseRedirect
-from django.utils.translation import ugettext as _
 from django.utils.six.moves.urllib.parse import quote_plus
+from django.utils.translation import ugettext as _
 from askbot.shims.django_shims import ResolverMatch
 from askbot.conf import settings as askbot_settings
 
@@ -47,8 +47,7 @@ class ForumModeMiddleware(object):
         it will let through only authenticated users.
         All others will be redirected to the login url.
         """
-        if (askbot_settings.ASKBOT_CLOSED_FORUM_MODE
-                and request.user.is_anonymous()):
+        if (askbot_settings.ASKBOT_CLOSED_FORUM_MODE and request.user.is_anonymous()):
             resolver_match = ResolverMatch(resolve(request.path))
 
             internal_ips = getattr(settings, 'ASKBOT_INTERNAL_IPS', None)

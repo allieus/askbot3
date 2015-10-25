@@ -8,13 +8,13 @@ The "read-only" requirement here is not 100% strict, as for example "question" v
 allow adding new comments via Ajax form post.
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 import logging
 import operator
 import traceback
 from django.conf import settings as django_settings
 from django.contrib import messages as django_messages
+from django.contrib.auth.models import User
 from django.contrib.humanize.templatetags import humanize
 from django.core import exceptions as django_exceptions
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
@@ -26,23 +26,22 @@ from django.http import QueryDict
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
-from django.template import RequestContext
-from django.template.loader import get_template
-from django.utils import timezone, translation
+from django.template.loader import render_to_string
+from django.utils import translation
 from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.parse import urlencode
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext
 from django.views.decorators import csrf
 from django.views.decorators.http import require_GET
-from askbot import conf, const, exceptions, models, signals
+from askbot import conf, const, exceptions, signals
 from askbot.conf import settings as askbot_settings
 from askbot.forms import AnswerForm
 from askbot.forms import GetUserItemsForm
 from askbot.forms import ShowTagsForm
 from askbot.forms import ShowQuestionForm
-from askbot.models.post import MockPost
-from askbot.models.tag import Tag
+from askbot.models import Thread, Post, MockPost, PostRevision, DraftAnswer, Tag, get_name_of_anonymous_user
+from askbot.models import Vote  # TODO: used in index page - take these out of const or settings
 from askbot.search.state_manager import SearchState
 from askbot.startup_procedures import domain_is_bad
 from askbot.templatetags import extra_tags
@@ -52,10 +51,6 @@ from askbot.utils.diff import textDiff as htmldiff
 from askbot.utils.html import sanitize_html
 from askbot.utils.loading import load_module
 from askbot.views import context
-
-# used in index page
-# TODO: - take these out of const or settings
-from askbot.models import Vote
 
 # refactor? - we have these
 # views that generate a listing of questions in one way or another:
@@ -77,8 +72,7 @@ def questions(request, **kwargs):
     """
     search_state = SearchState(user_logged_in=request.user.is_authenticated(), **kwargs)
 
-    qs, meta_data = models.Thread.objects.run_advanced_search(
-        request_user=request.user, search_state=search_state)
+    qs, meta_data = Thread.objects.run_advanced_search(request_user=request.user, search_state=search_state)
 
     if meta_data['non_existing_tags']:
         search_state = search_state.remove_tags(meta_data['non_existing_tags'])
@@ -87,23 +81,22 @@ def questions(request, **kwargs):
     if paginator.num_pages < search_state.page:
         search_state.page = 1
     page = paginator.page(search_state.page)
-    page.object_list = list(page.object_list)  # evaluate the queryset
+    page.object_list = list(page.object_list)  # FIXME: evaluate the queryset
 
     # INFO: Because for the time being we need question posts and thread authors
     #       down the pipeline, we have to precache them in thread objects
-    models.Thread.objects.precache_view_data_hack(threads=page.object_list)
+    Thread.objects.precache_view_data_hack(threads=page.object_list)
 
     related_tags = Tag.objects.get_related_to_search(
         threads=page.object_list,
-        ignored_tag_names=meta_data.get('ignored_tag_names',[]))
+        ignored_tag_names=meta_data.get('ignored_tag_names', []))
 
     tag_list_type = askbot_settings.TAG_LIST_FORMAT
     if tag_list_type == 'cloud':  # force cloud to sort by name
         related_tags = sorted(related_tags, key=operator.attrgetter('name'))
 
-    contributors = list(
-        models.Thread.objects.get_thread_contributors(
-            thread_list=page.object_list).only('id', 'username', 'gravatar'))
+    contributors = Thread.objects.get_thread_contributors(thread_list=page.object_list).\
+        only('id', 'username', 'gravatar')
 
     paginator_context = {
         'is_paginated': (paginator.count > search_state.page_size),
@@ -133,41 +126,32 @@ def questions(request, **kwargs):
         rss_query_dict.setlist('tags', search_state.tags)
         context_feed_url += '?' + rss_query_dict.urlencode()
 
-    reset_method_count = len(list(filter(None, [search_state.query, search_state.tags, meta_data.get('author_name', None)])))
+    reset_method_count = len(tuple(filter(None,
+                                          [search_state.query, search_state.tags, meta_data.get('author_name', None)])))
 
     if request.is_ajax():
         q_count = paginator.count
 
         # TODO: words
         question_counter = ungettext('%(q_num)s question', '%(q_num)s questions', q_count)
-        question_counter = question_counter % {'q_num': humanize.intcomma(q_count),}
+        question_counter = question_counter % {'q_num': humanize.intcomma(q_count)}
 
         if q_count > search_state.page_size:
-            paginator_tpl = get_template('main_page/paginator.jinja')
-            paginator_html = paginator_tpl.render(
-                RequestContext(
-                    request, {
-                        'context': paginator_context,
-                        'questions_count': q_count,
-                        'page_size': search_state.page_size,
-                        'search_state': search_state,
-                    }
-                )
-            )
+            paginator_html = render_to_string('main_page/paginator.jinja', {
+                'context': paginator_context,
+                'questions_count': q_count,
+                'page_size': search_state.page_size,
+                'search_state': search_state,
+            }, request)
         else:
             paginator_html = ''
 
-        questions_tpl = get_template('main_page/questions_loop.jinja')
-        questions_html = questions_tpl.render(
-            RequestContext(
-                request, {
-                    'threads': page,
-                    'search_state': search_state,
-                    'reset_method_count': reset_method_count,
-                    'request': request
-                }
-            )
-        )
+        questions_html = render_to_string('main_page/questions_loop.jinja', {
+            'threads': page,
+            'search_state': search_state,
+            'reset_method_count': reset_method_count,
+            'request': request,
+        }, request)
 
         ajax_data = {
             'query_data': {
@@ -181,11 +165,10 @@ def questions(request, **kwargs):
             'feed_url': context_feed_url,
             'query_string': search_state.query_string(),
             'page_size': search_state.page_size,
-            'questions': questions_html.replace('\n',''),
+            'questions': questions_html.replace('\n', ''),
             'non_existing_tags': meta_data['non_existing_tags'],
         }
 
-        related_tags_tpl = get_template('widgets/related_tags.jinja')
         related_tags_data = {
             'tags': related_tags,
             'tag_list_type': tag_list_type,
@@ -196,9 +179,7 @@ def questions(request, **kwargs):
         if tag_list_type == 'cloud':
             related_tags_data['font_size'] = extra_tags.get_tag_font_size(related_tags)
 
-        ajax_data['related_tags_html'] = related_tags_tpl.render(
-            RequestContext(request, related_tags_data)
-        )
+        ajax_data['related_tags_html'] = render_to_string('widgets/related_tags.jinja', related_tags_data, request)
 
         # here we add and then delete some items to allow extra context processor to work
         ajax_data['tags'] = related_tags
@@ -225,7 +206,7 @@ def questions(request, **kwargs):
             'ignored_tag_names': meta_data.get('ignored_tag_names', None),
             'subscribed_tag_names': meta_data.get('subscribed_tag_names', None),
             'language_code': translation.get_language(),
-            'name_of_anonymous_user': models.get_name_of_anonymous_user(),
+            'name_of_anonymous_user': get_name_of_anonymous_user(),
             'page_class': 'main-page',
             'page_size': search_state.page_size,
             'query': search_state.query,
@@ -272,11 +253,10 @@ def get_top_answers(request):
     """returns a snippet of html of users answers"""
     form = GetUserItemsForm(request.GET)
     if form.is_valid():
-        owner = models.User.objects.get(id=form.cleaned_data['user_id'])
+        owner = User.objects.get(id=form.cleaned_data['user_id'])
         paginator = owner.get_top_answers_paginator(visitor=request.user)
         answers = paginator.page(form.cleaned_data['page_number']).object_list
-        template = get_template('user_profile/user_answers_list.jinja')
-        answers_html = template.render({'top_answers': answers})
+        answers_html = render_to_string('user_profile/user_answers_list.jinja', {'top_answers': answers}, request)
         return JsonResponse({'html': answers_html, 'num_answers': paginator.count})
     else:
         return HttpResponseBadRequest()
@@ -346,9 +326,8 @@ def tags(request):  # view showing a listing of available tags - plain list
     data.update(context.get_extra('ASKBOT_TAGS_PAGE_EXTRA_CONTEXT', request, data))
 
     if request.is_ajax():
-        template = get_template('tags/content.jinja')
-        template_context = RequestContext(request, data)
-        return JsonResponse({'success': True, 'html': template.render(template_context)})
+        html = render_to_string('tags/content.jinja', data, request)
+        return JsonResponse({'success': True, 'html': html})
     else:
         return render(request, 'tags.jinja', data)
 
@@ -363,7 +342,8 @@ def question(request, id):  # refactor - long subroutine. display question body,
     # process url parameters
     # TODO: fix inheritance of sort method from questions
 
-    form = ShowQuestionForm(request.REQUEST)
+    form = ShowQuestionForm(dict(tuple(request.POST.items()) + tuple(request.GET.items())))
+
     form.full_clean()  # always valid
     show_answer = form.cleaned_data['show_answer']
     show_comment = form.cleaned_data['show_comment']
@@ -374,7 +354,7 @@ def question(request, id):  # refactor - long subroutine. display question body,
     # if the question does not exist - try mapping to old questions
     # and and if it is not found again - then give up
 
-    qs = models.Post.objects.filter(post_type='question').select_related('thread')
+    qs = Post.objects.filter(post_type='question').select_related('thread')
 
     question_post = qs.filter(id=id).first()
     if question_post is None:
@@ -385,24 +365,24 @@ def question(request, id):  # refactor - long subroutine. display question body,
 
         if show_answer:
             try:
-                old_answer = models.Post.objects.get_answers().get(old_answer_id=show_answer)
-            except models.Post.DoesNotExist:
+                old_answer = Post.objects.get_answers().get(old_answer_id=show_answer)
+            except Post.DoesNotExist:
                 pass
             else:
                 return redirect(old_answer)
 
         elif show_comment:
             try:
-                old_comment = models.Post.objects.get_comments().get(old_comment_id=show_comment)
-            except models.Post.DoesNotExist:
+                old_comment = Post.objects.get_comments().get(old_comment_id=show_comment)
+            except Post.DoesNotExist:
                 pass
             else:
                 return redirect(old_comment)
 
     if show_comment or show_answer:
         try:
-            show_post = models.Post.objects.get(pk=(show_comment or show_answer))
-        except models.Post.DoesNotExist:
+            show_post = Post.objects.get(pk=(show_comment or show_answer))
+        except Post.DoesNotExist:
             # missing target post will be handled later
             pass
         else:
@@ -444,8 +424,8 @@ def question(request, id):  # refactor - long subroutine. display question body,
         # in addition - if url points to a comment and the comment
         # is for the answer - we need the answer object
         try:
-            show_comment = models.Post.objects.get_comments().get(id=show_comment)
-        except models.Post.DoesNotExist as e:
+            show_comment = Post.objects.get_comments().get(id=show_comment)
+        except Post.DoesNotExist as e:
             traceback.print_exc()
             error_message = _(
                 'Sorry, the comment you are looking for has been '
@@ -478,7 +458,7 @@ def question(request, id):  # refactor - long subroutine. display question body,
         # question - we must check whether the question exists
         # whether answer is actually corresponding to the current question
         # and that the visitor is allowed to see it
-        show_post = get_object_or_404(models.Post, post_type='answer', id=show_answer)
+        show_post = get_object_or_404(Post, post_type='answer', id=show_answer)
         if str(show_post.thread._question_post().id) != str(id):
             return redirect(show_post)
 
@@ -528,10 +508,7 @@ def question(request, id):  # refactor - long subroutine. display question body,
     page_objects = objects_list.page(show_page)
 
     # count visits
-    signals.question_visited.send(None,
-                    request=request,
-                    question=question_post,
-                )
+    signals.question_visited.send(None, request=request, question=question_post)
 
     paginator_data = {
         'is_paginated': (objects_list.count > const.ANSWERS_PAGE_SIZE),
@@ -549,17 +526,14 @@ def question(request, id):  # refactor - long subroutine. display question body,
     is_cacheable = True
     if show_page != 1:
         is_cacheable = False
-    elif show_comment_position > askbot_settings.MAX_COMMENTS_TO_SHOW:
+    elif (show_comment_position or 0) > askbot_settings.MAX_COMMENTS_TO_SHOW:
         is_cacheable = False
 
     # maybe load draft
     initial = {}
     if request.user.is_authenticated():
         # TODO: refactor into methor on thread
-        drafts = models.DraftAnswer.objects.filter(
-                                        author=request.user,
-                                        thread=thread
-                                    )
+        drafts = DraftAnswer.objects.filter(author=request.user, thread=thread)
         if drafts.count() > 0:
             initial['text'] = drafts[0].text
 
@@ -571,9 +545,7 @@ def question(request, id):  # refactor - long subroutine. display question body,
 
     answer_form = answer_form_class(initial=initial, user=request.user)
 
-    user_can_post_comment = (
-        request.user.is_authenticated() and request.user.can_post_comment(question_post)
-    )
+    user_can_post_comment = (request.user.is_authenticated() and request.user.can_post_comment(question_post))
 
     new_answer_allowed = True
     previous_answer = None
@@ -637,14 +609,14 @@ def question(request, id):  # refactor - long subroutine. display question body,
 
 def revisions(request, id, post_type=None):
     assert post_type in ('question', 'answer')
-    post = get_object_or_404(models.Post, post_type=post_type, id=id)
+    post = get_object_or_404(Post, post_type=post_type, id=id)
 
     if post.deleted:
         if request.user.is_anonymous() or \
                 not request.user.is_administrator_or_moderator():
             raise Http404
 
-    revisions = list(models.PostRevision.objects.filter(post=post))
+    revisions = list(PostRevision.objects.filter(post=post))
     revisions.reverse()
     for i, revision in enumerate(revisions):
         if i == 0:
@@ -674,13 +646,13 @@ def get_comment(request):
     and request must be ajax
     """
     id = int(request.GET['id'])
-    comment = models.Post.objects.get(post_type='comment', id=id)
+    comment = Post.objects.get(post_type='comment', id=id)
     request.user.assert_can_edit_comment(comment)
 
     try:
         # try to get suggested edit
         rev = comment.revisions.get(revision=0)
-    except models.PostRevision.DoesNotExist:
+    except PostRevision.DoesNotExist:
         rev = comment.get_latest_revision()
     return {'text': rev.text}
 
@@ -735,11 +707,10 @@ def get_perms_data(request):
         )
         data.append(setting)
 
-    template = get_template('widgets/user_perms.jinja')
-    html = template.render({
+    html = render_to_string('widgets/user_perms.jinja', {
         'user': request.user,
         'perms_data': data
-    })
+    }, request)
 
     return {'html': html}
 
@@ -747,7 +718,7 @@ def get_perms_data(request):
 @ajax_only
 @require_GET
 def get_post_html(request):
-    post = models.Post.objects.get(id=request.GET['post_id'])
+    post = Post.objects.get(id=request.GET['post_id'])
     post.assert_is_visible_to(request.user)
     return {'post_html': post.html}
 

@@ -103,7 +103,7 @@ def export_as_python(request):
     pp = pprint.PrettyPrinter(indent=4)
     pretty = pp.pformat(work)
 
-    return render(request, 'livesettings/text.txt', {
+    return render(request, 'livesettings/text.txt.jinja', {
         'text': pretty,
     }, content_type='text/plain')
 

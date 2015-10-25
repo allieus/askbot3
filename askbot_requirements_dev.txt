@@ -36,3 +36,4 @@ longerusername
 mock>=1.0.1
 beautifulsoup4
 django-picklefield>=0.3.0
+djorm-ext-pgfulltext==0.10
